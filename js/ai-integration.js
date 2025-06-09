@@ -161,8 +161,8 @@ class AIIntegration {
 
         Guidelines:
         - Extract ALL questions from the document (don't limit to 10)
-        - Each question must have exactly 4 options
-        - correctAnswer should be the index (0-3) of the correct option
+        - Each question should have 4-5 options (preserve original count)
+        - correctAnswer should be the index (0-3 for 4 options, 0-4 for 5 options)
         - Provide clear, educational explanations
         - If the document has existing questions, use them; if not, create relevant questions from the content
         - Maintain academic accuracy and clarity
@@ -276,15 +276,15 @@ class AIIntegration {
 					console.warn(`Question ${index + 1} has invalid structure, skipping`);
 					return false;
 				}
-				if (q.options.length !== 4) {
+				if (q.options.length < 4 || q.options.length > 5) {
 					console.warn(
-						`Question ${index + 1} doesn't have exactly 4 options, skipping`,
+						`Question ${index + 1} has ${q.options.length} options (should be 4-5), skipping`,
 					);
 					return false;
 				}
-				if (q.correctAnswer < 0 || q.correctAnswer >= 4) {
+				if (q.correctAnswer < 0 || q.correctAnswer >= q.options.length) {
 					console.warn(
-						`Question ${index + 1} has invalid correctAnswer index, skipping`,
+						`Question ${index + 1} has invalid correctAnswer index ${q.correctAnswer} for ${q.options.length} options, skipping`,
 					);
 					return false;
 				}
@@ -433,12 +433,19 @@ class AIIntegration {
 		return `Extract ALL multiple choice questions from this exam content. This appears to be an exam or quiz document.
 
 EXTRACTION GUIDELINES:
-- Look for numbered questions (1., 2., 3., etc.) followed by multiple choice options (a., b., c., d.)
+- Look for numbered questions (1., 2., 3., etc.) followed by multiple choice options
 - Extract EVERY question you find - be comprehensive, not conservative
-- Convert option letters (a, b, c, d) to array positions (0, 1, 2, 3)
-- If a question has fewer than 4 options, pad with reasonable alternatives
-- Use your knowledge to determine the most likely correct answer
-- If unsure about correct answer, make an educated guess
+- Handle 4 OR 5 options: (a, b, c, d) OR (a, b, c, d, e)
+- Convert option letters to array positions: a=0, b=1, c=2, d=3, e=4
+- Preserve the original number of options (don't pad 4 to 5, don't truncate 5 to 4)
+
+ANSWER DETECTION - VERY IMPORTANT:
+- Many exam PDFs have the correct answer RIGHT AFTER the question
+- Look for patterns like: "Answer: A", "Ans: B", "Correct Answer: C", "Answer is D", "Answer: E"
+- Look for: "(A)", "(B)", "(C)", "(D)", "(E)" immediately following questions  
+- Look for: "The answer is A", "Correct option: B", "Right answer: C"
+- If you find a provided answer, USE THAT as the correct answer
+- If no answer is provided, use your knowledge to determine the most likely correct answer
 
 EXAM CONTENT:
 ${textContent.substring(0, 100000)}${textContent.length > 100000 ? "\n[Truncated...]" : ""}
@@ -453,7 +460,14 @@ Return ONLY a valid JSON array (no markdown, no additional text):
   }
 ]
 
-IMPORTANT: Extract ALL questions you can identify, even if some details are unclear. Be aggressive in extraction - it's better to get more questions than to miss them.`;
+Note: If a question has 5 options, include all 5 in the options array. The options array can have 4 or 5 elements.
+
+IMPORTANT: 
+- Extract ALL questions you can identify, even if some details are unclear
+- Be aggressive in extraction - it's better to get more questions than to miss them
+- ALWAYS use provided answers from the text when available
+- Convert letter answers to numbers: A=0, B=1, C=2, D=3, E=4
+- Preserve original option count (4 or 5 options as found in source)`;
 	}
 
 	parseChunkResponse(text) {
@@ -583,16 +597,20 @@ IMPORTANT: Extract ALL questions you can identify, even if some details are uncl
 					q.correctAnswer = 0; // Default to first option
 				}
 
-				// Ensure exactly 4 options
-				while (q.options.length < 4) {
-					q.options.push("Additional option");
-				}
-				if (q.options.length > 4) {
-					q.options = q.options.slice(0, 4);
-					if (q.correctAnswer >= 4) {
+				// Handle 4-5 options dynamically (don't force to exactly 4)
+				if (q.options.length < 4) {
+					// Pad to minimum 4 options
+					while (q.options.length < 4) {
+						q.options.push("Additional option");
+					}
+				} else if (q.options.length > 5) {
+					// Cap at maximum 5 options
+					q.options = q.options.slice(0, 5);
+					if (q.correctAnswer >= 5) {
 						q.correctAnswer = 0;
 					}
 				}
+				// Keep 4 or 5 options as-is
 
 				return true;
 			});
@@ -640,6 +658,66 @@ IMPORTANT: Extract ALL questions you can identify, even if some details are uncl
 					correctAnswer: correctIdx,
 					explanation: explanation || "No explanation provided",
 				});
+			}
+		}
+
+		// If JSON extraction failed, try to extract raw questions with answers
+		if (questions.length === 0) {
+			console.log("🔧 Attempting raw text extraction with answer detection...");
+
+			// Look for numbered questions with multiple choice options and answers (4 or 5 options)
+			const rawQuestionPattern =
+				/(\d+\.?\s*[^?]*\?)[^]*?(?:a[\.\)]\s*[^]*?b[\.\)]\s*[^]*?c[\.\)]\s*[^]*?d[\.\)]\s*(?:[^]*?e[\.\)]\s*[^]*?)?[^]*?)(?:answer[:\s]*([abcdeABCDE])|ans[:\s]*([abcdeABCDE])|correct[:\s]*(?:answer[:\s]*)?([abcdeABCDE])|\(([abcdeABCDE])\))/gi;
+
+			let rawMatch;
+			let questionId = 1;
+
+			while (
+				(rawMatch = rawQuestionPattern.exec(text)) !== null &&
+				questionId <= 20
+			) {
+				const [fullMatch, questionText, answer1, answer2, answer3, answer4] =
+					rawMatch;
+
+				// Extract the answer letter (could be in any of the capture groups)
+				const answerLetter = (
+					answer1 ||
+					answer2 ||
+					answer3 ||
+					answer4 ||
+					""
+				).toUpperCase();
+
+				// Extract options from the text (4 or 5 options)
+				const optionMatches = fullMatch.match(
+					/[abcdeABCDE][\.\)]\s*([^]*?)(?=[abcdeABCDE][\.\)]|answer|ans|correct|\d+\.|$)/gi,
+				);
+
+				if (optionMatches && optionMatches.length >= 4 && answerLetter) {
+					// Take all available options (4 or 5)
+					const maxOptions = Math.min(optionMatches.length, 5);
+					const options = optionMatches
+						.slice(0, maxOptions)
+						.map((opt) => opt.replace(/^[abcdeABCDE][\.\)]\s*/, "").trim());
+
+					// Convert letter to index
+					const correctAnswer = answerLetter.charCodeAt(0) - "A".charCodeAt(0);
+
+					if (
+						correctAnswer >= 0 &&
+						correctAnswer <= 4 &&
+						correctAnswer < options.length
+					) {
+						2;
+						questions.push({
+							question: questionText.trim(),
+							options: options,
+							correctAnswer: correctAnswer,
+							explanation: `Answer provided in source: ${answerLetter}`,
+						});
+						questionId++;
+					}
+				}
 			}
 		}
 

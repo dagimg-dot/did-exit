@@ -60,8 +60,8 @@ class BatchProcessor {
 
 		// Use multiple choice indicators as confirmation
 		const mcMarkers = [
-			/^\s*[A-Ea-e][\.\)]/gm, // A. B. C. D. options
-			/^\s*\([A-Ea-e]\)/gm, // (A) (B) (C) (D) options
+			/^\s*[A-Ea-e][\.\)]/gm, // A. B. C. D. E. options
+			/^\s*\([A-Ea-e]\)/gm, // (A) (B) (C) (D) (E) options
 		];
 
 		let optionCount = 0;
@@ -150,6 +150,17 @@ class BatchProcessor {
 			if (existingPDF && existingPDF.isComplete) {
 				console.log(`✅ PDF already processed: ${pdfFile.name}`);
 				const questions = await this.db.getQuestions(pdfId);
+				console.log(
+					`📦 Retrieved ${questions.length} questions from cache (from ${existingPDF.batchCount} batches)`,
+				);
+
+				// Verify we have questions from all expected batches
+				const batchCounts = {};
+				questions.forEach((q) => {
+					batchCounts[q.batchNumber] = (batchCounts[q.batchNumber] || 0) + 1;
+				});
+				console.log(`📊 Questions per batch from cache:`, batchCounts);
+
 				this.emit("cacheHit", { pdfId, questions, pdfData: existingPDF });
 				return { pdfId, questions, fromCache: true };
 			}
@@ -254,6 +265,21 @@ class BatchProcessor {
 			);
 
 			if (questions && questions.length > 0) {
+				// Check if any explanations indicate provided answers were found
+				const providedAnswers = questions.filter(
+					(q) =>
+						q.explanation &&
+						(q.explanation.toLowerCase().includes("answer provided") ||
+							q.explanation.toLowerCase().includes("provided in source") ||
+							q.explanation.toLowerCase().includes("given answer")),
+				);
+
+				if (providedAnswers.length > 0) {
+					console.log(
+						`✨ Found ${providedAnswers.length} questions with provided answers in batch ${chunk.batchNumber}`,
+					);
+				}
+
 				console.log(
 					`✅ Generated ${questions.length} questions from batch ${chunk.batchNumber}`,
 				);
@@ -278,23 +304,42 @@ class BatchProcessor {
 
 IMPORTANT INSTRUCTIONS:
 - Extract ALL existing questions if they're already in the content
-- If no questions exist, create relevant questions from the key concepts
-- Each question must have exactly 4 options (A, B, C, D)
-- Provide the correct answer index (0-3)
+- LOOK FOR CORRECT ANSWERS: Many exam PDFs have the correct answer right after the question (e.g., "Answer: A", "Correct Answer: B", "Ans: C")
+- If a correct answer is provided in the text, USE THAT as the correctAnswer index
+- If no answer is provided, use your knowledge to determine the most likely correct answer
+- Handle 4 OR 5 options dynamically (A, B, C, D) OR (A, B, C, D, E)
+- Provide the correct answer index where 0=A, 1=B, 2=C, 3=D, 4=E
 - Include brief explanations
 
-Format as JSON:
+FORMAT AS JSON:
 {
   "questions": [
     {
       "id": 1,
       "question": "Question text?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "options": ["Option A", "Option B", "Option C", "Option D", "Option E"],
       "correctAnswer": 0,
       "explanation": "Why this answer is correct"
     }
   ]
 }
+
+ANSWER DETECTION PATTERNS:
+- Look for: "Answer: A", "Ans: B", "Correct Answer: C", "Answer is D", "Answer: E"
+- Look for: "(A)", "(B)", "(C)", "(D)", "(E)" after questions
+- Look for: "The answer is A", "Correct option: B"
+- Convert A=0, B=1, C=2, D=3, E=4 for the correctAnswer field
+
+OPTION HANDLING:
+- If question has 4 options (A-D), provide exactly 4 options
+- If question has 5 options (A-E), provide exactly 5 options
+- DO NOT pad 4-option questions to 5, and DO NOT truncate 5-option questions to 4
+- Preserve the original number of options from the source
+
+EXTRACTION PRIORITY:
+1. Use provided answers from the text when available
+2. If no answer provided, make educated guess based on content
+3. Always provide an explanation regardless of whether answer was given or guessed
 
 Batch ${chunk.batchNumber} content:
 ${chunk.content}`;
@@ -366,10 +411,55 @@ ${chunk.content}`;
 						completedBatches: item.chunk.batchNumber,
 						totalBatches: item.totalBatches,
 					});
-				}
 
-				// Check if this was the last batch
-				if (this.processingQueue.length === 0) {
+					// Check if ALL batches are actually completed (not just queue empty)
+					console.log(
+						`✅ Batch ${item.chunk.batchNumber} of ${item.totalBatches} completed and stored`,
+					);
+
+					// Only mark complete when we've processed the last batch number
+					if (item.chunk.batchNumber === item.totalBatches) {
+						console.log(
+							`🎉 All ${item.totalBatches} batches completed! Marking PDF as complete.`,
+						);
+						await this.db.markPDFComplete(item.pdfId);
+						const finalQuestions = await this.db.getQuestions(item.pdfId);
+
+						this.emit("processingComplete", {
+							pdfId: item.pdfId,
+							totalQuestions: finalQuestions.length,
+						});
+					}
+				} else {
+					console.warn(
+						`⚠️ No questions generated for batch ${item.chunk.batchNumber}, but continuing...`,
+					);
+
+					// Still check for completion even if this batch was empty
+					if (item.chunk.batchNumber === item.totalBatches) {
+						console.log(
+							`🎉 Reached final batch ${item.totalBatches}. Marking PDF as complete.`,
+						);
+						await this.db.markPDFComplete(item.pdfId);
+						const finalQuestions = await this.db.getQuestions(item.pdfId);
+
+						this.emit("processingComplete", {
+							pdfId: item.pdfId,
+							totalQuestions: finalQuestions.length,
+						});
+					}
+				}
+			} catch (error) {
+				console.error(
+					`Error processing background batch ${item.chunk.batchNumber}:`,
+					error,
+				);
+
+				// Even if there's an error, check if we need to mark as complete
+				if (item.chunk.batchNumber === item.totalBatches) {
+					console.log(
+						`🎉 Reached final batch ${item.totalBatches} (with error). Marking PDF as complete.`,
+					);
 					await this.db.markPDFComplete(item.pdfId);
 					const finalQuestions = await this.db.getQuestions(item.pdfId);
 
@@ -378,12 +468,6 @@ ${chunk.content}`;
 						totalQuestions: finalQuestions.length,
 					});
 				}
-			} catch (error) {
-				console.error(
-					`Error processing background batch ${item.chunk.batchNumber}:`,
-					error,
-				);
-				// Continue with next item rather than stopping entire queue
 			}
 		}
 
@@ -393,6 +477,8 @@ ${chunk.content}`;
 			console.log("🛑 Background processing cancelled");
 			this.emit("processingCancelled", { reason: "user_cancelled" });
 		}
+
+		console.log("✅ Background processing queue completed");
 	}
 
 	// Rate limiting for AI requests

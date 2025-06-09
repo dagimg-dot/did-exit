@@ -201,6 +201,10 @@ class DatabaseManager {
 
 	// Question Management Methods
 	async storeQuestions(pdfId, questions, batchNumber) {
+		console.log(
+			`💾 Storing ${questions.length} questions for PDF ${pdfId.substring(0, 8)}... batch ${batchNumber}`,
+		);
+
 		const transaction = this.db.transaction(["questions"], "readwrite");
 		const store = transaction.objectStore("questions");
 
@@ -220,15 +224,34 @@ class DatabaseManager {
 			return new Promise((resolve, reject) => {
 				const request = store.put(questionRecord);
 				request.onsuccess = () => resolve(questionRecord);
-				request.onerror = () => reject(request.error);
+				request.onerror = () => {
+					console.error(
+						`❌ Failed to store question ${questionRecord.questionId}:`,
+						request.error,
+					);
+					reject(request.error);
+				};
 			});
 		});
 
-		const results = await Promise.all(promises);
-		console.log(
-			`❓ Stored ${results.length} questions for batch ${batchNumber}`,
-		);
-		return results;
+		try {
+			const results = await Promise.all(promises);
+			console.log(
+				`✅ Successfully stored ${results.length} questions for batch ${batchNumber}`,
+			);
+
+			// Verify storage by counting total questions for this PDF
+			const totalCount = await this.getQuestionCount(pdfId);
+			console.log(`📊 Total questions now stored for this PDF: ${totalCount}`);
+
+			return results;
+		} catch (error) {
+			console.error(
+				`❌ Error storing questions for batch ${batchNumber}:`,
+				error,
+			);
+			throw error;
+		}
 	}
 
 	async getQuestions(pdfId, batchNumber = null) {
