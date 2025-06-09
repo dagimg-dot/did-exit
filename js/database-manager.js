@@ -194,6 +194,11 @@ class DatabaseManager {
 		});
 	}
 
+	// Alias for completePDFProcessing to match batch processor usage
+	async markPDFComplete(pdfId) {
+		return this.completePDFProcessing(pdfId);
+	}
+
 	// Question Management Methods
 	async storeQuestions(pdfId, questions, batchNumber) {
 		const transaction = this.db.transaction(["questions"], "readwrite");

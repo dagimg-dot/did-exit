@@ -1,10 +1,8 @@
-// PDF text extraction using PDF.js with enhanced analysis
-import { PDFAnalyzer } from "./pdf-analyzer.js";
+// PDF text extraction using PDF.js - Simplified for AI Processing
 
 class PDFProcessor {
 	constructor() {
 		this.events = {};
-		this.analyzer = new PDFAnalyzer();
 		this.currentPdf = null;
 		this.initializePDFJS();
 	}
@@ -59,28 +57,23 @@ class PDFProcessor {
 			this.currentPdf = pdf;
 			console.log("PDF loaded:", pdf.numPages, "pages");
 
-			// Enhanced analysis using PDFAnalyzer
-			const analysis = await this.analyzer.analyzeContent(pdf);
+			// Extract text from all pages
+			const extractedText = await this.extractTextFromPDF(pdf);
 
-			// Emit enhanced analysis data
-			this.emit("pdfAnalyzed", analysis);
-
-			// Also emit basic text for backward compatibility
-			if (!analysis.textContent.trim()) {
+			if (!extractedText.trim()) {
 				throw new Error(
 					"No text found in PDF. Please ensure the PDF contains readable text.",
 				);
 			}
 
 			console.log(
-				"Enhanced analysis complete:",
-				analysis.textContent.length,
-				"characters,",
-				analysis.metadata.questionsFound,
-				"questions detected",
+				"Text extraction complete:",
+				extractedText.length,
+				"characters",
 			);
 
-			this.emit("textExtracted", analysis.textContent, analysis);
+			// Emit extracted text directly for AI processing
+			this.emit("textExtracted", extractedText);
 		} catch (error) {
 			console.error("PDF processing error:", error);
 			this.emit("error", error);
@@ -105,9 +98,8 @@ class PDFProcessor {
 				const page = await pdf.getPage(pageNum);
 				const textContent = await page.getTextContent();
 
-				// Extract text items
-				const pageText = textContent.items.map((item) => item.str).join(" ");
-
+				// Extract text items with better formatting
+				const pageText = this.processPageText(textContent);
 				fullText += pageText + "\n\n";
 
 				console.log(`Page ${pageNum} processed: ${pageText.length} characters`);
@@ -120,43 +112,40 @@ class PDFProcessor {
 		return this.cleanExtractedText(fullText);
 	}
 
+	processPageText(textContent) {
+		// Extract text items and maintain better structure
+		let pageText = "";
+		let lastY = null;
+
+		for (const item of textContent.items) {
+			const currentY = item.transform[5];
+
+			// Add line break if we moved to a different line
+			if (lastY !== null && Math.abs(currentY - lastY) > 5) {
+				pageText += "\n";
+			}
+
+			pageText += item.str + " ";
+			lastY = currentY;
+		}
+
+		return pageText.trim();
+	}
+
 	cleanExtractedText(text) {
 		return (
 			text
-				// Remove excessive whitespace
+				// Normalize whitespace
 				.replace(/\s+/g, " ")
-				// Remove page numbers and headers/footers patterns
-				.replace(/^\d+\s*$/gm, "")
-				// Clean up multiple line breaks
-				.replace(/\n\s*\n\s*\n/g, "\n\n")
-				// Trim whitespace
+				// Remove page numbers (standalone numbers on their own lines)
+				.replace(/^\s*\d+\s*$/gm, "")
+				// Clean up excessive line breaks
+				.replace(/\n\s*\n\s*\n+/g, "\n\n")
+				// Remove leading/trailing whitespace
 				.trim()
+				// Ensure we have reasonable line breaks
+				.replace(/(.{100,}?)(\s)/g, "$1\n")
 		);
-	}
-
-	// Simple text analysis to identify potential questions
-	identifyQuestions(text) {
-		const questionPatterns = [
-			/\d+[\.\)]\s+.+?\?/g, // 1. Question?
-			/\([A-Da-d]\)\s+.+/g, // (A) Option
-			/[A-Da-d][\.\)]\s+.+/g, // A. Option
-			/Question\s+\d+/gi, // Question 1
-			/\d+\.\s+Which|What|How|Why|Where|When/gi, // Numbered questions
-		];
-
-		const matches = [];
-		questionPatterns.forEach((pattern) => {
-			const found = text.match(pattern);
-			if (found) {
-				matches.push(...found);
-			}
-		});
-
-		return {
-			hasQuestions: matches.length > 0,
-			potentialQuestions: matches.slice(0, 5), // First 5 matches
-			questionCount: matches.length,
-		};
 	}
 
 	// Event system

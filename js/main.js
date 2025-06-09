@@ -50,23 +50,11 @@ class App {
 			this.handleProcessingStart.bind(this),
 		);
 
-		// PDF processing events
-		this.pdfProcessor.on("pdfAnalyzed", this.handlePDFAnalyzed.bind(this));
+		// PDF processing events - simplified
 		this.pdfProcessor.on("textExtracted", this.handleTextExtracted.bind(this));
 		this.pdfProcessor.on("error", this.handleProcessingError.bind(this));
 
-		// AI integration events
-		this.aiIntegration.on(
-			"questionsGenerated",
-			this.handleQuestionsGenerated.bind(this),
-		);
-		this.aiIntegration.on(
-			"answersAnalyzed",
-			this.handleAnswersAnalyzed.bind(this),
-		);
-		this.aiIntegration.on("error", this.handleAIError.bind(this));
-
-		// Batch processing events
+		// Batch processing events - focus on AI
 		this.batchProcessor.on("cacheHit", this.handleCacheHit.bind(this));
 		this.batchProcessor.on(
 			"firstBatchReady",
@@ -110,7 +98,10 @@ class App {
 	async handleFileSelected(file) {
 		console.log("File selected:", file.name);
 		this.currentFile = file;
-		this.ui.showLoading("Processing PDF and extracting text...");
+		this.ui.showLoading("Extracting text from PDF...");
+
+		// Show cancel button immediately
+		this.showCancelButton();
 
 		try {
 			await this.pdfProcessor.processFile(file);
@@ -123,38 +114,22 @@ class App {
 		this.ui.showLoading("Processing PDF...");
 	}
 
-	handlePDFAnalyzed(pdfAnalysis) {
-		console.log("📊 PDF analysis complete:", pdfAnalysis.metadata);
-		this.currentPDFAnalysis = pdfAnalysis;
-
-		// Show cancel button when processing starts
-		this.showCancelButton();
-
-		if (pdfAnalysis.metadata.hasQuestions) {
-			const breakdown = pdfAnalysis.metadata.patternBreakdown;
-			const mainQuestions =
-				breakdown.mainQuestions || breakdown.numberedQuestions || 0;
-			const optionGroups = breakdown.optionGroups || 0;
-
-			this.ui.updateLoadingMessage(
-				`📋 Detected ~${pdfAnalysis.metadata.estimatedQuestions} questions (${mainQuestions} numbered, ${optionGroups} option groups). Starting AI extraction...`,
-			);
-		} else {
-			this.ui.updateLoadingMessage(
-				"No obvious question patterns detected. Analyzing content with AI...",
-			);
-		}
-	}
-
-	async handleTextExtracted(extractedText, pdfAnalysis = null) {
-		console.log("Text extracted, length:", extractedText.length);
+	async handleTextExtracted(extractedText) {
+		console.log(
+			"Text extracted, starting AI processing:",
+			extractedText.length,
+			"characters",
+		);
 
 		try {
-			// Use enhanced batch processor with PDF analysis
+			this.ui.updateLoadingMessage(
+				"Starting AI analysis and question extraction...",
+			);
+
+			// Use simplified batch processor focused on AI
 			const result = await this.batchProcessor.processPDFInBatches(
 				this.currentFile,
 				extractedText,
-				pdfAnalysis || this.currentPDFAnalysis,
 			);
 
 			if (!result) {
@@ -172,23 +147,7 @@ class App {
 		}
 	}
 
-	async handleQuestionsGenerated(questions) {
-		console.log("Questions generated:", questions.length);
-		this.quizData = questions;
-
-		// Store correct answers with AI for comparison later
-		this.ui.updateLoadingMessage("Preparing quiz...");
-
-		try {
-			this.correctAnswers =
-				await this.aiIntegration.getCorrectAnswers(questions);
-			this.startQuiz();
-		} catch (error) {
-			this.handleAIError(error);
-		}
-	}
-
-	// New batch processing event handlers
+	// Batch processing event handlers
 	handleCacheHit(data) {
 		console.log(
 			"📦 Cache hit! Loading existing questions:",
@@ -205,16 +164,16 @@ class App {
 		this.currentPdfId = data.pdfId;
 		this.quizData = data.questions;
 
-		// Immediately show the questions - no delay
+		// Immediately show the questions
 		if (data.questions.length > 0) {
 			console.log("📚 Starting quiz with first batch immediately");
 			this.startQuizWithProgress(data.totalBatches, data.completedBatches);
 		} else {
 			console.warn(
-				"⚠️ First batch was empty, waiting for background processing",
+				"⚠️ First batch was empty, this shouldn't happen with AI processing",
 			);
-			this.ui.updateLoadingMessage(
-				"First batch contained no questions. Processing more content...",
+			this.ui.showError(
+				"No questions could be extracted from this PDF. Please try a different document.",
 			);
 		}
 	}
@@ -231,10 +190,17 @@ class App {
 			this.currentPdfId === data.pdfId &&
 			this.currentSection === "quiz-section"
 		) {
-			this.quizManager.handleQuestionExpansion(data.questions);
+			// Add new questions to existing quiz
+			this.quizData = [...this.quizData, ...data.questions];
+			this.quizManager.addQuestions(data.questions);
+
 			this.ui.showNotification(
 				`${data.questions.length} new questions added! Total: ${data.newTotal}`,
+				"info",
 			);
+
+			// Update progress indicator
+			this.ui.updateProgressIndicator(data.completedBatches, data.totalBatches);
 		}
 	}
 
@@ -244,7 +210,7 @@ class App {
 
 		if (this.currentPdfId === data.pdfId) {
 			this.ui.showNotification(
-				"All questions extracted! Quiz is now complete.",
+				`All questions extracted! Quiz completed with ${data.totalQuestions} total questions.`,
 				"success",
 			);
 			this.ui.hideProgressIndicator();
@@ -309,6 +275,11 @@ class App {
 				`Quiz started with ${this.quizData.length} questions! More questions are being processed in the background.`,
 				"info",
 			);
+		} else {
+			this.ui.showNotification(
+				`Quiz ready with ${this.quizData.length} questions!`,
+				"success",
+			);
 		}
 	}
 
@@ -318,9 +289,21 @@ class App {
 
 	async handleQuizCompleted(userAnswers) {
 		this.userAnswers = userAnswers;
-		this.ui.showLoading("Analyzing your answers...");
+		this.ui.showLoading("Analyzing your answers with AI...");
 
 		try {
+			// Get correct answers from AI if not already available
+			if (
+				!this.correctAnswers ||
+				this.correctAnswers.length !== this.quizData.length
+			) {
+				console.log("Getting correct answers from AI...");
+				this.correctAnswers = await this.aiIntegration.getCorrectAnswers(
+					this.quizData,
+				);
+			}
+
+			// Analyze answers with AI
 			const results = await this.aiIntegration.analyzeAnswers(
 				this.quizData,
 				this.userAnswers,
@@ -330,10 +313,6 @@ class App {
 		} catch (error) {
 			this.handleAIError(error);
 		}
-	}
-
-	handleAnswersAnalyzed(results) {
-		this.showResults(results);
 	}
 
 	showResults(results) {
@@ -357,6 +336,7 @@ class App {
 		this.quizManager.reset();
 		this.ui.hideProgressIndicator();
 		this.ui.clearNotifications();
+		this.hideCancelButton();
 		this.showSection("upload-section");
 	}
 
@@ -376,6 +356,7 @@ class App {
 	handleProcessingError(error) {
 		console.error("Processing error:", error);
 		this.ui.hideLoading();
+		this.hideCancelButton();
 		this.ui.showError("Error processing PDF: " + error.message);
 	}
 
@@ -400,8 +381,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 				<h2>Initialization Error</h2>
 				<p>Failed to start the application. Please refresh the page and try again.</p>
 				<details style="margin-top: 1rem; text-align: left;">
-					<summary>Technical Details</summary>
-					<pre style="background: #f9fafb; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">${error.stack}</pre>
+					<summary>Error Details</summary>
+					<pre style="background: #f3f4f6; padding: 1rem; border-radius: 0.5rem; overflow: auto;">${error.stack}</pre>
 				</details>
 			</div>
 		`;

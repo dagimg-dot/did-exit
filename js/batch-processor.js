@@ -1,4 +1,4 @@
-// Batch Processing Manager for Progressive PDF Question Extraction
+// Batch Processing Manager for Progressive PDF Question Extraction with AI
 class BatchProcessor {
 	constructor(aiIntegration, databaseManager) {
 		this.ai = aiIntegration;
@@ -11,136 +11,57 @@ class BatchProcessor {
 		this.currentOperation = null;
 	}
 
-	// Smart Chunking Algorithm
-	calculateBatchSize(textContent) {
-		const estimatedTokens = textContent.length / 4; // Rough token estimation
-		const estimatedQuestions = this.estimateQuestionCount(textContent);
+	// Simplified chunking for AI processing
+	createTextChunks(textContent, questionsPerBatch = 15) {
+		console.log(`📝 Creating chunks for ${textContent.length} characters`);
 
-		console.log(
-			`📊 Content analysis: ${estimatedTokens.toLocaleString()} tokens, ~${estimatedQuestions} questions`,
-		);
-
-		if (estimatedQuestions <= 15) {
-			return { batchSize: estimatedQuestions, batchCount: 1 };
-		}
-
-		// For large documents, create manageable batches
-		const optimalBatchSize = Math.min(
-			15,
-			Math.max(5, Math.floor(estimatedQuestions / 6)),
-		);
-		const batchCount = Math.ceil(estimatedQuestions / optimalBatchSize);
-
-		return {
-			batchSize: optimalBatchSize,
-			batchCount: Math.min(batchCount, 10), // Cap at 10 batches to respect rate limits
-		};
-	}
-
-	estimateQuestionCount(textContent) {
-		// Multiple heuristics to estimate question count
-		const questionMarkers = [
-			/^\s*\d+[\.\)]\s+/gm, // 1. Question or 1) Question
-			/^\s*[A-Z][\.\)]\s+/gm, // A. Question or A) Question
-			/\bquestion\s+\d+/gi, // "Question 1", "Question 2"
-			/^\s*Q\d+/gm, // Q1, Q2, etc.
-			/\?\s*$/gm, // Lines ending with ?
-		];
-
-		let maxCount = 0;
-		questionMarkers.forEach((pattern) => {
-			const matches = textContent.match(pattern) || [];
-			maxCount = Math.max(maxCount, matches.length);
-		});
-
-		// Use multiple choice indicators as confirmation
-		const mcMarkers = [
-			/^\s*[A-D][\.\)]/gm, // A. B. C. D. options
-			/^\s*\([A-D]\)/gm, // (A) (B) (C) (D) options
-		];
-
-		let optionCount = 0;
-		mcMarkers.forEach((pattern) => {
-			const matches = textContent.match(pattern) || [];
-			optionCount += matches.length;
-		});
-
-		// If we have 4x more options than questions, that's a good sign
-		const mcQuestionEstimate = Math.floor(optionCount / 4);
-
-		// Use the more conservative estimate
-		const finalEstimate = Math.max(
-			5,
-			Math.min(maxCount, mcQuestionEstimate || maxCount),
-		);
-
-		console.log(
-			`🔍 Question estimation: markers=${maxCount}, mc=${mcQuestionEstimate}, final=${finalEstimate}`,
-		);
-		return finalEstimate;
-	}
-
-	createTextChunks(textContent, batchCount) {
-		if (batchCount === 1) {
+		// For smaller documents (under 50k chars), process in one go
+		if (textContent.length < 50000) {
 			return [
 				{
 					content: textContent,
 					batchNumber: 1,
-					startIndex: 0,
-					endIndex: textContent.length,
+					isFirstBatch: true,
 				},
 			];
 		}
 
+		// For larger documents, create meaningful chunks
+		const estimatedWords = textContent.split(/\s+/).length;
+		const wordsPerChunk = Math.max(5000, Math.floor(estimatedWords / 4)); // Max 4 chunks
+
 		const chunks = [];
-		const baseChunkSize = Math.floor(textContent.length / batchCount);
+		const words = textContent.split(/\s+/);
 
-		for (let i = 0; i < batchCount; i++) {
-			const start = i * baseChunkSize;
-			let end =
-				i === batchCount - 1 ? textContent.length : (i + 1) * baseChunkSize;
-
-			// Find natural break points to avoid cutting questions in half
-			if (i < batchCount - 1) {
-				const searchEnd = end + 300; // Look ahead 300 chars
-				const breakPoints = [
-					textContent.indexOf("\n\n", end), // Paragraph break
-					textContent.indexOf("\n\n\n", end), // Multiple line breaks
-					textContent.lastIndexOf("\n\n", searchEnd), // Previous paragraph
-					textContent.indexOf("Question", end), // Next question
-					textContent.indexOf(/\d+\./, end), // Next numbered item
-				].filter((pos) => pos > end && pos < searchEnd);
-
-				if (breakPoints.length > 0) {
-					end = Math.min(...breakPoints);
-				}
-			}
-
-			// Ensure some overlap to avoid missing questions at boundaries
-			const overlapSize = i > 0 ? 200 : 0;
-			const actualStart = Math.max(0, start - overlapSize);
+		for (let i = 0; i < words.length; i += wordsPerChunk) {
+			const chunkWords = words.slice(i, i + wordsPerChunk);
+			const chunkContent = chunkWords.join(" ");
 
 			chunks.push({
-				content: textContent.slice(actualStart, end),
-				batchNumber: i + 1,
-				startIndex: actualStart,
-				endIndex: end,
-				hasOverlap: overlapSize > 0,
+				content: chunkContent,
+				batchNumber: chunks.length + 1,
+				isFirstBatch: chunks.length === 0,
+				wordsCount: chunkWords.length,
 			});
+
+			// Limit to 4 chunks to respect rate limits
+			if (chunks.length >= 4) break;
 		}
 
-		console.log(`📝 Created ${chunks.length} text chunks`);
+		console.log(
+			`📊 Created ${chunks.length} chunks, first chunk: ${chunks[0].wordsCount} words`,
+		);
 		return chunks;
 	}
 
-	// Main Processing Method with enhanced analysis and cancellation support
-	async processPDFInBatches(pdfFile, textContent, pdfAnalysis = null) {
+	// Main Processing Method - Simplified AI-only approach
+	async processPDFInBatches(pdfFile, textContent) {
 		try {
 			// Create abort controller for cancellation
 			this.abortController = new AbortController();
 			this.currentOperation = `Processing ${pdfFile.name}`;
 
-			console.log(`🚀 Starting batch processing for: ${pdfFile.name}`);
+			console.log(`🚀 Starting AI-only batch processing for: ${pdfFile.name}`);
 
 			// Generate PDF ID and check cache
 			const pdfId = await this.db.generatePDFHash(textContent);
@@ -153,304 +74,276 @@ class BatchProcessor {
 				return { pdfId, questions, fromCache: true };
 			}
 
-			let firstBatchQuestions = [];
-			let totalBatches = 1;
+			// Create text chunks for AI processing
+			const chunks = this.createTextChunks(textContent);
+			const totalBatches = chunks.length;
 
-			// Use simplified analysis if available
-			if (pdfAnalysis && pdfAnalysis.metadata.hasQuestions) {
-				console.log(
-					`📊 Using PDF analysis: ${pdfAnalysis.metadata.estimatedQuestions} questions estimated`,
-				);
-
-				// Create intelligent chunks based on analysis
-				const chunkData = this.createIntelligentChunks(pdfAnalysis);
-				totalBatches = Math.max(1, chunkData.aiChunks.length);
-			} else {
-				// Fallback to basic processing
-				const { batchSize, batchCount } = this.calculateBatchSize(textContent);
-				totalBatches = batchCount;
-			}
+			console.log(`📋 Will process ${totalBatches} batches with AI`);
 
 			// Store PDF metadata
-			const pdfData = await this.db.storePDF({
+			await this.db.storePDF({
 				id: pdfId,
 				filename: pdfFile.name,
 				fileSize: pdfFile.size,
 				textContent: textContent,
-				totalQuestions: firstBatchQuestions.length,
+				totalQuestions: 0,
 				isComplete: false,
 				processingStatus: "processing",
 				batchCount: totalBatches,
-				completedBatches: firstBatchQuestions.length > 0 ? 1 : 0,
+				completedBatches: 0,
 			});
 
-			// Process first chunk with AI immediately
-			let chunks;
-			if (pdfAnalysis && pdfAnalysis.metadata.hasQuestions) {
-				chunks = this.createIntelligentChunks(pdfAnalysis).aiChunks;
-			} else {
-				chunks = this.createBasicChunks(textContent);
-			}
-
-			console.log(`⚡ Processing first batch with AI (priority)...`);
-			const aiBatch = await this.processChunk(chunks[0], pdfId, true);
-
-			if (aiBatch && aiBatch.length > 0) {
-				await this.db.storeQuestions(pdfId, aiBatch, 1);
-				await this.db.updatePDFProgress(pdfId, 1);
-
-				console.log(`✅ First batch ready: ${aiBatch.length} questions`);
-				this.emit("firstBatchReady", {
-					pdfId,
-					questions: aiBatch,
-					totalBatches: totalBatches,
-					completedBatches: 1,
-					pdfData: pdfData,
-				});
-
-				firstBatchQuestions = aiBatch;
-			}
-
-			// Queue remaining chunks for background processing
-			if (chunks.length > 1) {
-				this.queueRemainingBatches(chunks.slice(1), pdfId);
-			}
-
-			// Complete if no background processing needed
-			if (totalBatches === 1) {
-				await this.db.completePDFProcessing(pdfId);
-				this.emit("processingComplete", { pdfId });
-			}
-
-			return {
+			// Process first chunk immediately with AI
+			console.log(`⚡ Processing first batch with AI...`);
+			const firstBatch = chunks[0];
+			const firstBatchQuestions = await this.processChunkWithAI(
+				firstBatch,
 				pdfId,
-				questions: firstBatchQuestions,
-				fromCache: false,
-				totalBatches: totalBatches,
-			};
-		} catch (error) {
-			if (error.name === "AbortError") {
-				console.log("🛑 Processing cancelled by user");
-				this.emit("processingCancelled", { pdfFile });
+			);
+
+			if (this.abortController?.signal.aborted) {
+				console.log("🛑 Processing cancelled during first batch");
 				return null;
 			}
-			console.error("❌ Batch processing failed:", error);
-			this.emit("processingError", { error, pdfFile });
+
+			if (firstBatchQuestions && firstBatchQuestions.length > 0) {
+				// Store first batch results
+				await this.db.storeQuestions(pdfId, firstBatchQuestions, 1);
+				await this.db.updatePDFProgress(pdfId, 1);
+
+				console.log(
+					`✅ First batch ready: ${firstBatchQuestions.length} questions`,
+				);
+
+				// Emit first batch ready event
+				this.emit("firstBatchReady", {
+					pdfId,
+					questions: firstBatchQuestions,
+					batchNumber: 1,
+					totalBatches,
+					completedBatches: 1,
+				});
+
+				// Queue remaining batches for background processing
+				if (chunks.length > 1) {
+					this.queueRemainingBatches(chunks.slice(1), pdfId, totalBatches);
+				} else {
+					// Mark as complete if only one batch
+					await this.db.markPDFComplete(pdfId);
+					this.emit("processingComplete", {
+						pdfId,
+						totalQuestions: firstBatchQuestions.length,
+					});
+				}
+
+				return { pdfId, questions: firstBatchQuestions, fromCache: false };
+			} else {
+				throw new Error(
+					"First batch generated no questions. The content might not contain extractable questions.",
+				);
+			}
+		} catch (error) {
+			console.error("Batch processing error:", error);
+			this.emit("processingError", error);
 			throw error;
-		} finally {
-			this.abortController = null;
-			this.currentOperation = null;
 		}
 	}
 
-	async processChunk(chunk, pdfId, isPriority = false) {
+	// Process a single chunk with AI
+	async processChunkWithAI(chunk, pdfId) {
 		try {
-			const chunkPrefix = isPriority
-				? "🔥 PRIORITY"
-				: `📦 BATCH ${chunk.batchNumber}`;
 			console.log(
-				`${chunkPrefix} Processing chunk: ${chunk.content.length} chars`,
+				`🤖 Processing batch ${chunk.batchNumber} with AI (${chunk.wordsCount || "unknown"} words)`,
 			);
 
-			// Create optimized prompt for chunk processing
-			const prompt = this.createChunkPrompt(
-				chunk.content,
-				chunk.batchNumber,
-				chunk.hasOverlap,
-			);
+			// Check for cancellation
+			if (this.abortController?.signal.aborted) {
+				console.log("🛑 Processing cancelled");
+				return null;
+			}
 
-			// Use AI to extract questions
+			// Create AI prompt for this chunk
+			const prompt = this.createAIPrompt(chunk);
+
+			// Process with AI
 			const questions = await this.ai.generateQuestionsFromText(
 				chunk.content,
 				prompt,
 			);
 
-			if (!questions || questions.length === 0) {
+			if (questions && questions.length > 0) {
+				console.log(
+					`✅ Generated ${questions.length} questions from batch ${chunk.batchNumber}`,
+				);
+				return questions;
+			} else {
 				console.warn(
-					`⚠️ No questions extracted from batch ${chunk.batchNumber}`,
+					`⚠️ No questions generated from batch ${chunk.batchNumber}`,
 				);
 				return [];
 			}
-
-			// Add batch metadata to questions
-			const processedQuestions = questions.map((q, index) => ({
-				...q,
-				id: (chunk.batchNumber - 1) * 20 + index + 1,
-				batchNumber: chunk.batchNumber,
-				source: "ai",
-			}));
-
-			console.log(
-				`✅ Extracted ${processedQuestions.length} questions from batch ${chunk.batchNumber}`,
-			);
-			return processedQuestions;
 		} catch (error) {
-			console.error(
-				`❌ Chunk processing failed (batch ${chunk.batchNumber}):`,
-				error,
-			);
+			console.error(`❌ Error processing batch ${chunk.batchNumber}:`, error);
 
-			// Return mock questions to prevent total failure
-			return this.createMockQuestions(chunk.batchNumber, 3);
+			// Return empty array instead of throwing to allow other batches to continue
+			return [];
 		}
 	}
 
-	createChunkPrompt(content, batchNumber, hasOverlap) {
-		const overlapNote = hasOverlap
-			? "\n⚠️ NOTE: This chunk has some overlap with the previous chunk. Avoid extracting duplicate questions."
-			: "";
+	// Create optimized AI prompt for chunk processing
+	createAIPrompt(chunk) {
+		return `Extract ALL multiple choice questions from this content. Focus on creating high-quality educational questions.
 
-		return `Extract ALL multiple choice questions from this text chunk (Batch ${batchNumber}).
-		
-${overlapNote}
-
-CRITICAL REQUIREMENTS:
-- Extract EVERY complete multiple choice question found
+IMPORTANT INSTRUCTIONS:
+- Extract ALL existing questions if they're already in the content
+- If no questions exist, create relevant questions from the key concepts
 - Each question must have exactly 4 options (A, B, C, D)
-- Provide the correct answer index (0=A, 1=B, 2=C, 3=D)
-- Include detailed explanations for correct answers
-- Maintain original question numbering if present
-- Skip incomplete or unclear questions
+- Provide the correct answer index (0-3)
+- Include brief explanations
 
-TEXT TO ANALYZE:
-${content}
+Format as JSON:
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Question text?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "Why this answer is correct"
+    }
+  ]
+}
 
-Return ONLY a valid JSON array with this exact structure:
-[
-  {
-    "question": "Complete question text here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "correctAnswer": 0,
-    "explanation": "Detailed explanation of why this answer is correct"
-  }
-]`;
+Batch ${chunk.batchNumber} content:
+${chunk.content}`;
 	}
 
-	// Background Processing Queue
-	queueRemainingBatches(chunks, pdfId) {
+	// Queue remaining batches for background processing
+	async queueRemainingBatches(remainingChunks, pdfId, totalBatches) {
 		console.log(
-			`📋 Queuing ${chunks.length} batches for background processing`,
+			`📋 Queuing ${remainingChunks.length} remaining batches for background processing`,
 		);
 
-		chunks.forEach((chunk) => {
+		for (const chunk of remainingChunks) {
 			this.processingQueue.push({
 				chunk,
 				pdfId,
-				priority: "background",
-				timestamp: Date.now(),
+				totalBatches,
+				type: "ai-batch",
 			});
-		});
+		}
 
-		// Start processing if not already running
+		// Start background processing
 		if (!this.isProcessing) {
 			this.processQueue();
 		}
 	}
 
+	// Background queue processor
 	async processQueue() {
-		if (this.processingQueue.length === 0) {
-			this.isProcessing = false;
+		if (this.isProcessing || this.processingQueue.length === 0) {
 			return;
 		}
 
 		this.isProcessing = true;
+		console.log(
+			`⚙️ Starting background processing of ${this.processingQueue.length} items`,
+		);
 
-		while (this.processingQueue.length > 0) {
-			const job = this.processingQueue.shift();
+		while (
+			this.processingQueue.length > 0 &&
+			!this.abortController?.signal.aborted
+		) {
+			const item = this.processingQueue.shift();
 
 			try {
-				console.log(
-					`🔄 Processing background job: PDF ${job.pdfId.substring(0, 8)}... batch ${job.chunk.batchNumber}`,
-				);
-
 				// Enforce rate limiting
 				await this.enforceRateLimit();
 
 				// Process the chunk
-				const questions = await this.processChunk(job.chunk, job.pdfId, false);
+				const questions = await this.processChunkWithAI(item.chunk, item.pdfId);
 
 				if (questions && questions.length > 0) {
-					// Store questions in database
+					// Store results
 					await this.db.storeQuestions(
-						job.pdfId,
+						item.pdfId,
 						questions,
-						job.chunk.batchNumber,
+						item.chunk.batchNumber,
 					);
-
-					// Update progress
-					await this.db.updatePDFProgress(job.pdfId, job.chunk.batchNumber);
+					await this.db.updatePDFProgress(item.pdfId, item.chunk.batchNumber);
 
 					// Get updated question count
-					const totalQuestions = await this.db.getQuestionCount(job.pdfId);
+					const allQuestions = await this.db.getQuestions(item.pdfId);
 
+					// Emit batch completed event
 					this.emit("batchCompleted", {
-						pdfId: job.pdfId,
-						batchNumber: job.chunk.batchNumber,
+						pdfId: item.pdfId,
+						batchNumber: item.chunk.batchNumber,
 						questions: questions,
-						newTotal: totalQuestions,
+						newTotal: allQuestions.length,
+						completedBatches: item.chunk.batchNumber,
+						totalBatches: item.totalBatches,
 					});
 				}
 
-				// Check if all batches are complete
-				const pdfData = await this.db.getPDF(job.pdfId);
-				if (pdfData && pdfData.completedBatches >= pdfData.batchCount) {
-					await this.db.completePDFProcessing(job.pdfId);
-					this.emit("processingComplete", { pdfId: job.pdfId });
+				// Check if this was the last batch
+				if (this.processingQueue.length === 0) {
+					await this.db.markPDFComplete(item.pdfId);
+					const finalQuestions = await this.db.getQuestions(item.pdfId);
+
+					this.emit("processingComplete", {
+						pdfId: item.pdfId,
+						totalQuestions: finalQuestions.length,
+					});
 				}
 			} catch (error) {
-				console.error(`❌ Background job failed:`, error);
-				this.emit("batchError", {
-					pdfId: job.pdfId,
-					batchNumber: job.chunk.batchNumber,
+				console.error(
+					`Error processing background batch ${item.chunk.batchNumber}:`,
 					error,
-				});
+				);
+				// Continue with next item rather than stopping entire queue
 			}
 		}
 
 		this.isProcessing = false;
-		console.log("✅ Background processing queue completed");
+
+		if (this.abortController?.signal.aborted) {
+			console.log("🛑 Background processing cancelled");
+			this.emit("processingCancelled", { reason: "user_cancelled" });
+		}
 	}
 
+	// Rate limiting for AI requests
 	async enforceRateLimit() {
-		// Conservative rate limiting: 12 requests per minute (5 second intervals)
 		const now = Date.now();
-		const timeSinceLastRequest = now - (this.lastRequestTime || 0);
-
-		if (timeSinceLastRequest < this.rateLimitDelay) {
-			const waitTime = this.rateLimitDelay - timeSinceLastRequest;
-			console.log(`⏳ Rate limiting: waiting ${waitTime}ms`);
+		if (
+			this.lastRequestTime &&
+			now - this.lastRequestTime < this.rateLimitDelay
+		) {
+			const waitTime = this.rateLimitDelay - (now - this.lastRequestTime);
+			console.log(`⏱️ Rate limiting: waiting ${Math.ceil(waitTime / 1000)}s...`);
 			await new Promise((resolve) => setTimeout(resolve, waitTime));
 		}
-
-		this.lastRequestTime = Date.now();
+		this.lastRequestTime = now;
 	}
 
-	// Utility Methods
-	createMockQuestions(batchNumber, count = 3) {
-		const mockQuestions = [];
+	// Cancellation support
+	cancelProcessing() {
+		console.log("🛑 Cancelling batch processing...");
 
-		for (let i = 1; i <= count; i++) {
-			mockQuestions.push({
-				id: (batchNumber - 1) * 20 + i,
-				question: `Sample question ${i} from batch ${batchNumber} (AI extraction failed)`,
-				options: [
-					"This is option A",
-					"This is option B",
-					"This is option C",
-					"This is option D",
-				],
-				correctAnswer: 0,
-				explanation:
-					"This is a mock question created when AI extraction failed. The actual questions could not be processed.",
-				batchNumber: batchNumber,
-				source: "mock",
-			});
+		if (this.abortController) {
+			this.abortController.abort();
 		}
 
-		return mockQuestions;
+		// Clear the queue
+		this.processingQueue = [];
+		this.isProcessing = false;
+		this.currentOperation = null;
+
+		this.emit("processingCancelled", { reason: "user_cancelled" });
 	}
 
-	// Event System
+	// Event system
 	on(event, callback) {
 		if (!this.events[event]) {
 			this.events[event] = [];
@@ -464,75 +357,13 @@ Return ONLY a valid JSON array with this exact structure:
 		}
 	}
 
-	// Public API for getting processing status
-	async getProcessingStatus(pdfId) {
-		const pdfData = await this.db.getPDF(pdfId);
-		const questionCount = await this.db.getQuestionCount(pdfId);
-
-		return {
-			pdfData,
-			questionCount,
-			progress: pdfData
-				? (pdfData.completedBatches / pdfData.batchCount) * 100
-				: 0,
-			isComplete: pdfData ? pdfData.isComplete : false,
-		};
-	}
-
-	// Create basic chunks (fallback method)
-	createBasicChunks(textContent) {
-		const { batchSize, batchCount } = this.calculateBatchSize(textContent);
-		return this.createTextChunks(textContent, batchCount);
-	}
-
-	// Create intelligent chunks from PDF analysis (simplified)
-	createIntelligentChunks(pdfAnalysis) {
-		// Use the analyzer's built-in chunking
-		return pdfAnalysis.createIntelligentChunks
-			? pdfAnalysis.createIntelligentChunks()
-			: {
-					aiChunks: [
-						{
-							content: pdfAnalysis.textContent,
-							estimatedQuestions: pdfAnalysis.metadata.estimatedQuestions,
-							type: "ai_processing",
-						},
-					],
-				};
-	}
-
-	// Cancel current processing
-	cancelProcessing() {
-		if (this.abortController) {
-			console.log("🛑 Cancelling current processing operation...");
-			this.abortController.abort();
-			this.currentOperation = null;
-		}
-
-		// Clear the queue
-		this.clearQueue();
-
-		this.emit("processingCancelled", {
-			message: "Processing cancelled by user",
-			operation: this.currentOperation,
-		});
-	}
-
-	// Get current processing status
+	// Status helpers
 	getProcessingStatus() {
 		return {
 			isProcessing: this.isProcessing,
-			currentOperation: this.currentOperation,
 			queueLength: this.processingQueue.length,
-			canCancel: this.abortController !== null,
+			currentOperation: this.currentOperation,
 		};
-	}
-
-	// Clear processing queue (useful for cleanup)
-	clearQueue() {
-		this.processingQueue = [];
-		this.isProcessing = false;
-		console.log("🧹 Processing queue cleared");
 	}
 }
 
