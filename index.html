@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Quiz App</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/quiz.css">
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1>PDF Quiz App</h1>
+            <p>Upload your exam PDF and take an interactive quiz</p>
+        </header>
+
+        <main class="app-main">
+            <!-- File Upload Section -->
+            <section id="upload-section" class="section active">
+                <div class="upload-container">
+                    <div class="upload-area" id="upload-area">
+                        <div class="upload-icon">📄</div>
+                        <h3>Upload PDF File</h3>
+                        <p>Drag and drop your exam PDF here or click to browse</p>
+                        <input type="file" id="pdf-input" accept=".pdf" hidden>
+                        <button id="browse-btn" class="btn btn-primary">Browse Files</button>
+                    </div>
+                    <div class="file-info" id="file-info" style="display: none;">
+                        <p><strong>Selected:</strong> <span id="file-name"></span></p>
+                        <button id="process-btn" class="btn btn-success">Process PDF</button>
+                    </div>
+                </div>
+                <div class="loading" id="loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Processing PDF and generating questions...</p>
+                </div>
+            </section>
+
+            <!-- Quiz Section -->
+            <section id="quiz-section" class="section">
+                <div class="quiz-header">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <div class="question-counter">
+                        <span id="current-question">1</span> / <span id="total-questions">10</span>
+                    </div>
+                </div>
+                
+                <div class="quiz-container">
+                    <div class="question-card" id="question-card">
+                        <h2 id="question-text">Question will appear here...</h2>
+                        <div class="options-container" id="options-container">
+                            <!-- Options will be dynamically added -->
+                        </div>
+                        <div class="quiz-controls">
+                            <button id="prev-btn" class="btn btn-secondary" disabled>Previous</button>
+                            <button id="next-btn" class="btn btn-primary" disabled>Next</button>
+                            <button id="submit-quiz-btn" class="btn btn-success" style="display: none;">Submit Quiz</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-section" class="section">
+                <div class="results-container">
+                    <div class="results-header">
+                        <h2>Quiz Results</h2>
+                        <div class="score-display">
+                            <span class="score" id="final-score">0/0</span>
+                            <span class="percentage" id="score-percentage">0%</span>
+                        </div>
+                    </div>
+                    <div class="results-breakdown" id="results-breakdown">
+                        <!-- Results will be populated here -->
+                    </div>
+                    <div class="results-actions">
+                        <button id="restart-btn" class="btn btn-primary">Take Another Quiz</button>
+                        <button id="review-btn" class="btn btn-secondary">Review Answers</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html> 
