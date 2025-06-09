@@ -5,7 +5,7 @@ class PDFAnalyzer {
 		this.commonPatterns = {
 			numberedQuestions: /^\s*(\d+)[\.\)]\s+(.+)/gm, // "1. text" or "1) text"
 			questionMarkers: /\?/g,
-			mcChoiceMarkers: /[A-D][\.\)]/g,
+			mcChoiceMarkers: /[A-Da-d][\.\)]/g, // Both uppercase and lowercase
 		};
 	}
 
@@ -47,35 +47,63 @@ class PDFAnalyzer {
 	}
 
 	detectQuestionPatterns(text) {
-		// Count numbered questions (most common pattern: "1. text")
-		const numberedMatches =
-			text.match(this.commonPatterns.numberedQuestions) || [];
+		// Enhanced patterns for better detection
+		const questionPatterns = {
+			// Main question numbers: "1.", "2.", "3." with flexible spacing
+			mainQuestions: /^\s*(\d+)\.\s+\S/gm,
+			// Alternative: "1)", "2)", "3)" with flexible spacing
+			parenthesisQuestions: /^\s*(\d+)\)\s+\S/gm,
+			// Question keyword patterns
+			questionKeywords: /^\s*(Question\s+\d+|Q\d+)/gim,
+			// Multiple choice option groups - both lowercase and uppercase
+			optionGroups: /^\s*[a-dA-D][\.\)]\s+\S/gm,
+			// Additional pattern for spaced options like "a ." or "A ."
+			spacedOptions: /^\s*[a-dA-D]\s*[\.\)]\s+\S/gm,
+		};
 
-		// Count question marks
-		const questionMarks = text.match(this.commonPatterns.questionMarkers) || [];
+		// Count main question patterns
+		const mainQuestionMatches =
+			text.match(questionPatterns.mainQuestions) || [];
+		const parenthesisMatches =
+			text.match(questionPatterns.parenthesisQuestions) || [];
+		const keywordMatches = text.match(questionPatterns.questionKeywords) || [];
+		const optionMatches = text.match(questionPatterns.optionGroups) || [];
+		const spacedOptionMatches =
+			text.match(questionPatterns.spacedOptions) || [];
 
-		// Count multiple choice indicators
-		const mcMarkers = text.match(this.commonPatterns.mcChoiceMarkers) || [];
-
-		// Simple estimation
-		const numberedQuestions = numberedMatches.length;
-		const questionMarkCount = questionMarks.length;
-		const mcOptionCount = mcMarkers.length;
-
-		// Estimate actual questions
-		let estimatedQuestions = Math.max(
-			numberedQuestions,
-			Math.floor(questionMarkCount / 2), // Assume some question marks are in answers
-			Math.floor(mcOptionCount / 4), // Assume 4 options per MC question
+		// Combine option matches (avoid double counting)
+		const totalOptionMatches = Math.max(
+			optionMatches.length,
+			spacedOptionMatches.length,
 		);
 
-		// Conservative estimate - most PDFs have fewer questions than markers
-		estimatedQuestions = Math.min(estimatedQuestions, 50);
+		// Get the highest count from reliable patterns
+		const numberedQuestions = Math.max(
+			mainQuestionMatches.length,
+			parenthesisMatches.length,
+		);
+		const keywordQuestions = keywordMatches.length;
+		const estimatedFromOptions = Math.floor(totalOptionMatches / 4);
+
+		// Use the most reliable estimate
+		let estimatedQuestions = Math.max(
+			numberedQuestions,
+			keywordQuestions,
+			estimatedFromOptions,
+		);
+
+		// Don't be too conservative - let AI handle validation
+		estimatedQuestions = Math.min(estimatedQuestions, 200); // Increased from 50
 
 		const hasQuestions = estimatedQuestions > 0;
 
 		console.log(
-			`📊 Pattern detection: ${numberedQuestions} numbered items, ${questionMarkCount} question marks, ${mcOptionCount} MC markers`,
+			`📊 Enhanced pattern detection: 
+			- Main numbered (${mainQuestionMatches.length}): "${mainQuestionMatches.slice(0, 3).join('", "')}"
+			- Parenthesis numbered: ${parenthesisMatches.length}
+			- Keyword questions: ${keywordQuestions}
+			- Option groups: ${optionMatches.length}, spaced: ${spacedOptionMatches.length} (total: ${totalOptionMatches}, est. ${estimatedFromOptions} questions)
+			- Final estimate: ${estimatedQuestions}`,
 		);
 
 		return {
@@ -83,17 +111,27 @@ class PDFAnalyzer {
 			hasQuestions: hasQuestions,
 			estimatedQuestions: estimatedQuestions,
 			patternBreakdown: {
-				numberedQuestions,
-				questionMarkCount,
-				mcOptionCount,
+				mainQuestions: mainQuestionMatches.length,
+				parenthesisQuestions: parenthesisMatches.length,
+				keywordQuestions: keywordQuestions,
+				optionGroups: totalOptionMatches,
+				estimatedFromOptions: estimatedFromOptions,
 			},
 		};
 	}
 
-	// Simple chunking based on content length only
-	createIntelligentChunks(analysis, maxChunkSize = 15000) {
+	// Intelligent chunking based on question patterns and content length
+	createIntelligentChunks(analysis, maxChunkSize = 12000) {
 		const textContent = analysis.textContent;
 		const chunks = [];
+		const estimatedQuestions = analysis.metadata.estimatedQuestions;
+
+		// For better extraction, create smaller chunks if we have many questions
+		if (estimatedQuestions > 30) {
+			maxChunkSize = 8000; // Smaller chunks for dense content
+		} else if (estimatedQuestions > 15) {
+			maxChunkSize = 10000;
+		}
 
 		if (textContent.length <= maxChunkSize) {
 			// Single chunk
@@ -101,38 +139,56 @@ class PDFAnalyzer {
 				aiChunks: [
 					{
 						content: textContent,
-						estimatedQuestions: analysis.metadata.estimatedQuestions,
+						estimatedQuestions: estimatedQuestions,
 						type: "ai_processing",
 					},
 				],
 			};
 		}
 
-		// Split into multiple chunks
-		const chunkCount = Math.ceil(textContent.length / maxChunkSize);
-		const chunkSize = Math.floor(textContent.length / chunkCount);
+		// Create multiple chunks, aiming for ~10-15 questions per chunk
+		const questionsPerChunk = Math.min(
+			15,
+			Math.max(5, Math.floor(estimatedQuestions / 6)),
+		);
+		const targetChunkCount = Math.ceil(estimatedQuestions / questionsPerChunk);
+		const actualChunkSize = Math.floor(textContent.length / targetChunkCount);
 
-		for (let i = 0; i < chunkCount; i++) {
-			const start = i * chunkSize;
+		for (let i = 0; i < targetChunkCount; i++) {
+			const start = i * actualChunkSize;
 			const end =
-				i === chunkCount - 1 ? textContent.length : (i + 1) * chunkSize;
+				i === targetChunkCount - 1
+					? textContent.length
+					: (i + 1) * actualChunkSize;
 
-			// Try to break at sentence boundaries
+			// Try to break at natural boundaries (question starts)
 			let actualEnd = end;
-			if (i < chunkCount - 1) {
-				const nextPeriod = textContent.indexOf(".", end);
-				const nextNewline = textContent.indexOf("\n", end);
+			if (i < targetChunkCount - 1) {
+				// Look for question number patterns near the break point
+				const searchText = textContent.substring(
+					end,
+					Math.min(end + 500, textContent.length),
+				);
+				const questionBreaks = [
+					searchText.search(/^\s*\d+\.\s+\S/m),
+					searchText.search(/^\s*\d+\)\s+\S/m),
+					searchText.search(/^\s*Question\s+\d+/im),
+				].filter((pos) => pos >= 0);
 
-				if (nextPeriod > 0 && nextPeriod < end + 200) {
-					actualEnd = nextPeriod + 1;
-				} else if (nextNewline > 0 && nextNewline < end + 200) {
-					actualEnd = nextNewline + 1;
+				if (questionBreaks.length > 0) {
+					actualEnd = end + Math.min(...questionBreaks);
+				} else {
+					// Fall back to sentence boundary
+					const nextPeriod = textContent.indexOf(".", end);
+					if (nextPeriod > 0 && nextPeriod < end + 200) {
+						actualEnd = nextPeriod + 1;
+					}
 				}
 			}
 
 			const chunkContent = textContent.substring(start, actualEnd);
 			const chunkQuestionEstimate = Math.ceil(
-				analysis.metadata.estimatedQuestions / chunkCount,
+				estimatedQuestions / targetChunkCount,
 			);
 
 			chunks.push({
@@ -141,6 +197,10 @@ class PDFAnalyzer {
 				type: "ai_processing",
 			});
 		}
+
+		console.log(
+			`📝 Created ${chunks.length} intelligent chunks, ~${questionsPerChunk} questions per chunk`,
+		);
 
 		return {
 			aiChunks: chunks,

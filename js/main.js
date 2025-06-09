@@ -132,8 +132,12 @@ class App {
 
 		if (pdfAnalysis.metadata.hasQuestions) {
 			const breakdown = pdfAnalysis.metadata.patternBreakdown;
+			const mainQuestions =
+				breakdown.mainQuestions || breakdown.numberedQuestions || 0;
+			const optionGroups = breakdown.optionGroups || 0;
+
 			this.ui.updateLoadingMessage(
-				`Detected ~${pdfAnalysis.metadata.estimatedQuestions} questions (${breakdown.numberedQuestions} numbered items, ${breakdown.questionMarkCount} question marks). Starting AI extraction...`,
+				`📋 Detected ~${pdfAnalysis.metadata.estimatedQuestions} questions (${mainQuestions} numbered, ${optionGroups} option groups). Starting AI extraction...`,
 			);
 		} else {
 			this.ui.updateLoadingMessage(
@@ -201,14 +205,18 @@ class App {
 		this.currentPdfId = data.pdfId;
 		this.quizData = data.questions;
 
-		// Show progress indicator
-		this.ui.updateLoadingMessage(
-			`First ${data.questions.length} questions ready! Processing ${data.totalBatches - 1} more batches in background...`,
-		);
-
-		setTimeout(() => {
+		// Immediately show the questions - no delay
+		if (data.questions.length > 0) {
+			console.log("📚 Starting quiz with first batch immediately");
 			this.startQuizWithProgress(data.totalBatches, data.completedBatches);
-		}, 1500);
+		} else {
+			console.warn(
+				"⚠️ First batch was empty, waiting for background processing",
+			);
+			this.ui.updateLoadingMessage(
+				"First batch contained no questions. Processing more content...",
+			);
+		}
 	}
 
 	handleBatchCompleted(data) {
@@ -262,6 +270,7 @@ class App {
 		const cancelBtn = document.getElementById("cancel-processing-btn");
 		if (cancelBtn) {
 			cancelBtn.style.display = "block";
+			cancelBtn.style.margin = "1rem auto 0 auto";
 		}
 	}
 

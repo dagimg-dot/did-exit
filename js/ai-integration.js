@@ -430,27 +430,30 @@ class AIIntegration {
 	}
 
 	createChunkExtractionPrompt(textContent) {
-		return `Extract ALL multiple choice questions from this text chunk.
+		return `Extract ALL multiple choice questions from this exam content. This appears to be an exam or quiz document.
 
-CRITICAL REQUIREMENTS:
-- Extract EVERY complete multiple choice question found
-- Each question must have exactly 4 options (A, B, C, D)
-- Provide the correct answer index (0=A, 1=B, 2=C, 3=D)
-- Include detailed explanations for correct answers
-- Skip incomplete or unclear questions
+EXTRACTION GUIDELINES:
+- Look for numbered questions (1., 2., 3., etc.) followed by multiple choice options (a., b., c., d.)
+- Extract EVERY question you find - be comprehensive, not conservative
+- Convert option letters (a, b, c, d) to array positions (0, 1, 2, 3)
+- If a question has fewer than 4 options, pad with reasonable alternatives
+- Use your knowledge to determine the most likely correct answer
+- If unsure about correct answer, make an educated guess
 
-TEXT TO ANALYZE:
+EXAM CONTENT:
 ${textContent.substring(0, 100000)}${textContent.length > 100000 ? "\n[Truncated...]" : ""}
 
-Return ONLY a valid JSON array with this exact structure (no additional text or markdown):
+Return ONLY a valid JSON array (no markdown, no additional text):
 [
   {
-    "question": "Complete question text here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
+    "question": "Complete question text without the number",
+    "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
     "correctAnswer": 0,
-    "explanation": "Detailed explanation of why this answer is correct"
+    "explanation": "Brief explanation of the correct answer"
   }
-]`;
+]
+
+IMPORTANT: Extract ALL questions you can identify, even if some details are unclear. Be aggressive in extraction - it's better to get more questions than to miss them.`;
 	}
 
 	parseChunkResponse(text) {
