@@ -438,294 +438,184 @@ class AIIntegration {
 	}
 
 	createChunkExtractionPrompt(textContent) {
-		return `Extract ALL multiple choice questions from this exam content. This appears to be an exam or quiz document.
+		return `You are an expert quiz generator. Extract and create interactive multiple-choice questions from the following text content.
 
-EXTRACTION GUIDELINES:
-- Look for numbered questions (1., 2., 3., etc.) followed by multiple choice options
-- Extract EVERY question you find - be comprehensive, not conservative
-- Handle 4 OR 5 options: (a, b, c, d) OR (a, b, c, d, e)
-- Convert option letters to array positions: a=0, b=1, c=2, d=3, e=4
-- Preserve the original number of options (don't pad 4 to 5, don't truncate 5 to 4)
+Format your response as a single, valid JSON object containing a "questions" array. Each question object must have: "id", "question", "options" (array of strings), "correctAnswer" (0-indexed integer), and "explanation".
 
-ANSWER DETECTION - VERY IMPORTANT:
-- Many exam PDFs have the correct answer RIGHT AFTER the question
-- Look for patterns like: "Answer: A", "Ans: B", "Correct Answer: C", "Answer is D", "Answer: E"
-- Look for: "(A)", "(B)", "(C)", "(D)", "(E)" immediately following questions  
-- Look for: "The answer is A", "Correct option: B", "Right answer: C"
-- If you find a provided answer, USE THAT as the correct answer
-- If no answer is provided, use your knowledge to determine the most likely correct answer
+Guidelines:
+- Extract ALL questions. Do not stop prematurely.
+- Ensure the JSON is well-formed. Do not include trailing commas.
+- Escape any double quotes within the question or explanation text.
+- If the text contains numbered questions and options (e.g., "1.", "A.", "B."), preserve them accurately.
 
-EXAM CONTENT:
-${textContent.substring(0, 100000)}${textContent.length > 100000 ? "\n[Truncated...]" : ""}
-
-Return ONLY a valid JSON array (no markdown, no additional text):
-[
-  {
-    "question": "Complete question text without the number",
-    "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
-    "correctAnswer": 0,
-    "explanation": "Brief explanation of the correct answer"
-  }
-]
-
-Note: If a question has 5 options, include all 5 in the options array. The options array can have 4 or 5 elements.
-
-IMPORTANT: 
-- Extract ALL questions you can identify, even if some details are unclear
-- Be aggressive in extraction - it's better to get more questions than to miss them
-- ALWAYS use provided answers from the text when available
-- Convert letter answers to numbers: A=0, B=1, C=2, D=3, E=4
-- Preserve original option count (4 or 5 options as found in source)`;
+Content to analyze:
+${textContent}`;
 	}
 
+	// New robust JSON parsing logic
 	parseChunkResponse(text) {
-		try {
-			// Clean the response text to extract JSON array
-			let jsonText = text.trim();
+		console.log("🧼 Cleaning and parsing AI response...");
 
-			// Remove markdown code blocks
-			if (jsonText.includes("```json")) {
-				jsonText =
-					jsonText.match(/```json\s*([\s\S]*?)\s*```/)?.[1] || jsonText;
-			} else if (jsonText.includes("```")) {
-				jsonText = jsonText.match(/```\s*([\s\S]*?)\s*```/)?.[1] || jsonText;
-			}
+		const jsonText = this.extractJsonFromText(text);
 
-			// Find the JSON array bounds
-			const firstBracket = jsonText.indexOf("[");
-			let lastBracket = jsonText.lastIndexOf("]");
-
-			if (firstBracket === -1) {
-				throw new Error("No opening bracket found in response");
-			}
-
-			// If no closing bracket, try to find the last complete question
-			if (lastBracket === -1 || firstBracket >= lastBracket) {
-				console.warn("🔧 Attempting to fix truncated JSON response...");
-
-				// Find the last complete question object
-				let workingText = jsonText.substring(firstBracket + 1);
-				let braceCount = 0;
-				let inString = false;
-				let escapeNext = false;
-				let lastGoodPos = 0;
-
-				for (let i = 0; i < workingText.length; i++) {
-					const char = workingText[i];
-
-					if (escapeNext) {
-						escapeNext = false;
-						continue;
-					}
-
-					if (char === "\\" && inString) {
-						escapeNext = true;
-						continue;
-					}
-
-					if (char === '"' && !escapeNext) {
-						inString = !inString;
-						continue;
-					}
-
-					if (!inString) {
-						if (char === "{") {
-							braceCount++;
-						} else if (char === "}") {
-							braceCount--;
-							if (braceCount === 0) {
-								// Found complete question object
-								lastGoodPos = i + 1;
-							}
-						}
-					}
-				}
-
-				if (lastGoodPos > 0) {
-					jsonText = "[" + workingText.substring(0, lastGoodPos) + "]";
-					console.log(
-						"🔧 Fixed truncated JSON, working with complete questions only",
-					);
-				} else {
-					throw new Error("Could not find any complete question objects");
-				}
-			} else {
-				jsonText = jsonText.substring(firstBracket, lastBracket + 1);
-			}
-
-			// Basic JSON cleaning
-			jsonText = jsonText
-				.replace(/,\s*}/g, "}")
-				.replace(/,\s*]/g, "]")
-				.replace(/,\s*,/g, ",") // Remove double commas
-				.trim();
-
-			let parsed;
-			try {
-				parsed = JSON.parse(jsonText);
-			} catch (parseError) {
-				console.warn("🔧 First parse failed, attempting regex extraction...");
-				return this.extractQuestionsWithRegex(text);
-			}
-
-			if (!Array.isArray(parsed)) {
-				console.warn(
-					"Response is not an array, attempting to extract from object...",
-				);
-				if (parsed.questions && Array.isArray(parsed.questions)) {
-					parsed = parsed.questions;
-				} else if (typeof parsed === "object" && parsed.question) {
-					// Single question object
-					parsed = [parsed];
-				} else {
-					throw new Error("Response is not a valid array or question object");
-				}
-			}
-
-			// Validate and clean questions
-			const validQuestions = parsed.filter((q, index) => {
-				if (
-					!q.question ||
-					!Array.isArray(q.options) ||
-					typeof q.correctAnswer !== "number"
-				) {
-					console.warn(`Question ${index + 1} has invalid structure, skipping`);
-					return false;
-				}
-				if (q.options.length < 2) {
-					console.warn(
-						`Question ${index + 1} doesn't have enough options, skipping`,
-					);
-					return false;
-				}
-				if (q.correctAnswer < 0 || q.correctAnswer >= q.options.length) {
-					console.warn(
-						`Question ${index + 1} has invalid correctAnswer index, fixing...`,
-					);
-					q.correctAnswer = 0; // Default to first option
-				}
-
-				// Handle 4-5 options dynamically (don't force to exactly 4)
-				if (q.options.length < 4) {
-					// Pad to minimum 4 options
-					while (q.options.length < 4) {
-						q.options.push("Additional option");
-					}
-				} else if (q.options.length > 5) {
-					// Cap at maximum 5 options
-					q.options = q.options.slice(0, 5);
-					if (q.correctAnswer >= 5) {
-						q.correctAnswer = 0;
-					}
-				}
-				// Keep 4 or 5 options as-is
-
-				return true;
-			});
-
-			console.log(
-				`✅ Parsed ${validQuestions.length} valid questions from ${parsed.length} total`,
-			);
-			return validQuestions;
-		} catch (error) {
-			console.error("Failed to parse chunk response:", error);
-			console.log("Response length:", text.length);
-			console.log(
-				"Response preview (first 500 chars):",
-				text.substring(0, 500),
-			);
-			console.log(
-				"Response preview (last 500 chars):",
-				text.substring(text.length - 500),
-			);
-
-			// Try regex extraction as final fallback
+		if (!jsonText) {
+			console.warn("⚠️ No JSON block found in response. Trying regex fallback.");
 			return this.extractQuestionsWithRegex(text);
 		}
+
+		try {
+			// First, try a direct parse
+			const parsed = JSON.parse(jsonText);
+			if (parsed.questions && Array.isArray(parsed.questions)) {
+				console.log(
+					`✅ Successfully parsed ${parsed.questions.length} questions directly.`,
+				);
+				return this.validateQuestions(parsed.questions);
+			}
+		} catch (e) {
+			console.warn("⚠️ Direct JSON.parse failed. Attempting to repair...");
+		}
+
+		// If direct parse fails, try to repair and parse the whole string
+		try {
+			const repairedParsed = this.repairAndParseJson(jsonText);
+			if (repairedParsed.questions && Array.isArray(repairedParsed.questions)) {
+				console.log(
+					`✅ Successfully repaired and parsed ${repairedParsed.questions.length} questions.`,
+				);
+				return this.validateQuestions(repairedParsed.questions);
+			}
+		} catch (e) {
+			console.warn(
+				`⚠️ JSON repair failed: ${e.message}. Attempting iterative parsing...`,
+			);
+		}
+
+		// As a robust fallback, find and parse question objects iteratively
+		console.log("🔧 Attempting iterative parsing of question objects...");
+		const questions = [];
+		// Regex to find individual JSON objects that look like questions
+		const questionObjectRegex =
+			/{\s*"id":\s*\d+,\s*"question":\s*"[\s\S]*?,\s*"options":\s*\[[\s\S]*?\],\s*"correctAnswer":\s*\d+,\s*"explanation":\s*"[\s\S]*?"\s*}/g;
+
+		const matches = jsonText.match(questionObjectRegex);
+
+		if (matches) {
+			console.log(`Found ${matches.length} potential question objects.`);
+			for (const match of matches) {
+				try {
+					questions.push(JSON.parse(match));
+				} catch (e) {
+					console.warn("Could not parse individual question object:", match, e);
+				}
+			}
+		}
+
+		if (questions.length > 0) {
+			console.log(
+				`✅ Successfully extracted ${questions.length} questions iteratively.`,
+			);
+			return this.validateQuestions(questions);
+		}
+
+		console.error("🚨 Failed to parse chunk response after all attempts.");
+		console.log("Original text length:", text.length);
+		console.log("Preview (first 500):", text.substring(0, 500));
+		console.log("Preview (last 500):", text.substring(text.length - 500));
+
+		// Final fallback to broad regex on the original text
+		return this.extractQuestionsWithRegex(text);
+	}
+
+	// Utility to extract JSON from markdown or plain text
+	extractJsonFromText(text) {
+		const match = text.match(/```json\s*([\s\S]*?)\s*```/);
+		if (match && match[1]) {
+			return match[1].trim();
+		}
+		// Fallback for responses that might not have the markdown block
+		const firstBrace = text.indexOf("{");
+		const lastBrace = text.lastIndexOf("}");
+		if (firstBrace !== -1 && lastBrace > firstBrace) {
+			return text.substring(firstBrace, lastBrace + 1);
+		}
+		return null;
+	}
+
+	// Utility to fix common JSON errors and parse
+	repairAndParseJson(jsonString) {
+		let repaired = jsonString
+			// Remove trailing commas from objects and arrays
+			.replace(/,\s*([}\]])/g, "$1")
+			// Add missing commas between properties (basic case)
+			.replace(/}"\s*"/g, '}, "')
+			// Attempt to escape unescaped quotes (simple version)
+			.replace(/\\"/g, '"') // First, un-escape correctly escaped ones to avoid double-escaping
+			.replace(/([:\[,]\s*)"([^"\\]*)"([^"\\]*)"/g, '$1"$2\\"$3"'); // A common error pattern
+
+		// Balance braces and brackets
+		let openBraces = (repaired.match(/{/g) || []).length;
+		let closeBraces = (repaired.match(/}/g) || []).length;
+		while (openBraces > closeBraces) {
+			repaired += "}";
+			closeBraces++;
+		}
+
+		let openBrackets = (repaired.match(/\[/g) || []).length;
+		let closeBrackets = (repaired.match(/]/g) || []).length;
+		while (openBrackets > closeBrackets) {
+			repaired += "]";
+			closeBrackets++;
+		}
+
+		return JSON.parse(repaired);
+	}
+
+	validateQuestions(questions) {
+		const validQuestions = questions.filter((q, index) => {
+			const hasQuestion = q.question && typeof q.question === "string";
+			const hasOptions = Array.isArray(q.options) && q.options.length > 1;
+			const hasCorrectAnswer = typeof q.correctAnswer === "number";
+			const hasExplanation = q.explanation && typeof q.explanation === "string";
+
+			if (!hasQuestion || !hasOptions || !hasCorrectAnswer || !hasExplanation) {
+				console.warn(`Skipping invalid question at index ${index}:`, q);
+				return false;
+			}
+			return true;
+		});
+		return validQuestions;
 	}
 
 	extractQuestionsWithRegex(text) {
-		console.log("🔧 Attempting regex extraction as fallback...");
-
+		console.log("🔧 Attempting regex extraction as final fallback...");
 		const questions = [];
-
-		// Try to find JSON-like question objects in the text
-		const questionPattern =
-			/\{\s*"question"\s*:\s*"([^"]+)"\s*,\s*"options"\s*:\s*\[\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*,\s*"([^"]+)"\s*\]\s*,\s*"correctAnswer"\s*:\s*(\d+)(?:\s*,\s*"explanation"\s*:\s*"([^"]*)")?\s*\}/g;
+		// Regex to find question blocks, more tolerant of formatting
+		const questionBlockRegex =
+			/(\d+[\.\)]\s*|Question\s*\d+:?\s*)([\s\S]+?)(Answer:|Correct Answer:|Explanation:)/gi;
 
 		let match;
-		while ((match = questionPattern.exec(text)) !== null) {
-			const [, question, opt1, opt2, opt3, opt4, correctAnswer, explanation] =
-				match;
+		let idCounter = 1;
+		while ((match = questionBlockRegex.exec(text)) !== null) {
+			const questionText = match[2].trim();
+			const optionsRegex =
+				/([A-Ea-e][\.\)]\s*)([\s\S]+?)(?=[A-Ea-e][\.\)]\s*|$)/g;
 
-			const correctIdx = parseInt(correctAnswer);
-			if (correctIdx >= 0 && correctIdx <= 3) {
-				questions.push({
-					question: question,
-					options: [opt1, opt2, opt3, opt4],
-					correctAnswer: correctIdx,
-					explanation: explanation || "No explanation provided",
-				});
+			let optionsMatch;
+			const options = [];
+			while ((optionsMatch = optionsRegex.exec(questionText)) !== null) {
+				options.push(optionsMatch[2].trim());
 			}
-		}
 
-		// If JSON extraction failed, try to extract raw questions with answers
-		if (questions.length === 0) {
-			console.log("🔧 Attempting raw text extraction with answer detection...");
-
-			// Look for numbered questions with multiple choice options and answers (4 or 5 options)
-			const rawQuestionPattern =
-				/(\d+\.?\s*[^?]*\?)[^]*?(?:a[\.\)]\s*[^]*?b[\.\)]\s*[^]*?c[\.\)]\s*[^]*?d[\.\)]\s*(?:[^]*?e[\.\)]\s*[^]*?)?[^]*?)(?:answer[:\s]*([abcdeABCDE])|ans[:\s]*([abcdeABCDE])|correct[:\s]*(?:answer[:\s]*)?([abcdeABCDE])|\(([abcdeABCDE])\))/gi;
-
-			let rawMatch;
-			let questionId = 1;
-
-			while (
-				(rawMatch = rawQuestionPattern.exec(text)) !== null &&
-				questionId <= 20
-			) {
-				const [fullMatch, questionText, answer1, answer2, answer3, answer4] =
-					rawMatch;
-
-				// Extract the answer letter (could be in any of the capture groups)
-				const answerLetter = (
-					answer1 ||
-					answer2 ||
-					answer3 ||
-					answer4 ||
-					""
-				).toUpperCase();
-
-				// Extract options from the text (4 or 5 options)
-				const optionMatches = fullMatch.match(
-					/[abcdeABCDE][\.\)]\s*([^]*?)(?=[abcdeABCDE][\.\)]|answer|ans|correct|\d+\.|$)/gi,
-				);
-
-				if (optionMatches && optionMatches.length >= 4 && answerLetter) {
-					// Take all available options (4 or 5)
-					const maxOptions = Math.min(optionMatches.length, 5);
-					const options = optionMatches
-						.slice(0, maxOptions)
-						.map((opt) => opt.replace(/^[abcdeABCDE][\.\)]\s*/, "").trim());
-
-					// Convert letter to index
-					const correctAnswer = answerLetter.charCodeAt(0) - "A".charCodeAt(0);
-
-					if (
-						correctAnswer >= 0 &&
-						correctAnswer <= 4 &&
-						correctAnswer < options.length
-					) {
-						2;
-						questions.push({
-							question: questionText.trim(),
-							options: options,
-							correctAnswer: correctAnswer,
-							explanation: `Answer provided in source: ${answerLetter}`,
-						});
-						questionId++;
-					}
-				}
+			// Simple validation
+			if (questionText.length > 10 && options.length >= 2) {
+				questions.push({
+					id: idCounter++,
+					question: questionText.split(optionsRegex)[0].trim(), // Get text before options
+					options: options,
+					correctAnswer: 0, // Placeholder
+					explanation: "N/A - Extracted via regex",
+				});
 			}
 		}
 

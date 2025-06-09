@@ -107,7 +107,30 @@ class BatchProcessor {
 
 		for (let i = 0; i < words.length; i += wordsPerChunk) {
 			const chunkWords = words.slice(i, i + wordsPerChunk);
-			const chunkContent = chunkWords.join(" ");
+			let chunkContent = chunkWords.join(" ");
+
+			// Check if this would be the last chunk and it's too small
+			const remainingWords = words.length - (i + wordsPerChunk);
+			const isNearEnd = remainingWords < wordsPerChunk * 0.3; // Less than 30% of chunk size
+
+			if (isNearEnd && remainingWords > 0) {
+				// Merge remaining words into current chunk to avoid tiny last batch
+				const allRemainingWords = words.slice(i);
+				chunkContent = allRemainingWords.join(" ");
+
+				chunks.push({
+					content: chunkContent,
+					batchNumber: chunks.length + 1,
+					isFirstBatch: chunks.length === 0,
+					wordsCount: allRemainingWords.length,
+					isMergedLastBatch: true,
+				});
+
+				console.log(
+					`📝 Merged last batch to avoid small chunk: ${allRemainingWords.length} words`,
+				);
+				break;
+			}
 
 			chunks.push({
 				content: chunkContent,
@@ -123,6 +146,7 @@ class BatchProcessor {
 					const remainingWords = words.slice(i + wordsPerChunk);
 					chunks[chunks.length - 1].content += " " + remainingWords.join(" ");
 					chunks[chunks.length - 1].wordsCount += remainingWords.length;
+					chunks[chunks.length - 1].hasAppendedContent = true;
 				}
 				break;
 			}
@@ -387,8 +411,16 @@ ${chunk.content}`;
 				// Enforce rate limiting
 				await this.enforceRateLimit();
 
-				// Process the chunk
-				const questions = await this.processChunkWithAI(item.chunk, item.pdfId);
+				// Process the chunk with timeout
+				const questions = await Promise.race([
+					this.processChunkWithAI(item.chunk, item.pdfId),
+					new Promise((_, reject) =>
+						setTimeout(
+							() => reject(new Error("Batch timeout after 120 seconds")),
+							120000,
+						),
+					),
+				]);
 
 				if (questions && questions.length > 0) {
 					// Store results
@@ -456,18 +488,55 @@ ${chunk.content}`;
 					error,
 				);
 
-				// Even if there's an error, check if we need to mark as complete
+				// Log detailed error information for debugging
+				console.error(`🔍 Batch ${item.chunk.batchNumber} error details:`, {
+					batchNumber: item.chunk.batchNumber,
+					totalBatches: item.totalBatches,
+					errorType: error.name,
+					errorMessage: error.message,
+					contentLength: item.chunk.content?.length || 0,
+					isLastBatch: item.chunk.batchNumber === item.totalBatches,
+				});
+
+				// Store empty result to track failed batch
+				try {
+					await this.db.storeQuestions(item.pdfId, [], item.chunk.batchNumber);
+					console.log(
+						`📝 Stored empty result for failed batch ${item.chunk.batchNumber}`,
+					);
+				} catch (dbError) {
+					console.error(
+						`Failed to store empty batch ${item.chunk.batchNumber}:`,
+						dbError,
+					);
+				}
+
+				// Always check for completion, even with errors
 				if (item.chunk.batchNumber === item.totalBatches) {
 					console.log(
 						`🎉 Reached final batch ${item.totalBatches} (with error). Marking PDF as complete.`,
 					);
-					await this.db.markPDFComplete(item.pdfId);
-					const finalQuestions = await this.db.getQuestions(item.pdfId);
 
-					this.emit("processingComplete", {
-						pdfId: item.pdfId,
-						totalQuestions: finalQuestions.length,
-					});
+					try {
+						await this.db.markPDFComplete(item.pdfId);
+						const finalQuestions = await this.db.getQuestions(item.pdfId);
+
+						this.emit("processingComplete", {
+							pdfId: item.pdfId,
+							totalQuestions: finalQuestions.length,
+							hasErrors: true,
+							failedBatch: item.chunk.batchNumber,
+						});
+					} catch (completionError) {
+						console.error("Failed to mark PDF as complete:", completionError);
+						// Emit completion anyway to prevent hanging
+						this.emit("processingComplete", {
+							pdfId: item.pdfId,
+							totalQuestions: 0,
+							hasErrors: true,
+							completionError: true,
+						});
+					}
 				}
 			}
 		}
@@ -477,9 +546,75 @@ ${chunk.content}`;
 		if (this.abortController?.signal.aborted) {
 			console.log("🛑 Background processing cancelled");
 			this.emit("processingCancelled", { reason: "user_cancelled" });
+		} else {
+			// Fallback completion check - verify all batches were processed
+			console.log("🔍 Verifying all batches completed...");
+			await this.verifyProcessingCompletion();
 		}
 
 		console.log("✅ Background processing queue completed");
+	}
+
+	// Verify all batches were processed and mark as complete if needed
+	async verifyProcessingCompletion() {
+		if (this.processingQueue.length > 0) {
+			// Still have items in queue, processing not complete
+			return;
+		}
+
+		// Get all active PDFs that might need completion verification
+		try {
+			const allPDFs = await this.getAllActivePDFs();
+
+			for (const pdf of allPDFs) {
+				if (!pdf.isComplete && pdf.batchCount) {
+					const storedQuestions = await this.db.getQuestions(pdf.id);
+					const batchesProcessed = [
+						...new Set(storedQuestions.map((q) => q.batchNumber)),
+					].length;
+
+					console.log(
+						`📊 PDF ${pdf.id.substring(0, 8)}... has ${batchesProcessed}/${pdf.batchCount} batches completed`,
+					);
+
+					// If we have processed all expected batches, mark as complete
+					if (batchesProcessed >= pdf.batchCount) {
+						console.log(
+							`🎉 Marking PDF as complete (fallback): ${pdf.filename}`,
+						);
+						await this.db.markPDFComplete(pdf.id);
+
+						this.emit("processingComplete", {
+							pdfId: pdf.id,
+							totalQuestions: storedQuestions.length,
+							completedViaFallback: true,
+						});
+					}
+				}
+			}
+		} catch (error) {
+			console.error("Error in fallback completion verification:", error);
+		}
+	}
+
+	// Helper to get active PDFs for completion verification
+	async getAllActivePDFs() {
+		try {
+			const transaction = this.db.db.transaction(["pdfs"], "readonly");
+			const store = transaction.objectStore("pdfs");
+
+			return new Promise((resolve, reject) => {
+				const request = store.getAll();
+				request.onsuccess = () => {
+					const pdfs = request.result.filter((pdf) => !pdf.isComplete);
+					resolve(pdfs);
+				};
+				request.onerror = () => reject(request.error);
+			});
+		} catch (error) {
+			console.error("Error getting active PDFs:", error);
+			return [];
+		}
 	}
 
 	// Rate limiting for AI requests
