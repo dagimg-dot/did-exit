@@ -260,6 +260,9 @@ class DatabaseManager {
 			const totalCount = await this.getQuestionCount(pdfId);
 			console.log(`📊 Total questions now stored for this PDF: ${totalCount}`);
 
+			// Update the PDF record with the current total question count
+			await this.updatePDFQuestionCount(pdfId, totalCount);
+
 			return results;
 		} catch (error) {
 			console.error(
@@ -497,6 +500,29 @@ class DatabaseManager {
 		if (this.events[event]) {
 			this.events[event].forEach((callback) => callback(data));
 		}
+	}
+
+	async updatePDFQuestionCount(pdfId, totalCount) {
+		const transaction = this.db.transaction(["pdfs"], "readwrite");
+		const store = transaction.objectStore("pdfs");
+
+		return new Promise((resolve, reject) => {
+			const getRequest = store.get(pdfId);
+			getRequest.onsuccess = () => {
+				if (getRequest.result) {
+					const pdf = getRequest.result;
+					pdf.totalQuestions = totalCount;
+					pdf.lastAccessed = new Date();
+
+					const updateRequest = store.put(pdf);
+					updateRequest.onsuccess = () => resolve(pdf);
+					updateRequest.onerror = () => reject(updateRequest.error);
+				} else {
+					reject(new Error("PDF not found"));
+				}
+			};
+			getRequest.onerror = () => reject(getRequest.error);
+		});
 	}
 }
 

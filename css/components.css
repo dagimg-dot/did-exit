@@ -68,7 +68,7 @@
 	background: var(--card-background);
 	border: 2px dashed var(--border-color);
 	border-radius: var(--border-radius);
-	padding: 3rem 2rem;
+	padding: 2rem 1.5rem;
 	text-align: center;
 	transition: all 0.3s ease;
 	box-shadow: var(--shadow);
@@ -118,10 +118,10 @@
 
 .api-key-input {
 	flex: 1;
-	padding: 0.875rem 1.25rem;
+	padding: 0.75rem 1rem;
 	border: 2px solid var(--border-color);
 	border-radius: var(--border-radius);
-	font-size: 1rem;
+	font-size: 0.95rem;
 	transition: all 0.3s ease;
 	background: var(--card-background);
 	min-height: 44px;
@@ -639,4 +639,139 @@
 		left: 10px;
 		max-width: none;
 	}
+}
+
+/* Recent Exams Styles */
+.recent-exams-container {
+	max-width: 600px;
+	margin: 1rem auto 3rem auto;
+}
+
+.recent-exams-section {
+	background: var(--card-background);
+	border: 2px dashed var(--border-color);
+	border-radius: var(--border-radius);
+	padding: 2rem 1.5rem;
+	text-align: center;
+	transition: all 0.3s ease;
+	box-shadow: var(--shadow);
+}
+
+.recent-exams-section:hover {
+	border-color: var(--primary-color);
+	background-color: #f8faff;
+}
+
+.recent-exams-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+	opacity: 0.7;
+	filter: grayscale(0.3);
+}
+
+.recent-exams-section h3 {
+	font-size: 1.5rem;
+	margin-bottom: 0.5rem;
+	color: var(--text-primary);
+	font-weight: 600;
+}
+
+.recent-exams-section p {
+	color: var(--text-secondary);
+	margin-bottom: 2rem;
+	font-size: 1rem;
+}
+
+.recent-exams-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	text-align: left;
+}
+
+.recent-exam-item {
+	background: var(--background-color);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius);
+	padding: 1rem 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.recent-exam-item:hover {
+	background: #f0f7ff;
+	border-color: var(--primary-color);
+	transform: translateY(-1px);
+	box-shadow: var(--shadow);
+}
+
+.recent-exam-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.recent-exam-name {
+	font-weight: 500;
+	color: var(--text-primary);
+	margin-bottom: 0.25rem;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.recent-exam-meta {
+	font-size: 0.85rem;
+	color: var(--text-secondary);
+	display: flex;
+	gap: 1rem;
+}
+
+.recent-exam-actions {
+	display: flex;
+	gap: 0.5rem;
+	align-items: center;
+}
+
+.delete-exam-btn {
+	background: none;
+	border: none;
+	color: var(--text-secondary);
+	cursor: pointer;
+	padding: 0.25rem;
+	border-radius: 4px;
+	font-size: 1.25rem;
+	transition: all 0.2s ease;
+	opacity: 0.6;
+}
+
+.delete-exam-btn:hover {
+	background: #fef2f2;
+	color: #dc2626;
+	opacity: 1;
+}
+
+.no-recent-exams p {
+	color: var(--text-secondary);
+	font-style: italic;
+	margin: 0;
+}
+
+.recent-exam-meta {
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.recent-exams-section {
+	padding: 1.5rem 1rem;
+}
+
+.recent-exams-icon {
+	font-size: 2.5rem;
+}
+
+.recent-exam-item {
+	padding: 0.875rem 1rem;
 }

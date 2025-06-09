@@ -70,6 +70,22 @@
                         <button id="change-file-btn" class="btn btn-secondary">Change File</button>
                     </div>
                 </div>
+                
+                <!-- Recent Exams Section -->
+                <div class="recent-exams-container">
+                    <div class="recent-exams-section" id="recent-exams-section">
+                        <div class="recent-exams-icon">📚</div>
+                        <h3>Recent Exams</h3>
+                        <p>Previously processed PDFs - click to start quiz</p>
+                        <div class="recent-exams-list" id="recent-exams-list">
+                            <!-- Recent exams will be dynamically added here -->
+                        </div>
+                        <div class="no-recent-exams" id="no-recent-exams" style="display: none;">
+                            <p>No recent exams found</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="loading" id="loading" style="display: none;">
                     <div class="spinner"></div>
                     <p id="loading-message">Processing PDF and generating questions...</p>

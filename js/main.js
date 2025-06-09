@@ -74,6 +74,9 @@ class App {
 		// Load existing API key on startup
 		this.loadExistingAPIKey();
 
+		// Load recent exams
+		this.loadRecentExams();
+
 		// PDF processing events - simplified
 		this.pdfProcessor.on("textExtracted", this.handleTextExtracted.bind(this));
 		this.pdfProcessor.on("error", this.handleProcessingError.bind(this));
@@ -361,6 +364,7 @@ class App {
 		this.ui.hideProgressIndicator();
 		this.ui.clearNotifications();
 		this.hideCancelButton();
+		this.loadRecentExams(); // Refresh recent exams
 		this.showSection("upload-section");
 	}
 
@@ -497,6 +501,148 @@ class App {
 			if (cancelButton) {
 				cancelButton.style.display = "none";
 			}
+		}
+	}
+
+	async loadRecentExams() {
+		try {
+			const recentExamsList = document.getElementById("recent-exams-list");
+			const noRecentExams = document.getElementById("no-recent-exams");
+
+			// Get all PDFs from IndexedDB
+			const pdfs = await this.getAllPDFs();
+
+			if (pdfs.length === 0) {
+				recentExamsList.innerHTML = "";
+				noRecentExams.style.display = "block";
+				return;
+			}
+
+			// Sort PDFs by last accessed date (most recent first)
+			pdfs.sort((a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed));
+
+			// Generate HTML for each PDF
+			const examsHTML = pdfs
+				.map((pdf) => this.createExamItemHTML(pdf))
+				.join("");
+			recentExamsList.innerHTML = examsHTML;
+			noRecentExams.style.display = "none";
+
+			// Add event listeners for exam items and delete buttons
+			this.attachRecentExamListeners();
+		} catch (error) {
+			console.error("Error loading recent exams:", error);
+		}
+	}
+
+	async getAllPDFs() {
+		const transaction = this.databaseManager.db.transaction(
+			["pdfs"],
+			"readonly",
+		);
+		const store = transaction.objectStore("pdfs");
+
+		return new Promise((resolve, reject) => {
+			const request = store.getAll();
+			request.onsuccess = () => resolve(request.result);
+			request.onerror = () => reject(request.error);
+		});
+	}
+
+	createExamItemHTML(pdf) {
+		const lastAccessed = new Date(pdf.lastAccessed).toLocaleDateString();
+		const questionCount = pdf.totalQuestions || 0;
+
+		return `
+			<div class="recent-exam-item" data-pdf-id="${pdf.id}">
+				<div class="recent-exam-info">
+					<div class="recent-exam-name">${pdf.filename}</div>
+					<div class="recent-exam-meta">
+						<span>${questionCount} questions</span>
+						<span>Last accessed: ${lastAccessed}</span>
+					</div>
+				</div>
+				<div class="recent-exam-actions">
+					<button class="delete-exam-btn" data-pdf-id="${pdf.id}" title="Delete exam">×</button>
+				</div>
+			</div>
+		`;
+	}
+
+	attachRecentExamListeners() {
+		// Handle exam item clicks (start quiz)
+		document.querySelectorAll(".recent-exam-item").forEach((item) => {
+			item.addEventListener("click", (e) => {
+				// Don't trigger if delete button was clicked
+				if (e.target.classList.contains("delete-exam-btn")) return;
+
+				const pdfId = item.dataset.pdfId;
+				this.startQuizFromRecent(pdfId);
+			});
+		});
+
+		// Handle delete button clicks
+		document.querySelectorAll(".delete-exam-btn").forEach((btn) => {
+			btn.addEventListener("click", (e) => {
+				e.stopPropagation(); // Prevent exam item click
+				const pdfId = btn.dataset.pdfId;
+				this.deleteRecentExam(pdfId);
+			});
+		});
+	}
+
+	async startQuizFromRecent(pdfId) {
+		try {
+			// Get PDF and questions from IndexedDB
+			const pdf = await this.databaseManager.getPDF(pdfId);
+			const questions = await this.databaseManager.getQuestions(pdfId);
+
+			if (!pdf || questions.length === 0) {
+				this.ui.showError("Could not load exam data");
+				return;
+			}
+
+			// Set current data
+			this.currentPdfId = pdfId;
+			this.quizData = questions;
+			this.userAnswers = [];
+			this.correctAnswers = [];
+
+			// Start quiz
+			this.showSection("quiz-section");
+			this.quizManager.initialize(this.quizData);
+			this.ui.showNotification(
+				`Loaded ${questions.length} questions from "${pdf.filename}"`,
+				"success",
+			);
+		} catch (error) {
+			console.error("Error starting quiz from recent:", error);
+			this.ui.showError("Failed to load exam");
+		}
+	}
+
+	async deleteRecentExam(pdfId) {
+		try {
+			// Get PDF info for confirmation
+			const pdf = await this.databaseManager.getPDF(pdfId);
+			if (!pdf) return;
+
+			// Confirm deletion
+			const confirmed = confirm(
+				`Delete "${pdf.filename}" and all its questions?`,
+			);
+			if (!confirmed) return;
+
+			// Delete from IndexedDB
+			await this.databaseManager.deletePDFAndQuestions(pdfId);
+
+			// Reload the recent exams list
+			this.loadRecentExams();
+
+			this.ui.showNotification("Exam deleted successfully", "info");
+		} catch (error) {
+			console.error("Error deleting exam:", error);
+			this.ui.showError("Failed to delete exam");
 		}
 	}
 }
