@@ -1,7 +1,11 @@
-// PDF text extraction using PDF.js
+// PDF text extraction using PDF.js with enhanced analysis
+import { PDFAnalyzer } from "./pdf-analyzer.js";
+
 class PDFProcessor {
 	constructor() {
 		this.events = {};
+		this.analyzer = new PDFAnalyzer();
+		this.currentPdf = null;
 		this.initializePDFJS();
 	}
 
@@ -52,23 +56,31 @@ class PDFProcessor {
 
 			// Load PDF document
 			const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+			this.currentPdf = pdf;
 			console.log("PDF loaded:", pdf.numPages, "pages");
 
-			// Extract text from all pages
-			const extractedText = await this.extractTextFromPDF(pdf);
+			// Enhanced analysis using PDFAnalyzer
+			const analysis = await this.analyzer.analyzeContent(pdf);
 
-			if (!extractedText.trim()) {
+			// Emit enhanced analysis data
+			this.emit("pdfAnalyzed", analysis);
+
+			// Also emit basic text for backward compatibility
+			if (!analysis.textContent.trim()) {
 				throw new Error(
 					"No text found in PDF. Please ensure the PDF contains readable text.",
 				);
 			}
 
 			console.log(
-				"Text extraction complete:",
-				extractedText.length,
-				"characters",
+				"Enhanced analysis complete:",
+				analysis.textContent.length,
+				"characters,",
+				analysis.metadata.questionsFound,
+				"questions detected",
 			);
-			this.emit("textExtracted", extractedText);
+
+			this.emit("textExtracted", analysis.textContent, analysis);
 		} catch (error) {
 			console.error("PDF processing error:", error);
 			this.emit("error", error);

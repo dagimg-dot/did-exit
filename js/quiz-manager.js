@@ -280,6 +280,79 @@ class QuizManager {
 		this.submitBtn.style.display = "none";
 	}
 
+	// Add questions dynamically (for batch processing)
+	addQuestions(newQuestions) {
+		if (!Array.isArray(newQuestions) || newQuestions.length === 0) {
+			console.warn("No valid questions to add");
+			return;
+		}
+
+		console.log(`📚 Adding ${newQuestions.length} new questions to quiz`);
+
+		// Add new questions to the existing array
+		this.questions.push(...newQuestions);
+
+		// Extend user answers array to accommodate new questions
+		const additionalAnswers = new Array(newQuestions.length).fill(null);
+		this.userAnswers.push(...additionalAnswers);
+
+		// Update total questions display
+		this.totalQuestionsSpan.textContent = this.questions.length;
+
+		// Update navigation if we're on the last question and now have more
+		const wasLastQuestion =
+			this.currentQuestionIndex ===
+			this.questions.length - newQuestions.length - 1;
+		if (wasLastQuestion) {
+			this.updateNavigation();
+		}
+
+		// Update progress bar calculation
+		this.updateProgress();
+
+		console.log(`✅ Quiz now has ${this.questions.length} total questions`);
+
+		// Emit event for any listeners
+		this.emit("questionsAdded", {
+			newQuestions: newQuestions,
+			totalQuestions: this.questions.length,
+		});
+	}
+
+	// Get current question context for batch processing
+	getCurrentContext() {
+		return {
+			currentQuestionIndex: this.currentQuestionIndex,
+			totalQuestions: this.questions.length,
+			answeredCount: this.userAnswers.filter((answer) => answer !== null)
+				.length,
+			isOnLastQuestion: this.currentQuestionIndex === this.questions.length - 1,
+			hasAnsweredCurrent: this.userAnswers[this.currentQuestionIndex] !== null,
+		};
+	}
+
+	// Method to handle seamless question expansion
+	handleQuestionExpansion(newQuestions) {
+		const context = this.getCurrentContext();
+
+		// Add the new questions
+		this.addQuestions(newQuestions);
+
+		// If user was on last question and hadn't submitted, update UI to show they can continue
+		if (context.isOnLastQuestion && context.hasAnsweredCurrent) {
+			// Hide submit button, show next button
+			this.nextBtn.style.display = "inline-flex";
+			this.nextBtn.disabled = false;
+			this.submitBtn.style.display = "none";
+
+			// Show a subtle indicator that more questions are available
+			this.emit("moreQuestionsAvailable", {
+				newCount: newQuestions.length,
+				totalCount: this.questions.length,
+			});
+		}
+	}
+
 	// Get quiz statistics
 	getStats() {
 		const answeredCount = this.userAnswers.filter(

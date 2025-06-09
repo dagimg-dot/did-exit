@@ -383,6 +383,178 @@ class UIComponents {
 			modal.remove();
 		}
 	}
+
+	// Notification System Methods
+	showNotification(message, type = "info", duration = 5000) {
+		const container = document.getElementById("notification-container");
+		if (!container) {
+			console.error("Notification container not found");
+			return;
+		}
+
+		const notification = document.createElement("div");
+		notification.className = `notification ${type}`;
+
+		const notificationId = "notification-" + Date.now();
+		notification.id = notificationId;
+
+		notification.innerHTML = `
+			<div class="notification-content">
+				<div class="notification-icon"></div>
+				<div class="notification-text">${message}</div>
+			</div>
+			<button class="notification-close" onclick="this.parentElement.remove()">×</button>
+		`;
+
+		container.appendChild(notification);
+
+		// Auto-remove after duration
+		if (duration > 0) {
+			setTimeout(() => {
+				this.removeNotification(notificationId);
+			}, duration);
+		}
+
+		console.log(`📢 Notification (${type}): ${message}`);
+		return notificationId;
+	}
+
+	removeNotification(notificationId) {
+		const notification = document.getElementById(notificationId);
+		if (notification) {
+			notification.classList.add("hiding");
+			setTimeout(() => {
+				if (notification.parentNode) {
+					notification.remove();
+				}
+			}, 300);
+		}
+	}
+
+	clearNotifications() {
+		const container = document.getElementById("notification-container");
+		if (container) {
+			container.innerHTML = "";
+		}
+	}
+
+	// Background Processing Indicator Methods
+	showProgressIndicator(
+		completed,
+		total,
+		message = "Processing questions in background...",
+	) {
+		const indicator = document.getElementById("processing-indicator");
+		if (!indicator) {
+			console.error("Processing indicator element not found");
+			return;
+		}
+
+		const progressPercentage = Math.round((completed / total) * 100);
+
+		// Update message
+		const messageElement = document.getElementById("processing-message");
+		if (messageElement) {
+			messageElement.textContent = message;
+		}
+
+		// Update progress bar
+		const progressFill = document.getElementById("processing-progress-fill");
+		if (progressFill) {
+			progressFill.style.width = `${progressPercentage}%`;
+		}
+
+		// Update progress text
+		const progressText = document.getElementById("processing-progress-text");
+		if (progressText) {
+			progressText.textContent = `Batch ${completed} of ${total}`;
+		}
+
+		// Show the indicator
+		indicator.style.display = "block";
+
+		console.log(
+			`📊 Processing progress: ${completed}/${total} (${progressPercentage}%)`,
+		);
+	}
+
+	updateProgressIndicator(completed, total, message = null) {
+		if (message) {
+			const messageElement = document.getElementById("processing-message");
+			if (messageElement) {
+				messageElement.textContent = message;
+			}
+		}
+
+		const progressPercentage = Math.round((completed / total) * 100);
+
+		const progressFill = document.getElementById("processing-progress-fill");
+		if (progressFill) {
+			progressFill.style.width = `${progressPercentage}%`;
+		}
+
+		const progressText = document.getElementById("processing-progress-text");
+		if (progressText) {
+			progressText.textContent = `Batch ${completed} of ${total}`;
+		}
+	}
+
+	hideProgressIndicator() {
+		const indicator = document.getElementById("processing-indicator");
+		if (indicator) {
+			indicator.style.display = "none";
+		}
+	}
+
+	// Enhanced error display with better UX
+	showEnhancedError(message, details = null) {
+		this.hideLoading();
+
+		let errorContent = `<p style="color: #dc2626; margin-bottom: 1rem;"><strong>Error:</strong> ${message}</p>`;
+
+		if (details) {
+			errorContent += `
+				<details style="margin-top: 1rem;">
+					<summary style="cursor: pointer; color: #6b7280;">Technical Details</summary>
+					<pre style="background: #f9fafb; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto; font-size: 0.8rem;">${details}</pre>
+				</details>
+			`;
+		}
+
+		this.showModal("Processing Error", errorContent, [
+			{
+				text: "Try Again",
+				class: "btn-primary",
+				onclick:
+					'window.app.restart(); this.closest("#custom-modal").remove();',
+			},
+			{
+				text: "Close",
+				class: "btn-secondary",
+				onclick: 'this.closest("#custom-modal").remove();',
+			},
+		]);
+
+		this.showNotification(message, "error", 8000);
+	}
+
+	// Method to show batch processing status
+	showBatchStatus(currentBatch, totalBatches, questionsReady) {
+		const statusMessage =
+			totalBatches > 1
+				? `Quiz ready with ${questionsReady} questions! Processing ${totalBatches - currentBatch} more batches...`
+				: `All ${questionsReady} questions ready!`;
+
+		if (totalBatches > 1) {
+			this.showProgressIndicator(
+				currentBatch,
+				totalBatches,
+				"Extracting additional questions...",
+			);
+		}
+
+		return statusMessage;
+	}
 }
 
 export { UIComponents };

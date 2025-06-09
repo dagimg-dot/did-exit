@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Quiz App</title>
+    <title>PDF Quiz Generator</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/quiz.css">
@@ -33,7 +33,10 @@
                 </div>
                 <div class="loading" id="loading" style="display: none;">
                     <div class="spinner"></div>
-                    <p>Processing PDF and generating questions...</p>
+                    <p id="loading-message">Processing PDF and generating questions...</p>
+                    <button id="cancel-processing-btn" class="btn btn-secondary" style="display: none; margin-top: 1rem;">
+                        Cancel Processing
+                    </button>
                 </div>
             </section>
 
@@ -83,6 +86,27 @@
                 </div>
             </section>
         </main>
+
+        <!-- Notification System -->
+        <div id="notification-container" class="notification-container">
+            <!-- Notifications will be dynamically added here -->
+        </div>
+
+        <!-- Background Processing Indicator -->
+        <div id="processing-indicator" class="processing-indicator" style="display: none;">
+            <div class="processing-content">
+                <div class="processing-spinner"></div>
+                <div class="processing-text">
+                    <span id="processing-message">Processing questions in background...</span>
+                    <div class="processing-progress">
+                        <div class="processing-progress-bar">
+                            <div id="processing-progress-fill" class="processing-progress-fill"></div>
+                        </div>
+                        <span id="processing-progress-text">Batch 1 of 5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->
