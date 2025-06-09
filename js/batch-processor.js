@@ -399,8 +399,9 @@ ${chunk.content}`;
 					);
 					await this.db.updatePDFProgress(item.pdfId, item.chunk.batchNumber);
 
-					// Get updated question count
+					// Get updated question count and debug info
 					const allQuestions = await this.db.getQuestions(item.pdfId);
+					await this.db.getAllQuestionsDebug(item.pdfId); // Debug logging
 
 					// Emit batch completed event
 					this.emit("batchCompleted", {

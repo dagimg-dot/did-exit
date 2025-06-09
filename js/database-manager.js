@@ -2,7 +2,7 @@
 class DatabaseManager {
 	constructor() {
 		this.dbName = "QuizDB";
-		this.dbVersion = 1;
+		this.dbVersion = 2; // Increased version to trigger schema update
 		this.db = null;
 		this.events = {};
 	}
@@ -50,7 +50,7 @@ class DatabaseManager {
 		// Store individual questions
 		if (!db.objectStoreNames.contains("questions")) {
 			const questionStore = db.createObjectStore("questions", {
-				keyPath: ["pdfId", "questionId"],
+				keyPath: "id", // Use single unique ID instead of compound key
 			});
 			questionStore.createIndex("pdfId", "pdfId", { unique: false });
 			questionStore.createIndex("batchNumber", "batchNumber", {
@@ -58,6 +58,9 @@ class DatabaseManager {
 			});
 			questionStore.createIndex("createdDate", "createdDate", {
 				unique: false,
+			});
+			questionStore.createIndex("pdfIdQuestionId", ["pdfId", "questionId"], {
+				unique: true,
 			});
 			console.log("❓ Created Questions object store");
 		}
@@ -202,16 +205,24 @@ class DatabaseManager {
 	// Question Management Methods
 	async storeQuestions(pdfId, questions, batchNumber) {
 		console.log(
-			`💾 Storing ${questions.length} questions for PDF ${pdfId.substring(0, 8)}... batch ${batchNumber}`,
+			`💾 Storing ${questions.length} questions for PDF ${pdfId.substring(
+				0,
+				8,
+			)}... batch ${batchNumber}`,
 		);
 
 		const transaction = this.db.transaction(["questions"], "readwrite");
 		const store = transaction.objectStore("questions");
 
 		const promises = questions.map((question, index) => {
+			// Generate a guaranteed-unique questionId, ignoring any ID from the AI
+			const generatedQuestionId =
+				(batchNumber - 1) * 1000 + (question.id || index) + 1;
+
 			const questionRecord = {
+				id: `${pdfId}_${generatedQuestionId}`, // Unique primary key for the record
 				pdfId: pdfId,
-				questionId: question.id || (batchNumber - 1) * 20 + index + 1,
+				questionId: generatedQuestionId, // This is now guaranteed to be unique across batches
 				batchNumber: batchNumber,
 				question: question.question,
 				options: question.options,
@@ -223,10 +234,15 @@ class DatabaseManager {
 
 			return new Promise((resolve, reject) => {
 				const request = store.put(questionRecord);
-				request.onsuccess = () => resolve(questionRecord);
+				request.onsuccess = () => {
+					console.log(
+						`✅ Stored question ${questionRecord.id} (QID: ${questionRecord.questionId})`,
+					);
+					resolve(questionRecord);
+				};
 				request.onerror = () => {
 					console.error(
-						`❌ Failed to store question ${questionRecord.questionId}:`,
+						`❌ Failed to store question ${questionRecord.id} (QID: ${questionRecord.questionId}):`,
 						request.error,
 					);
 					reject(request.error);
@@ -250,6 +266,7 @@ class DatabaseManager {
 				`❌ Error storing questions for batch ${batchNumber}:`,
 				error,
 			);
+			// This error aborts the transaction, which is expected on constraint violation.
 			throw error;
 		}
 	}
@@ -284,7 +301,36 @@ class DatabaseManager {
 
 		return new Promise((resolve, reject) => {
 			const request = index.count(pdfId);
-			request.onsuccess = () => resolve(request.result);
+			request.onsuccess = () => {
+				console.log(
+					`📊 Question count for PDF ${pdfId.substring(0, 8)}...: ${request.result}`,
+				);
+				resolve(request.result);
+			};
+			request.onerror = () => reject(request.error);
+		});
+	}
+
+	async getAllQuestionsDebug(pdfId) {
+		const transaction = this.db.transaction(["questions"], "readonly");
+		const store = transaction.objectStore("questions");
+		const index = store.index("pdfId");
+
+		return new Promise((resolve, reject) => {
+			const request = index.getAll(pdfId);
+			request.onsuccess = () => {
+				const questions = request.result;
+				console.log(`🔍 DEBUG: Found ${questions.length} questions for PDF:`, {
+					pdfId: pdfId.substring(0, 8) + "...",
+					totalQuestions: questions.length,
+					batchBreakdown: questions.reduce((acc, q) => {
+						acc[q.batchNumber] = (acc[q.batchNumber] || 0) + 1;
+						return acc;
+					}, {}),
+					questionIds: questions.map((q) => q.questionId).sort((a, b) => a - b),
+				});
+				resolve(questions);
+			};
 			request.onerror = () => reject(request.error);
 		});
 	}
