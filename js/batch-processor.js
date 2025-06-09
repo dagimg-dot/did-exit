@@ -15,8 +15,21 @@ class BatchProcessor {
 	createTextChunks(textContent, questionsPerBatch = 15) {
 		console.log(`📝 Creating chunks for ${textContent.length} characters`);
 
-		// For smaller documents (under 50k chars), process in one go
-		if (textContent.length < 50000) {
+		// Estimate question count based on content patterns
+		const estimatedQuestions = this.estimateQuestionCount(textContent);
+		console.log(`📊 Estimated ${estimatedQuestions} questions in document`);
+
+		// For documents with many questions or large content, always split
+		if (estimatedQuestions > 20 || textContent.length > 25000) {
+			console.log(
+				`📋 Large document detected - will split into multiple batches`,
+			);
+			return this.createMultipleBatches(textContent, estimatedQuestions);
+		}
+
+		// For smaller documents (under 25k chars AND estimated < 20 questions), process in one go
+		if (textContent.length < 25000 && estimatedQuestions <= 20) {
+			console.log(`📋 Small document - processing in single batch`);
 			return [
 				{
 					content: textContent,
@@ -26,9 +39,68 @@ class BatchProcessor {
 			];
 		}
 
+		// Default to splitting for safety
+		return this.createMultipleBatches(textContent, estimatedQuestions);
+	}
+
+	// Estimate question count using multiple heuristics
+	estimateQuestionCount(textContent) {
+		const questionPatterns = [
+			/\d+[\.\)]\s+[A-Z]/g, // 1. Question or 1) Question
+			/Question\s+\d+/gi, // "Question 1", "Question 2"
+			/^\s*\d+\.\s+/gm, // Numbered items starting lines
+			/\?\s*$/gm, // Lines ending with ?
+		];
+
+		let maxCount = 0;
+		questionPatterns.forEach((pattern) => {
+			const matches = textContent.match(pattern) || [];
+			maxCount = Math.max(maxCount, matches.length);
+		});
+
+		// Use multiple choice indicators as confirmation
+		const mcMarkers = [
+			/^\s*[A-Ea-e][\.\)]/gm, // A. B. C. D. options
+			/^\s*\([A-Ea-e]\)/gm, // (A) (B) (C) (D) options
+		];
+
+		let optionCount = 0;
+		mcMarkers.forEach((pattern) => {
+			const matches = textContent.match(pattern) || [];
+			optionCount += matches.length;
+		});
+
+		// If we have 4x more options than questions, that's a good sign
+		const mcQuestionEstimate = Math.floor(optionCount / 4);
+
+		// Use the higher estimate but cap at reasonable limits
+		const finalEstimate = Math.min(
+			150,
+			Math.max(10, maxCount, mcQuestionEstimate),
+		);
+
+		console.log(
+			`🔍 Question estimation: numbered=${maxCount}, mc=${mcQuestionEstimate}, final=${finalEstimate}`,
+		);
+		return finalEstimate;
+	}
+
+	// Create multiple batches for larger documents
+	createMultipleBatches(textContent, estimatedQuestions) {
+		// Target 15-25 questions per batch
+		const questionsPerBatch = 20;
+		const targetBatches = Math.min(
+			5,
+			Math.max(2, Math.ceil(estimatedQuestions / questionsPerBatch)),
+		);
+
+		console.log(
+			`📊 Creating ${targetBatches} batches for ${estimatedQuestions} estimated questions`,
+		);
+
 		// For larger documents, create meaningful chunks
 		const estimatedWords = textContent.split(/\s+/).length;
-		const wordsPerChunk = Math.max(5000, Math.floor(estimatedWords / 4)); // Max 4 chunks
+		const wordsPerChunk = Math.floor(estimatedWords / targetBatches);
 
 		const chunks = [];
 		const words = textContent.split(/\s+/);
@@ -44,8 +116,16 @@ class BatchProcessor {
 				wordsCount: chunkWords.length,
 			});
 
-			// Limit to 4 chunks to respect rate limits
-			if (chunks.length >= 4) break;
+			// Don't exceed target batch count
+			if (chunks.length >= targetBatches) {
+				// Add remaining words to last chunk
+				if (i + wordsPerChunk < words.length) {
+					const remainingWords = words.slice(i + wordsPerChunk);
+					chunks[chunks.length - 1].content += " " + remainingWords.join(" ");
+					chunks[chunks.length - 1].wordsCount += remainingWords.length;
+				}
+				break;
+			}
 		}
 
 		console.log(
@@ -153,7 +233,9 @@ class BatchProcessor {
 	async processChunkWithAI(chunk, pdfId) {
 		try {
 			console.log(
-				`🤖 Processing batch ${chunk.batchNumber} with AI (${chunk.wordsCount || "unknown"} words)`,
+				`🤖 Processing batch ${chunk.batchNumber} with AI (${
+					chunk.wordsCount || "unknown"
+				} words)`,
 			);
 
 			// Check for cancellation
