@@ -13,6 +13,7 @@ class FileUploader {
 		this.fileInfo = document.getElementById("file-info");
 		this.fileName = document.getElementById("file-name");
 		this.processBtn = document.getElementById("process-btn");
+		this.changeFileBtn = document.getElementById("change-file-btn");
 		this.selectedFile = null;
 	}
 
@@ -68,6 +69,11 @@ class FileUploader {
 				this.emit("fileSelected", this.selectedFile);
 			}
 		});
+
+		// Change file button click
+		this.changeFileBtn.addEventListener("click", () => {
+			this.showUploadArea();
+		});
 	}
 
 	handleFileSelection(file) {
@@ -77,6 +83,7 @@ class FileUploader {
 
 		this.selectedFile = file;
 		this.fileName.textContent = file.name;
+		this.hideUploadArea();
 		this.fileInfo.style.display = "block";
 
 		console.log("File selected:", {
@@ -84,6 +91,26 @@ class FileUploader {
 			size: this.formatFileSize(file.size),
 			type: file.type,
 		});
+	}
+
+	hideUploadArea() {
+		if (this.uploadArea) {
+			this.uploadArea.style.display = "none";
+		}
+	}
+
+	showUploadArea() {
+		if (this.uploadArea) {
+			this.uploadArea.style.display = "block";
+		}
+		this.fileInfo.style.display = "none";
+		this.selectedFile = null;
+		this.pdfInput.value = "";
+		// Clear any error messages
+		const errorElement = document.getElementById("upload-error");
+		if (errorElement) {
+			errorElement.style.display = "none";
+		}
 	}
 
 	validateFile(file) {
@@ -143,6 +170,7 @@ class FileUploader {
 		this.pdfInput.value = "";
 		this.fileInfo.style.display = "none";
 		this.fileName.textContent = "";
+		this.showUploadArea();
 
 		// Hide any error messages
 		const errorElement = document.getElementById("upload-error");

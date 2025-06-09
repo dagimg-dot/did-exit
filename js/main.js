@@ -50,6 +50,30 @@ class App {
 			this.handleProcessingStart.bind(this),
 		);
 
+		// API key management events
+		document
+			.getElementById("save-api-key-btn")
+			.addEventListener("click", this.handleSaveAPIKey.bind(this));
+
+		document
+			.getElementById("change-api-key-btn")
+			.addEventListener("click", this.showAPIKeyConfig.bind(this));
+
+		document
+			.getElementById("cancel-api-key-btn")
+			.addEventListener("click", this.hideAPIKeyConfig.bind(this));
+
+		document
+			.getElementById("api-key-input")
+			.addEventListener("keypress", (e) => {
+				if (e.key === "Enter") {
+					this.handleSaveAPIKey();
+				}
+			});
+
+		// Load existing API key on startup
+		this.loadExistingAPIKey();
+
 		// PDF processing events - simplified
 		this.pdfProcessor.on("textExtracted", this.handleTextExtracted.bind(this));
 		this.pdfProcessor.on("error", this.handleProcessingError.bind(this));
@@ -364,6 +388,116 @@ class App {
 		console.error("AI error:", error);
 		this.ui.hideLoading();
 		this.ui.showError("AI service error: " + error.message);
+	}
+
+	async handleSaveAPIKey() {
+		const apiKeyInput = document.getElementById("api-key-input");
+		const statusElement = document.getElementById("api-key-status");
+		const saveButton = document.getElementById("save-api-key-btn");
+		const apiKey = apiKeyInput.value.trim();
+
+		if (!apiKey) {
+			this.showAPIKeyStatus("Please enter an API key", "error");
+			return;
+		}
+
+		// Show loading state
+		saveButton.disabled = true;
+		saveButton.textContent = "Testing...";
+		this.showAPIKeyStatus("Testing API key...", "");
+
+		try {
+			// Test the API key
+			const testResult = await this.aiIntegration.testAPIKey(apiKey);
+
+			if (testResult.success) {
+				// Save the API key
+				this.aiIntegration.setAPIKey(apiKey);
+				this.showAPIKeyStatus("✅ API key saved and verified!", "success");
+
+				// Clear the input for security
+				apiKeyInput.value = "";
+				apiKeyInput.placeholder = "API key configured ✓";
+
+				// Hide the config and show collapsed state after a short delay
+				setTimeout(() => {
+					this.hideAPIKeyConfig();
+				}, 1500);
+			} else {
+				this.showAPIKeyStatus("❌ " + testResult.message, "error");
+			}
+		} catch (error) {
+			console.error("API key test error:", error);
+			this.showAPIKeyStatus("❌ Failed to verify API key", "error");
+		} finally {
+			// Reset button state
+			saveButton.disabled = false;
+			saveButton.textContent = "Save Key";
+		}
+	}
+
+	loadExistingAPIKey() {
+		const existingKey = localStorage.getItem("google-ai-api-key");
+		if (existingKey) {
+			// Show collapsed state if API key exists
+			this.hideAPIKeyConfig();
+		} else {
+			// Show expanded state if no API key
+			this.showAPIKeyConfig();
+			this.showAPIKeyStatus("No API key configured", "warning");
+		}
+	}
+
+	showAPIKeyStatus(message, type) {
+		const statusElement = document.getElementById("api-key-status");
+		if (statusElement) {
+			statusElement.textContent = message;
+			statusElement.className = `api-key-status ${type}`;
+		}
+	}
+
+	showAPIKeyConfig() {
+		const expandedSection = document.getElementById("api-key-section");
+		const collapsedSection = document.getElementById("api-key-collapsed");
+		const cancelButton = document.getElementById("cancel-api-key-btn");
+		const apiKeyInput = document.getElementById("api-key-input");
+
+		if (expandedSection && collapsedSection) {
+			expandedSection.style.display = "block";
+			collapsedSection.style.display = "none";
+
+			// Show cancel button if there's an existing API key
+			const existingKey = localStorage.getItem("google-ai-api-key");
+			if (existingKey && cancelButton) {
+				cancelButton.style.display = "inline-flex";
+			}
+
+			// Clear and focus input
+			if (apiKeyInput) {
+				apiKeyInput.value = "";
+				apiKeyInput.placeholder = "Enter your Google AI API key";
+				apiKeyInput.focus();
+			}
+
+			// Clear status
+			this.showAPIKeyStatus("", "");
+		}
+	}
+
+	hideAPIKeyConfig() {
+		const expandedSection = document.getElementById("api-key-section");
+		const collapsedSection = document.getElementById("api-key-collapsed");
+		const cancelButton = document.getElementById("cancel-api-key-btn");
+
+		if (expandedSection && collapsedSection) {
+			expandedSection.style.display = "none";
+			collapsedSection.style.display = "block";
+
+			// Hide cancel button
+			if (cancelButton) {
+				cancelButton.style.display = "none";
+			}
+		}
 	}
 }
 

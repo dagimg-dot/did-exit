@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Quiz Generator</title>
+    <title>Did Exit - Exam Generator from PDF</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="assets/favicon-exit.png">
+    <link rel="shortcut icon" href="assets/favicon-exit.png">
+    <link rel="apple-touch-icon" href="assets/favicon-exit.png">
+    
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/quiz.css">
@@ -12,13 +18,45 @@
     <div class="container">
         <header class="app-header">
             <h1>Did Exit</h1>
-            <p>Upload your exam PDF and take an interactive quiz</p>
+            <p>Upload your exam PDF and make it interactive</p>
         </header>
 
         <main class="app-main">
             <!-- File Upload Section -->
             <section id="upload-section" class="section active">
-                <div class="upload-container">
+                <!-- API Key Configuration -->
+                <div class="api-key-container">
+                    <!-- Collapsed State - shown when API key is configured -->
+                    <div class="api-key-collapsed" id="api-key-collapsed" style="display: none;">
+                        <div class="api-key-status-bar">
+                            <span class="api-key-status-icon">🔑</span>
+                            <span class="api-key-status-text">API Key Configured</span>
+                            <button id="change-api-key-btn" class="btn btn-secondary btn-sm">Change API Key</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Expanded State - shown when configuring API key -->
+                    <div class="api-key-section" id="api-key-section">
+                        <div class="api-key-icon">🔑</div>
+                        <h3>API Key Configuration</h3>
+                        <p>Enter your Google AI API key to generate questions from PDFs</p>
+                        <div class="api-key-input-group">
+                            <input type="password" id="api-key-input" placeholder="Enter your Google AI API key" class="api-key-input">
+                            <button id="save-api-key-btn" class="btn btn-primary">Save Key</button>
+                        </div>
+                        <div class="api-key-status" id="api-key-status">
+                            <!-- Status will be shown here -->
+                        </div>
+                        <div class="api-key-help">
+                            <small>Get your free API key at <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a></small>
+                        </div>
+                        <div class="api-key-actions">
+                            <button id="cancel-api-key-btn" class="btn btn-secondary" style="display: none;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="upload-container" id="upload-container">
                     <div class="upload-area" id="upload-area">
                         <div class="upload-icon">📄</div>
                         <h3>Upload PDF File</h3>
@@ -29,6 +67,7 @@
                     <div class="file-info" id="file-info" style="display: none;">
                         <p><strong>Selected:</strong> <span id="file-name"></span></p>
                         <button id="process-btn" class="btn btn-success">Process PDF</button>
+                        <button id="change-file-btn" class="btn btn-secondary">Change File</button>
                     </div>
                 </div>
                 <div class="loading" id="loading" style="display: none;">

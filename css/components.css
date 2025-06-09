@@ -58,6 +58,173 @@
 	margin: 0 auto;
 }
 
+/* API Key Configuration Styles */
+.api-key-container {
+	max-width: 600px;
+	margin: 0 auto 3rem auto;
+}
+
+.api-key-section {
+	background: var(--card-background);
+	border: 2px dashed var(--border-color);
+	border-radius: var(--border-radius);
+	padding: 3rem 2rem;
+	text-align: center;
+	transition: all 0.3s ease;
+	box-shadow: var(--shadow);
+}
+
+.api-key-section:hover {
+	border-color: var(--primary-color);
+	background-color: #f8faff;
+}
+
+.api-key-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+	opacity: 0.7;
+	filter: grayscale(0.3);
+}
+
+.api-key-section h3 {
+	font-size: 1.5rem;
+	margin-bottom: 0.5rem;
+	color: var(--text-primary);
+	font-weight: 600;
+}
+
+.api-key-section p {
+	color: var(--text-secondary);
+	margin-bottom: 2rem;
+	font-size: 1rem;
+}
+
+.api-key-input-group {
+	display: flex;
+	gap: 0.75rem;
+	margin-bottom: 1.5rem;
+	align-items: stretch;
+	max-width: 500px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.api-key-input-group .btn {
+	white-space: nowrap;
+	min-width: 120px;
+	font-weight: 600;
+	box-shadow: var(--shadow);
+}
+
+.api-key-input {
+	flex: 1;
+	padding: 0.875rem 1.25rem;
+	border: 2px solid var(--border-color);
+	border-radius: var(--border-radius);
+	font-size: 1rem;
+	transition: all 0.3s ease;
+	background: var(--card-background);
+	min-height: 44px;
+	font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+	letter-spacing: 0.5px;
+}
+
+.api-key-input:focus {
+	outline: none;
+	border-color: var(--primary-color);
+	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+	transform: translateY(-1px);
+}
+
+.api-key-input::placeholder {
+	color: var(--text-secondary);
+	opacity: 0.7;
+}
+
+.api-key-status {
+	margin-bottom: 1rem;
+	min-height: 1.5rem;
+	font-size: 0.95rem;
+	font-weight: 500;
+}
+
+.api-key-status.success {
+	color: var(--success-color);
+}
+
+.api-key-status.error {
+	color: #dc2626;
+}
+
+.api-key-status.warning {
+	color: #f59e0b;
+}
+
+.api-key-help {
+	margin-top: 1.5rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--border-color);
+}
+
+.api-key-help small {
+	color: var(--text-secondary);
+	font-size: 0.9rem;
+	line-height: 1.4;
+}
+
+.api-key-help a {
+	color: var(--primary-color);
+	text-decoration: none;
+	font-weight: 500;
+}
+
+.api-key-help a:hover {
+	text-decoration: underline;
+}
+
+/* API Key Collapsed State */
+.api-key-collapsed {
+	background: var(--card-background);
+	border: 1px solid var(--border-color);
+	border-radius: var(--border-radius);
+	padding: 1rem 1.5rem;
+	margin-bottom: 2rem;
+	box-shadow: var(--shadow);
+}
+
+.api-key-status-bar {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	justify-content: space-between;
+}
+
+.api-key-status-icon {
+	font-size: 1.25rem;
+	opacity: 0.8;
+}
+
+.api-key-status-text {
+	flex: 1;
+	font-weight: 500;
+	color: var(--success-color);
+	font-size: 0.95rem;
+}
+
+.api-key-actions {
+	text-align: center;
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid var(--border-color);
+}
+
+/* Small button variant */
+.btn-sm {
+	padding: 0.5rem 1rem;
+	font-size: 0.875rem;
+	min-height: 36px;
+}
+
 .upload-area {
 	background: var(--card-background);
 	border: 2px dashed var(--border-color);
@@ -197,6 +364,31 @@
 		font-size: 0.9rem;
 	}
 
+	.api-key-input-group {
+		flex-direction: column;
+		gap: 0.75rem;
+		max-width: 100%;
+	}
+
+	.api-key-section {
+		padding: 2rem 1.5rem;
+	}
+
+	.api-key-input {
+		padding: 0.75rem 1rem;
+		font-size: 0.95rem;
+	}
+
+	.api-key-status-bar {
+		flex-direction: column;
+		gap: 0.75rem;
+		text-align: center;
+	}
+
+	.api-key-collapsed {
+		padding: 1rem;
+	}
+
 	.upload-area {
 		padding: 2rem 1rem;
 	}
@@ -218,6 +410,19 @@
 	.btn {
 		padding: 0.5rem 1rem;
 		font-size: 0.875rem;
+	}
+
+	.api-key-section {
+		padding: 1.5rem 1rem;
+	}
+
+	.api-key-icon {
+		font-size: 2.5rem;
+	}
+
+	.api-key-input {
+		padding: 0.625rem 0.875rem;
+		font-size: 0.9rem;
 	}
 
 	.upload-area {

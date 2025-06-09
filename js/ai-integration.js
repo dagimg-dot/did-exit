@@ -7,17 +7,25 @@ class AIIntegration {
 		this.lastRequestTime = 0;
 		this.requestCount = 0;
 		this.requestWindow = 60000; // 1 minute in milliseconds
+		this.loadAPIKeyFromStorage();
 		this.initializeAPI();
 	}
 
-	async initializeAPI() {
-		// For now, we'll use a placeholder. User will need to add their API key
-		// You can get your API key from: https://makersuite.google.com/app/apikey
-		this.apiKey = "AIzaSyAewRblWsT75SKeMHrChYvOKrJj9Upw1R4";
-
-		if (this.apiKey === "YOUR_GOOGLE_AI_API_KEY_HERE") {
+	loadAPIKeyFromStorage() {
+		// Load API key from localStorage
+		this.apiKey = localStorage.getItem("google-ai-api-key");
+		if (!this.apiKey) {
 			console.warn(
-				"⚠️ Please set your Google AI API key in js/ai-integration.js",
+				"⚠️ No API key found in storage. Please configure your Google AI API key.",
+			);
+		}
+	}
+
+	async initializeAPI() {
+		// Check if we have an API key
+		if (!this.apiKey || this.apiKey === "YOUR_GOOGLE_AI_API_KEY_HERE") {
+			console.warn(
+				"⚠️ Please set your Google AI API key using the configuration panel",
 			);
 			return;
 		}
@@ -789,7 +797,45 @@ IMPORTANT:
 	// Method to set API key programmatically
 	setAPIKey(apiKey) {
 		this.apiKey = apiKey;
+		if (apiKey) {
+			localStorage.setItem("google-ai-api-key", apiKey);
+		} else {
+			localStorage.removeItem("google-ai-api-key");
+		}
 		this.initializeAPI();
+	}
+
+	async testAPIKey(apiKey = null) {
+		const testKey = apiKey || this.apiKey;
+		if (!testKey) {
+			throw new Error("No API key provided");
+		}
+
+		try {
+			// Load Google Generative AI SDK
+			const { GoogleGenerativeAI } = await import(
+				"https://esm.run/@google/generative-ai"
+			);
+			const genAI = new GoogleGenerativeAI(testKey);
+
+			// Try to initialize with the simplest model
+			const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+			// Test with a simple prompt
+			const result = await model.generateContent(
+				"Say 'test' if you can read this.",
+			);
+			const response = await result.response;
+			const text = response.text();
+
+			return { success: true, message: "API key is valid and working" };
+		} catch (error) {
+			console.error("API key test failed:", error);
+			return {
+				success: false,
+				message: error.message || "Invalid API key or network error",
+			};
+		}
 	}
 
 	// Event system
