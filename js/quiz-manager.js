@@ -89,6 +89,20 @@ class QuizManager {
 		this.prevBtn.addEventListener("click", () => this.previousQuestion());
 		this.nextBtn.addEventListener("click", () => this.nextQuestion());
 		this.submitBtn.addEventListener("click", () => this.submitQuiz());
+		this.setupKeydownListener();
+	}
+
+	setupKeydownListener() {
+		document.addEventListener("keydown", (event) => {
+			const quizSection = document.getElementById("quiz-section");
+			if (quizSection.classList.contains("active")) {
+				if (event.key === "ArrowLeft" && !this.prevBtn.disabled) {
+					this.previousQuestion();
+				} else if (event.key === "ArrowRight" && !this.nextBtn.disabled) {
+					this.nextQuestion();
+				}
+			}
+		});
 	}
 
 	initialize(questions) {
