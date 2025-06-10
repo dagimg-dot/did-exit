@@ -20,7 +20,7 @@ class BatchProcessor {
 		console.log(`📊 Estimated ${estimatedQuestions} questions in document`);
 
 		// For documents with many questions or large content, always split
-		if (estimatedQuestions > 20 || textContent.length > 25000) {
+		if (estimatedQuestions > 20 || textContent.length > 20000) {
 			console.log(
 				`📋 Large document detected - will split into multiple batches`,
 			);
@@ -28,7 +28,7 @@ class BatchProcessor {
 		}
 
 		// For smaller documents (under 25k chars AND estimated < 20 questions), process in one go
-		if (textContent.length < 25000 && estimatedQuestions <= 20) {
+		if (textContent.length < 20000 && estimatedQuestions <= 10) {
 			console.log(`📋 Small document - processing in single batch`);
 			return [
 				{
