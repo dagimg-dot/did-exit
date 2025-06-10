@@ -7,6 +7,8 @@ import { UIComponents } from "./ui-components.js";
 import { DatabaseManager } from "./database-manager.js";
 import { BatchProcessor } from "./batch-processor.js";
 
+const CURRENT_APP_VERSION = "1.2";
+
 class App {
 	constructor() {
 		this.currentSection = "upload-section";
@@ -22,6 +24,7 @@ class App {
 	async initializeApp() {
 		await this.initializeComponents();
 		this.setupEventListeners();
+		this.showNewFeaturesPrompt();
 	}
 
 	async initializeComponents() {
@@ -643,6 +646,59 @@ class App {
 		} catch (error) {
 			console.error("Error deleting exam:", error);
 			this.ui.showError("Failed to delete exam");
+		}
+	}
+
+	showNewFeaturesPrompt() {
+		const lastSeenVersion = localStorage.getItem("did-exit-version") || "0.0";
+		const content = {
+			version: CURRENT_APP_VERSION,
+			features: [
+				{
+					title: "Exam Mode vs. Instant Feedback",
+					description:
+						"Easily toggle between a realistic exam simulation and a mode with instant answer feedback.",
+				},
+				{
+					title: "Keyboard Shortcuts",
+					description:
+						"Navigate through questions seamlessly using the Left (←) and Right (→) arrow keys.",
+				},
+			],
+		};
+
+		if (CURRENT_APP_VERSION > lastSeenVersion) {
+			const htmlContent = `
+                <div style="text-align: left; padding: 0 1rem;">
+                    <h3 style="margin-top: 0;">New Features in v${CURRENT_APP_VERSION}!</h3>
+                    <p>We've added some exciting new features to improve your experience:</p>
+                    <ul style="padding-left: 20px;">
+						${content.features
+							.map(
+								(feature) => `
+							<li style="margin-bottom: 0.5rem;">
+								<strong>${feature.title}:</strong> ${feature.description}
+							</li>
+						`,
+							)
+							.join("")}
+                    </ul>
+                </div>
+            `;
+
+			this.ui.showModal("What's New", htmlContent, [
+				{
+					text: "Got it!",
+					className: "btn-primary",
+					onClick: (() => {
+						const self = this;
+						return function () {
+							localStorage.setItem("did-exit-version", CURRENT_APP_VERSION);
+							self.ui.hideModal();
+						};
+					})(),
+				},
+			]);
 		}
 	}
 }

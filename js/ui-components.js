@@ -2,6 +2,7 @@
 class UIComponents {
 	constructor() {
 		this.setupElements();
+		this.modalElement = null;
 	}
 
 	setupElements() {
@@ -249,185 +250,117 @@ class UIComponents {
 		}
 	}
 
-	// Utility method to show success message
 	showSuccess(message) {
-		let successElement = document.getElementById("global-success");
-		if (!successElement) {
-			successElement = document.createElement("div");
-			successElement.id = "global-success";
-			successElement.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #f0fdf4;
-                color: #166534;
-                padding: 1rem 1.5rem;
-                border-radius: 8px;
-                border: 1px solid #bbf7d0;
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-                max-width: 400px;
-                animation: slideIn 0.3s ease-out;
-            `;
-			document.body.appendChild(successElement);
-		}
-
-		successElement.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <span style="font-size: 1.2rem;">✅</span>
-                <span>${message}</span>
-                <button onclick="this.parentElement.parentElement.remove()" 
-                        style="margin-left: auto; background: none; border: none; font-size: 1.2rem; cursor: pointer;">×</button>
-            </div>
-        `;
-
-		// Auto-hide after 5 seconds
-		setTimeout(() => {
-			if (successElement && successElement.parentNode) {
-				successElement.remove();
-			}
-		}, 5000);
+		this.showNotification(message, "success");
 	}
 
-	// Method to show quiz progress
 	showProgress(current, total) {
-		let progressElement = document.getElementById("quiz-progress");
-		if (!progressElement) {
-			progressElement = document.createElement("div");
-			progressElement.id = "quiz-progress";
-			progressElement.style.cssText = `
-                position: fixed;
-                top: 20px;
-                left: 20px;
-                background: var(--card-background);
-                padding: 0.75rem 1rem;
-                border-radius: 8px;
-                box-shadow: var(--shadow);
-                z-index: 1000;
-                font-size: 0.9rem;
-                color: var(--text-secondary);
-            `;
-			document.body.appendChild(progressElement);
-		}
-
-		progressElement.textContent = `Question ${current} of ${total}`;
+		this.showProgressIndicator(current, total, `Processing questions...`);
 	}
 
 	hideProgress() {
-		const progressElement = document.getElementById("quiz-progress");
-		if (progressElement) {
-			progressElement.remove();
-		}
+		this.hideProgressIndicator();
 	}
 
 	// Method to create custom modal
 	showModal(title, content, buttons = []) {
-		const modal = document.createElement("div");
-		modal.id = "custom-modal";
-		modal.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
+		// Remove existing modal if any
+		this.hideModal();
+
+		const modalHTML = `
+            <div class="modal-backdrop">
+                <div class="modal-dialog">
+                    <div class="modal-header">
+                        <h3 class="modal-title">${title}</h3>
+                        <button class="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="modal-content">
+                        ${content}
+                    </div>
+                    <div class="modal-footer">
+                        <!-- Buttons will be added here -->
+                    </div>
+                </div>
+            </div>
         `;
 
-		const modalContent = document.createElement("div");
-		modalContent.style.cssText = `
-            background: var(--card-background);
-            padding: 2rem;
-            border-radius: var(--border-radius);
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-        `;
+		this.modalElement = document.createElement("div");
+		this.modalElement.innerHTML = modalHTML;
+		document.body.appendChild(this.modalElement);
+		document.body.style.overflow = "hidden"; // Prevent background scrolling
 
-		let buttonsHTML = "";
-		if (buttons.length > 0) {
-			buttonsHTML =
-				'<div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: flex-end;">';
-			buttons.forEach((button) => {
-				buttonsHTML += `<button class="btn ${button.class || "btn-primary"}" onclick="${button.onclick || ""}">${button.text}</button>`;
+		const footer = this.modalElement.querySelector(".modal-footer");
+		buttons.forEach((btn) => {
+			const button = document.createElement("button");
+			button.className = `btn ${btn.className || "btn-secondary"}`;
+			button.textContent = btn.text;
+			// Attach click handler: run provided onClick, then hide modal
+			button.addEventListener("click", (event) => {
+				if (typeof btn.onClick === "function") {
+					btn.onClick(event);
+				}
+				this.hideModal();
 			});
-			buttonsHTML += "</div>";
-		}
-
-		modalContent.innerHTML = `
-            <h2 style="margin-bottom: 1rem;">${title}</h2>
-            <div>${content}</div>
-            ${buttonsHTML}
-        `;
-
-		modal.appendChild(modalContent);
-		document.body.appendChild(modal);
-
-		// Close modal when clicking outside
-		modal.addEventListener("click", (e) => {
-			if (e.target === modal) {
-				modal.remove();
-			}
+			footer.appendChild(button);
 		});
 
-		return modal;
+		// Close button event
+		this.modalElement
+			.querySelector(".modal-close-btn")
+			.addEventListener("click", () => this.hideModal());
+		this.modalElement
+			.querySelector(".modal-backdrop")
+			.addEventListener("click", (e) => {
+				if (e.target === e.currentTarget) {
+					this.hideModal();
+				}
+			});
 	}
 
 	hideModal() {
-		const modal = document.getElementById("custom-modal");
-		if (modal) {
-			modal.remove();
+		if (this.modalElement) {
+			this.modalElement.remove();
+			this.modalElement = null;
+			document.body.style.overflow = "auto";
 		}
 	}
 
-	// Notification System Methods
 	showNotification(message, type = "info", duration = 5000) {
-		const container = document.getElementById("notification-container");
-		if (!container) {
-			console.error("Notification container not found");
-			return;
-		}
+		const container =
+			document.getElementById("notification-container") ||
+			document.createElement("div");
+		container.id = "notification-container";
+		container.className = "notification-container";
+		document.body.appendChild(container);
 
+		const notificationId = `notification-${Date.now()}`;
 		const notification = document.createElement("div");
+		notification.id = notificationId;
 		notification.className = `notification ${type}`;
 
-		const notificationId = "notification-" + Date.now();
-		notification.id = notificationId;
-
 		notification.innerHTML = `
-			<div class="notification-content">
-				<div class="notification-icon"></div>
-				<div class="notification-text">${message}</div>
-			</div>
-			<button class="notification-close" onclick="this.parentElement.remove()">×</button>
-		`;
+            <div class="notification-content">
+                <div class="notification-icon"></div>
+                <div class="notification-text">${message}</div>
+                <button class="notification-close">&times;</button>
+            </div>
+        `;
 
 		container.appendChild(notification);
 
-		// Auto-remove after duration
-		if (duration > 0) {
-			setTimeout(() => {
-				this.removeNotification(notificationId);
-			}, duration);
-		}
+		const closeButton = notification.querySelector(".notification-close");
+		closeButton.addEventListener("click", () =>
+			this.removeNotification(notificationId),
+		);
 
-		console.log(`📢 Notification (${type}): ${message}`);
-		return notificationId;
+		setTimeout(() => this.removeNotification(notificationId), duration);
 	}
 
 	removeNotification(notificationId) {
 		const notification = document.getElementById(notificationId);
 		if (notification) {
 			notification.classList.add("hiding");
-			setTimeout(() => {
-				if (notification.parentNode) {
-					notification.remove();
-				}
-			}, 300);
+			setTimeout(() => notification.remove(), 300);
 		}
 	}
 
@@ -438,64 +371,32 @@ class UIComponents {
 		}
 	}
 
-	// Background Processing Indicator Methods
 	showProgressIndicator(
 		completed,
 		total,
 		message = "Processing questions in background...",
 	) {
 		const indicator = document.getElementById("processing-indicator");
-		if (!indicator) {
-			console.error("Processing indicator element not found");
-			return;
-		}
+		if (!indicator) return;
 
-		const progressPercentage = Math.round((completed / total) * 100);
-
-		// Update message
-		const messageElement = document.getElementById("processing-message");
-		if (messageElement) {
-			messageElement.textContent = message;
-		}
-
-		// Update progress bar
-		const progressFill = document.getElementById("processing-progress-fill");
-		if (progressFill) {
-			progressFill.style.width = `${progressPercentage}%`;
-		}
-
-		// Update progress text
-		const progressText = document.getElementById("processing-progress-text");
-		if (progressText) {
-			progressText.textContent = `Batch ${completed} of ${total}`;
-		}
-
-		// Show the indicator
-		indicator.style.display = "block";
-
-		console.log(
-			`📊 Processing progress: ${completed}/${total} (${progressPercentage}%)`,
-		);
+		indicator.style.display = "flex";
+		document.getElementById("processing-message").textContent = message;
+		this.updateProgressIndicator(completed, total);
 	}
 
 	updateProgressIndicator(completed, total, message = null) {
+		const fill = document.getElementById("processing-progress-fill");
+		const text = document.getElementById("processing-progress-text");
+		const msg = document.getElementById("processing-message");
+
 		if (message) {
-			const messageElement = document.getElementById("processing-message");
-			if (messageElement) {
-				messageElement.textContent = message;
-			}
+			msg.textContent = message;
 		}
 
-		const progressPercentage = Math.round((completed / total) * 100);
-
-		const progressFill = document.getElementById("processing-progress-fill");
-		if (progressFill) {
-			progressFill.style.width = `${progressPercentage}%`;
-		}
-
-		const progressText = document.getElementById("processing-progress-text");
-		if (progressText) {
-			progressText.textContent = `Batch ${completed} of ${total}`;
+		if (fill && text) {
+			const percentage = total > 0 ? (completed / total) * 100 : 0;
+			fill.style.width = `${percentage}%`;
+			text.textContent = `Batch ${completed} of ${total}`;
 		}
 	}
 
@@ -506,54 +407,27 @@ class UIComponents {
 		}
 	}
 
-	// Enhanced error display with better UX
 	showEnhancedError(message, details = null) {
-		this.hideLoading();
-
-		let errorContent = `<p style="color: #dc2626; margin-bottom: 1rem;"><strong>Error:</strong> ${message}</p>`;
-
+		let detailHTML = "";
 		if (details) {
-			errorContent += `
-				<details style="margin-top: 1rem;">
-					<summary style="cursor: pointer; color: #6b7280;">Technical Details</summary>
-					<pre style="background: #f9fafb; padding: 1rem; border-radius: 4px; margin-top: 0.5rem; overflow-x: auto; font-size: 0.8rem;">${details}</pre>
-				</details>
-			`;
+			detailHTML = `<pre style="background: #eee; padding: 10px; border-radius: 4px; margin-top: 10px; white-space: pre-wrap; word-break: break-all;">${JSON.stringify(
+				details,
+				null,
+				2,
+			)}</pre>`;
 		}
 
-		this.showModal("Processing Error", errorContent, [
-			{
-				text: "Try Again",
-				class: "btn-primary",
-				onclick:
-					'window.app.restart(); this.closest("#custom-modal").remove();',
-			},
-			{
-				text: "Close",
-				class: "btn-secondary",
-				onclick: 'this.closest("#custom-modal").remove();',
-			},
+		this.showModal("An Error Occurred", `<p>${message}</p>${detailHTML}`, [
+			{ text: "Close", onClick: () => this.hideModal() },
 		]);
-
-		this.showNotification(message, "error", 8000);
 	}
 
-	// Method to show batch processing status
 	showBatchStatus(currentBatch, totalBatches, questionsReady) {
-		const statusMessage =
-			totalBatches > 1
-				? `Quiz ready with ${questionsReady} questions! Processing ${totalBatches - currentBatch} more batches...`
-				: `All ${questionsReady} questions ready!`;
-
-		if (totalBatches > 1) {
-			this.showProgressIndicator(
-				currentBatch,
-				totalBatches,
-				"Extracting additional questions...",
-			);
-		}
-
-		return statusMessage;
+		this.showProgressIndicator(
+			currentBatch,
+			totalBatches,
+			`${questionsReady} questions ready...`,
+		);
 	}
 }
 
