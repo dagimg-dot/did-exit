@@ -104,9 +104,10 @@ class QuizManager {
 		});
 	}
 
-	initialize(questions) {
+	initialize(questions, existingAnswers = null) {
 		this.questions = questions;
-		this.userAnswers = new Array(questions.length).fill(null);
+		this.userAnswers =
+			existingAnswers || new Array(questions.length).fill(null);
 		this.currentQuestionIndex = 0;
 		this.isReviewMode = false;
 
@@ -474,8 +475,13 @@ class QuizManager {
 		this.questions.push(...newQuestions);
 
 		// Extend user answers array to accommodate new questions
-		const additionalAnswers = new Array(newQuestions.length).fill(null);
-		this.userAnswers.push(...additionalAnswers);
+		// Only extend if the current array isn't already large enough
+		// This preserves existing answers when extending
+		if (this.userAnswers.length < this.questions.length) {
+			const additionalCount = this.questions.length - this.userAnswers.length;
+			const additionalAnswers = new Array(additionalCount).fill(null);
+			this.userAnswers.push(...additionalAnswers);
+		}
 
 		// Update total questions display
 		this.totalQuestionsSpan.textContent = this.questions.length;

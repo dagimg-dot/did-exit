@@ -524,6 +524,83 @@ class DatabaseManager {
 			getRequest.onerror = () => reject(getRequest.error);
 		});
 	}
+
+	async storeUserAnswers(pdfId, userAnswers) {
+		const transaction = this.db.transaction(["pdfs"], "readwrite");
+		const store = transaction.objectStore("pdfs");
+
+		return new Promise((resolve, reject) => {
+			const getRequest = store.get(pdfId);
+			getRequest.onsuccess = () => {
+				if (getRequest.result) {
+					const pdf = getRequest.result;
+					pdf.userAnswers = userAnswers;
+					pdf.lastAnswerSaved = new Date();
+
+					const updateRequest = store.put(pdf);
+					updateRequest.onsuccess = () => {
+						console.log(
+							`📝 Saved ${userAnswers.filter((a) => a !== null).length} user answers for PDF ${pdfId.substring(0, 8)}...`,
+						);
+						resolve(pdf);
+					};
+					updateRequest.onerror = () => reject(updateRequest.error);
+				} else {
+					reject(new Error("PDF not found"));
+				}
+			};
+			getRequest.onerror = () => reject(getRequest.error);
+		});
+	}
+
+	async getUserAnswers(pdfId) {
+		const transaction = this.db.transaction(["pdfs"], "readonly");
+		const store = transaction.objectStore("pdfs");
+
+		return new Promise((resolve, reject) => {
+			const request = store.get(pdfId);
+			request.onsuccess = () => {
+				if (request.result && request.result.userAnswers) {
+					console.log(
+						`📝 Loaded ${request.result.userAnswers.filter((a) => a !== null).length} saved user answers for PDF ${pdfId.substring(0, 8)}...`,
+					);
+					resolve(request.result.userAnswers);
+				} else {
+					// No saved answers found
+					resolve([]);
+				}
+			};
+			request.onerror = () => reject(request.error);
+		});
+	}
+
+	async clearUserAnswers(pdfId) {
+		const transaction = this.db.transaction(["pdfs"], "readwrite");
+		const store = transaction.objectStore("pdfs");
+
+		return new Promise((resolve, reject) => {
+			const getRequest = store.get(pdfId);
+			getRequest.onsuccess = () => {
+				if (getRequest.result) {
+					const pdf = getRequest.result;
+					pdf.userAnswers = [];
+					pdf.lastAnswerSaved = null;
+
+					const updateRequest = store.put(pdf);
+					updateRequest.onsuccess = () => {
+						console.log(
+							`🧹 Cleared user answers for PDF ${pdfId.substring(0, 8)}...`,
+						);
+						resolve(pdf);
+					};
+					updateRequest.onerror = () => reject(updateRequest.error);
+				} else {
+					reject(new Error("PDF not found"));
+				}
+			};
+			getRequest.onerror = () => reject(getRequest.error);
+		});
+	}
 }
 
 export { DatabaseManager };

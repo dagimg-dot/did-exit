@@ -197,24 +197,59 @@ class App {
 		this.currentPdfId = data.pdfId;
 		this.quizData = data.questions;
 
-		// Immediately show the questions
-		if (data.questions.length > 0) {
-			console.log("📚 Starting quiz with first batch immediately");
-			this.startQuizWithProgress(data.totalBatches, data.completedBatches);
+		// Try to load saved answers before starting quiz
+		this.databaseManager
+			.getUserAnswers(data.pdfId)
+			.then((savedAnswers) => {
+				// If we have saved answers, use them
+				if (savedAnswers && savedAnswers.length > 0) {
+					// Resize if needed
+					if (savedAnswers.length !== data.questions.length) {
+						this.userAnswers = new Array(data.questions.length).fill(null);
+						// Copy over existing answers that fit within the new array
+						savedAnswers.forEach((answer, index) => {
+							if (index < this.userAnswers.length) {
+								this.userAnswers[index] = answer;
+							}
+						});
+						console.log(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers (resized)`,
+						);
+					} else {
+						this.userAnswers = savedAnswers;
+						console.log(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+						);
+					}
+				} else {
+					// No saved answers, create empty array
+					this.userAnswers = new Array(data.questions.length).fill(null);
+				}
+			})
+			.catch((error) => {
+				console.error("Error loading saved answers:", error);
+				this.userAnswers = new Array(data.questions.length).fill(null);
+			})
+			.finally(() => {
+				// Immediately show the questions
+				if (data.questions.length > 0) {
+					console.log("📚 Starting quiz with first batch immediately");
+					this.startQuizWithProgress(data.totalBatches, data.completedBatches);
 
-			// Set correct answers for immediate feedback to work properly
-			this.correctAnswers = data.questions.map((q) => ({
-				correctAnswer: q.correctAnswer,
-				explanation: q.explanation || "No explanation available.",
-			}));
-		} else {
-			console.warn(
-				"⚠️ First batch was empty, this shouldn't happen with AI processing",
-			);
-			this.ui.showError(
-				"No questions could be extracted from this PDF. Please try a different document.",
-			);
-		}
+					// Set correct answers for immediate feedback to work properly
+					this.correctAnswers = data.questions.map((q) => ({
+						correctAnswer: q.correctAnswer,
+						explanation: q.explanation || "No explanation available.",
+					}));
+				} else {
+					console.warn(
+						"⚠️ First batch was empty, this shouldn't happen with AI processing",
+					);
+					this.ui.showError(
+						"No questions could be extracted from this PDF. Please try a different document.",
+					);
+				}
+			});
 	}
 
 	handleBatchCompleted(data) {
@@ -231,7 +266,17 @@ class App {
 		) {
 			// Add new questions to existing quiz
 			this.quizData = [...this.quizData, ...data.questions];
+
+			// Extend userAnswers array with nulls for new questions
+			// This preserves existing answers while adding space for new ones
+			const additionalAnswers = new Array(data.questions.length).fill(null);
+			this.userAnswers = [...this.userAnswers, ...additionalAnswers];
+
+			// Update the quiz manager
 			this.quizManager.addQuestions(data.questions);
+
+			// Make sure quiz manager has updated userAnswers
+			this.quizManager.userAnswers = this.userAnswers;
 
 			// Update correctAnswers array for all batches - fixes instant feedback issues
 			const newCorrectAnswers = data.questions.map((q) => ({
@@ -306,7 +351,7 @@ class App {
 		}
 	}
 
-	startQuiz() {
+	async startQuiz() {
 		this.ui.hideLoading();
 		this.showSection("quiz-section");
 
@@ -316,12 +361,56 @@ class App {
 			explanation: q.explanation || "No explanation available.",
 		}));
 
+		// Check for saved answers if we have a currentPdfId
+		let savedAnswers = null;
+		if (this.currentPdfId) {
+			try {
+				savedAnswers = await this.databaseManager.getUserAnswers(
+					this.currentPdfId,
+				);
+				if (savedAnswers && savedAnswers.length > 0) {
+					// If we have saved answers but they don't match the question count,
+					// we need to resize the array
+					if (savedAnswers.length !== this.quizData.length) {
+						// Keep existing answers for questions that still exist
+						this.userAnswers = new Array(this.quizData.length).fill(null);
+						savedAnswers.forEach((answer, index) => {
+							if (index < this.userAnswers.length) {
+								this.userAnswers[index] = answer;
+							}
+						});
+
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					} else {
+						// Use saved answers directly
+						this.userAnswers = savedAnswers;
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					}
+				} else {
+					// No saved answers, create empty array
+					this.userAnswers = new Array(this.quizData.length).fill(null);
+				}
+			} catch (error) {
+				console.error("Error loading saved answers:", error);
+				this.userAnswers = new Array(this.quizData.length).fill(null);
+			}
+		} else {
+			// No PDF ID, create empty array
+			this.userAnswers = new Array(this.quizData.length).fill(null);
+		}
+
 		// Initialize quiz manager and pass correctAnswers
-		this.quizManager.initialize(this.quizData);
+		this.quizManager.initialize(this.quizData, this.userAnswers);
 		this.quizManager.correctAnswers = this.correctAnswers;
 	}
 
-	startQuizFromCache() {
+	async startQuizFromCache() {
 		this.ui.hideLoading();
 		this.showSection("quiz-section");
 
@@ -331,8 +420,52 @@ class App {
 			explanation: q.explanation || "No explanation available.",
 		}));
 
+		// Check for saved answers if we have a currentPdfId
+		let savedAnswers = null;
+		if (this.currentPdfId) {
+			try {
+				savedAnswers = await this.databaseManager.getUserAnswers(
+					this.currentPdfId,
+				);
+				if (savedAnswers && savedAnswers.length > 0) {
+					// If we have saved answers but they don't match the question count,
+					// we need to resize the array
+					if (savedAnswers.length !== this.quizData.length) {
+						// Keep existing answers for questions that still exist
+						this.userAnswers = new Array(this.quizData.length).fill(null);
+						savedAnswers.forEach((answer, index) => {
+							if (index < this.userAnswers.length) {
+								this.userAnswers[index] = answer;
+							}
+						});
+
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					} else {
+						// Use saved answers directly
+						this.userAnswers = savedAnswers;
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					}
+				} else {
+					// No saved answers, create empty array
+					this.userAnswers = new Array(this.quizData.length).fill(null);
+				}
+			} catch (error) {
+				console.error("Error loading saved answers:", error);
+				this.userAnswers = new Array(this.quizData.length).fill(null);
+			}
+		} else {
+			// No PDF ID, create empty array
+			this.userAnswers = new Array(this.quizData.length).fill(null);
+		}
+
 		// Initialize quiz manager and pass correctAnswers
-		this.quizManager.initialize(this.quizData);
+		this.quizManager.initialize(this.quizData, this.userAnswers);
 		this.quizManager.correctAnswers = this.correctAnswers;
 
 		this.ui.showNotification(
@@ -341,7 +474,7 @@ class App {
 		);
 	}
 
-	startQuizWithProgress(totalBatches, completedBatches) {
+	async startQuizWithProgress(totalBatches, completedBatches) {
 		this.ui.hideLoading();
 		this.showSection("quiz-section");
 
@@ -356,8 +489,52 @@ class App {
 			}));
 		}
 
+		// Check for saved answers if we have a currentPdfId
+		let savedAnswers = null;
+		if (this.currentPdfId) {
+			try {
+				savedAnswers = await this.databaseManager.getUserAnswers(
+					this.currentPdfId,
+				);
+				if (savedAnswers && savedAnswers.length > 0) {
+					// If we have saved answers but they don't match the question count,
+					// we need to resize the array
+					if (savedAnswers.length !== this.quizData.length) {
+						// Keep existing answers for questions that still exist
+						this.userAnswers = new Array(this.quizData.length).fill(null);
+						savedAnswers.forEach((answer, index) => {
+							if (index < this.userAnswers.length) {
+								this.userAnswers[index] = answer;
+							}
+						});
+
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					} else {
+						// Use saved answers directly
+						this.userAnswers = savedAnswers;
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					}
+				} else {
+					// No saved answers, create empty array
+					this.userAnswers = new Array(this.quizData.length).fill(null);
+				}
+			} catch (error) {
+				console.error("Error loading saved answers:", error);
+				this.userAnswers = new Array(this.quizData.length).fill(null);
+			}
+		} else {
+			// No PDF ID, create empty array
+			this.userAnswers = new Array(this.quizData.length).fill(null);
+		}
+
 		// Initialize quiz manager and pass correctAnswers
-		this.quizManager.initialize(this.quizData);
+		this.quizManager.initialize(this.quizData, this.userAnswers);
 		this.quizManager.correctAnswers = this.correctAnswers;
 
 		// Show background processing progress
@@ -377,6 +554,17 @@ class App {
 
 	handleAnswerSelected(questionIndex, selectedAnswer) {
 		this.userAnswers[questionIndex] = selectedAnswer;
+
+		// Save user answers to persist across page refreshes
+		if (this.currentPdfId) {
+			// Use debounce to avoid too many database writes
+			clearTimeout(this._saveAnswersTimeout);
+			this._saveAnswersTimeout = setTimeout(() => {
+				this.databaseManager
+					.storeUserAnswers(this.currentPdfId, this.userAnswers)
+					.catch((error) => console.error("Error saving user answers:", error));
+			}, 500); // Wait 500ms after last answer before saving
+		}
 	}
 
 	async handleQuizCompleted(userAnswers) {
@@ -574,6 +762,37 @@ class App {
 			const recentExamsList = document.getElementById("recent-exams-list");
 			const noRecentExams = document.getElementById("no-recent-exams");
 
+			// Add CSS for the reset answers button if it doesn't exist
+			if (!document.getElementById("recent-exams-css")) {
+				const style = document.createElement("style");
+				style.id = "recent-exams-css";
+				style.textContent = `
+					.reset-answers-btn {
+						background: #4b5563;
+						color: white;
+						border: none;
+						border-radius: 50%;
+						width: 28px;
+						height: 28px;
+						font-size: 16px;
+						cursor: pointer;
+						margin-right: 8px;
+						display: flex;
+						align-items: center;
+						justify-content: center;
+						transition: background-color 0.2s;
+					}
+					.reset-answers-btn:hover {
+						background: #1e40af;
+					}
+					.answer-status {
+						color: #4f46e5;
+						font-weight: 500;
+					}
+				`;
+				document.head.appendChild(style);
+			}
+
 			// Get all PDFs from IndexedDB
 			const pdfs = await this.getAllPDFs();
 
@@ -617,6 +836,11 @@ class App {
 	createExamItemHTML(pdf) {
 		const lastAccessed = new Date(pdf.lastAccessed).toLocaleDateString();
 		const questionCount = pdf.totalQuestions || 0;
+		const hasUserAnswers =
+			pdf.userAnswers && pdf.userAnswers.filter((a) => a !== null).length > 0;
+		const answeredCount = hasUserAnswers
+			? pdf.userAnswers.filter((a) => a !== null).length
+			: 0;
 
 		return `
 			<div class="recent-exam-item" data-pdf-id="${pdf.id}">
@@ -625,9 +849,11 @@ class App {
 					<div class="recent-exam-meta">
 						<span>${questionCount} questions</span>
 						<span>Last accessed: ${lastAccessed}</span>
+						${hasUserAnswers ? `<span class="answer-status">${answeredCount} answered</span>` : ""}
 					</div>
 				</div>
 				<div class="recent-exam-actions">
+					${hasUserAnswers ? `<button class="reset-answers-btn" data-pdf-id="${pdf.id}" title="Reset answers">↺</button>` : ""}
 					<button class="delete-exam-btn" data-pdf-id="${pdf.id}" title="Delete exam">×</button>
 				</div>
 			</div>
@@ -638,8 +864,12 @@ class App {
 		// Handle exam item clicks (start quiz)
 		document.querySelectorAll(".recent-exam-item").forEach((item) => {
 			item.addEventListener("click", (e) => {
-				// Don't trigger if delete button was clicked
-				if (e.target.classList.contains("delete-exam-btn")) return;
+				// Don't trigger if delete button or reset button was clicked
+				if (
+					e.target.classList.contains("delete-exam-btn") ||
+					e.target.classList.contains("reset-answers-btn")
+				)
+					return;
 
 				const pdfId = item.dataset.pdfId;
 				this.startQuizFromRecent(pdfId);
@@ -652,6 +882,15 @@ class App {
 				e.stopPropagation(); // Prevent exam item click
 				const pdfId = btn.dataset.pdfId;
 				this.deleteRecentExam(pdfId);
+			});
+		});
+
+		// Handle reset answers button clicks
+		document.querySelectorAll(".reset-answers-btn").forEach((btn) => {
+			btn.addEventListener("click", (e) => {
+				e.stopPropagation(); // Prevent exam item click
+				const pdfId = btn.dataset.pdfId;
+				this.resetExamAnswers(pdfId);
 			});
 		});
 	}
@@ -670,7 +909,42 @@ class App {
 			// Set current data
 			this.currentPdfId = pdfId;
 			this.quizData = questions;
-			this.userAnswers = [];
+
+			// Try to load saved user answers
+			try {
+				const savedAnswers = await this.databaseManager.getUserAnswers(pdfId);
+				if (savedAnswers && savedAnswers.length > 0) {
+					// If we have saved answers but they don't match the question count,
+					// we need to resize the array
+					if (savedAnswers.length !== questions.length) {
+						// Keep existing answers for questions that still exist
+						this.userAnswers = new Array(questions.length).fill(null);
+						savedAnswers.forEach((answer, index) => {
+							if (index < questions.length) {
+								this.userAnswers[index] = answer;
+							}
+						});
+
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					} else {
+						// Use saved answers directly
+						this.userAnswers = savedAnswers;
+						this.ui.showNotification(
+							`Loaded ${savedAnswers.filter((a) => a !== null).length} saved answers`,
+							"info",
+						);
+					}
+				} else {
+					// No saved answers found, create empty array
+					this.userAnswers = new Array(questions.length).fill(null);
+				}
+			} catch (error) {
+				console.error("Error loading saved answers:", error);
+				this.userAnswers = new Array(questions.length).fill(null);
+			}
 
 			// Initialize correctAnswers properly for instant feedback
 			this.correctAnswers = questions.map((q) => ({
@@ -680,7 +954,7 @@ class App {
 
 			// Start quiz
 			this.showSection("quiz-section");
-			this.quizManager.initialize(this.quizData);
+			this.quizManager.initialize(this.quizData, this.userAnswers); // Pass user answers
 
 			// Pass the correctAnswers to quiz manager for instant feedback
 			this.quizManager.correctAnswers = this.correctAnswers;
@@ -781,6 +1055,37 @@ class App {
 			}
 		} catch (error) {
 			this.handleProcessingError(error);
+		}
+	}
+
+	// Add a new method to reset exam answers
+	async resetExamAnswers(pdfId) {
+		try {
+			// Get PDF info for confirmation
+			const pdf = await this.databaseManager.getPDF(pdfId);
+			if (!pdf) return;
+
+			// Count number of answers to reset
+			const answeredCount = pdf.userAnswers
+				? pdf.userAnswers.filter((a) => a !== null).length
+				: 0;
+
+			// Confirm reset
+			const confirmed = confirm(
+				`Reset ${answeredCount} answers for "${pdf.filename}"?`,
+			);
+			if (!confirmed) return;
+
+			// Clear user answers
+			await this.databaseManager.clearUserAnswers(pdfId);
+
+			// Reload the recent exams list
+			this.loadRecentExams();
+
+			this.ui.showNotification("Answers reset successfully", "info");
+		} catch (error) {
+			console.error("Error resetting exam answers:", error);
+			this.ui.showError("Failed to reset answers");
 		}
 	}
 }
