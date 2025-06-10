@@ -561,9 +561,9 @@ class QuizManager {
 		this.events[event].push(callback);
 	}
 
-	emit(event, data) {
+	emit(event, ...args) {
 		if (this.events[event]) {
-			this.events[event].forEach((callback) => callback(data));
+			this.events[event].forEach((callback) => callback(...args));
 		}
 	}
 

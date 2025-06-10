@@ -16,6 +16,7 @@ class App {
 		this.correctAnswers = [];
 		this.currentPdfId = null;
 		this.currentFile = null;
+		this.quizMode = "exam"; // Default quiz mode
 
 		this.initializeApp();
 	}
@@ -113,6 +114,7 @@ class App {
 		// Quiz events
 		this.quizManager.on("answerSelected", this.handleAnswerSelected.bind(this));
 		this.quizManager.on("quizCompleted", this.handleQuizCompleted.bind(this));
+		this.quizManager.on("modeChanged", this.handleModeChanged.bind(this));
 
 		// Navigation events
 		document
@@ -568,6 +570,7 @@ class App {
 	}
 
 	async handleQuizCompleted(userAnswers) {
+		// Ensure the app's userAnswers are updated from the quiz
 		this.userAnswers = userAnswers;
 		this.ui.showLoading("Analyzing your answers with AI...");
 
@@ -583,13 +586,22 @@ class App {
 				);
 			}
 
-			// Analyze answers with AI
+			// Use the updated userAnswers for analysis
 			const results = await this.aiIntegration.analyzeAnswers(
 				this.quizData,
 				this.userAnswers,
 				this.correctAnswers,
 			);
 			this.showResults(results);
+
+			// Save the final state to the database
+			if (this.currentPdfId) {
+				this.databaseManager
+					.storeUserAnswers(this.currentPdfId, this.userAnswers)
+					.catch((error) =>
+						console.error("Error saving final answers:", error),
+					);
+			}
 		} catch (error) {
 			this.handleAIError(error);
 		}
@@ -1112,6 +1124,41 @@ class App {
 		} catch (error) {
 			console.error("Error resetting exam answers:", error);
 			this.ui.showError("Failed to reset answers");
+		}
+	}
+
+	handleModeChanged(mode) {
+		console.log("Quiz mode changed:", mode);
+
+		// Store the current mode for later use when processing results
+		this.quizMode = mode;
+
+		// If switching to normal mode, we might need to pre-load correct answers
+		if (mode === "normal" && this.quizData && this.quizData.length > 0) {
+			// If we don't have correct answers yet, let's get them
+			if (
+				!this.correctAnswers ||
+				this.correctAnswers.length !== this.quizData.length
+			) {
+				this.ui.showLoading("Loading answer data...");
+
+				// Use a promise to get correct answers
+				this.aiIntegration
+					.getCorrectAnswers(this.quizData)
+					.then((correctAnswers) => {
+						this.correctAnswers = correctAnswers;
+						this.ui.hideLoading();
+
+						// Refresh the current question's feedback if needed
+						this.quizManager.refreshFeedbackIfNeeded();
+					})
+					.catch((error) => {
+						this.handleAIError(error);
+					});
+			} else {
+				// We already have correct answers, just refresh the feedback
+				this.quizManager.refreshFeedbackIfNeeded();
+			}
 		}
 	}
 }
