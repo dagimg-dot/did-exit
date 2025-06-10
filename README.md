@@ -13,6 +13,9 @@ A sleek web application that extracts questions from PDF files and creates engag
 - **💾 Smart Caching**: Previously processed PDFs load instantly
 - **📱 Responsive Design**: Works perfectly on desktop and mobile
 - **🎨 Modern UI**: Clean, professional interface with smooth animations
+- **🎓 Exam Mode vs. Instant Feedback**: Easily toggle between a realistic exam simulation and a mode with instant answer feedback.
+- **⌨️ Keyboard Shortcuts**: Navigate through questions seamlessly using the Left (←) and Right (→) arrow keys.
+- **🕑 Recent Exams**: Get a list of your recently uploaded exams and start them instantly.
 
 ## 🚀 Quick Start
 
