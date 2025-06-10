@@ -171,9 +171,15 @@ class AIIntegration {
         - Extract ALL questions from the document (don't limit to 10)
         - Each question should have 4-5 options (preserve original count)
         - correctAnswer should be the index (0-3 for 4 options, 0-4 for 5 options)
-        - Provide clear, educational explanations
+        - CRITICALLY IMPORTANT: Carefully analyze each option to determine the correct answer. Consider:
+          * Which option directly answers the question based on the document content
+          * Eliminate options that are partially correct but not the best answer
+          * Check for subtle differences between similar-looking options
+          * Verify that your selected answer aligns with the document information
+        - Provide clear, educational explanations that justify why the chosen option is correct and others are incorrect
         - If the document has existing questions, use them; if not, create relevant questions from the content
         - Maintain academic accuracy and clarity
+        - Double-check your work before finalizing answers
 
         Content to analyze (truncated to fit 1M token limit):
         ${extractedText.substring(0, 800000)} ${extractedText.length > 800000 ? "\n\n[Content truncated due to length...]" : ""}
@@ -447,6 +453,13 @@ Guidelines:
 - Ensure the JSON is well-formed. Do not include trailing commas.
 - Escape any double quotes within the question or explanation text.
 - If the text contains numbered questions and options (e.g., "1.", "A.", "B."), preserve them accurately.
+- CRITICALLY IMPORTANT: For each question, deeply analyze all options before selecting the correct answer:
+  * Compare each option against the exact information in the text
+  * Watch for subtle wording differences that change meaning
+  * Consider which option most completely answers the question
+  * Verify your choice is consistent with the source material
+- Provide explanations that clearly justify why the correct answer is right and why others are wrong
+- If answers are explicitly marked in the text, use those markings
 
 Content to analyze:
 ${textContent}`;
@@ -927,7 +940,14 @@ Important details:
 - Make sure to extract all visible multiple-choice questions on the page
 - Include all options (usually 4 or 5)
 - Maintain the exact format shown above
-- If answers are indicated on the page (e.g., "Answer: B"), use that for correctAnswer (where A=0, B=1, C=2, D=3, E=4)`;
+- CRITICALLY IMPORTANT: For determining the correct answer:
+  * If answers are indicated on the page (e.g., "Answer: B"), use that for correctAnswer (where A=0, B=1, C=2, D=3, E=4)
+  * Otherwise, carefully analyze each option against the content visible in the image
+  * Compare options to find the one that best answers the question based on the visible information
+  * Check for subtle differences between similar options
+  * Look for contextual clues in the image that may indicate the correct answer
+  * Provide a thorough explanation that justifies your choice
+`;
 	}
 }
 
