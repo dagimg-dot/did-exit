@@ -15,9 +15,6 @@ class QuizManager {
 		if (this.modeToggle) {
 			this.modeToggle.checked = false; // Unchecked = exam mode
 		}
-		if (this.modeLabel) {
-			this.modeLabel.textContent = "Exam Mode";
-		}
 	}
 
 	setupElements() {
@@ -34,7 +31,6 @@ class QuizManager {
 		);
 		this.explanationText = document.getElementById("explanation-text");
 		this.modeToggle = document.getElementById("quiz-mode-toggle");
-		this.modeLabel = document.getElementById("quiz-mode-label");
 
 		// Add event listener for mode toggle
 		if (this.modeToggle) {
@@ -54,11 +50,6 @@ class QuizManager {
 		// Update UI for the mode
 		if (this.modeToggle) {
 			this.modeToggle.checked = mode === "normal";
-		}
-
-		if (this.modeLabel) {
-			this.modeLabel.textContent =
-				mode === "normal" ? "Normal Mode" : "Exam Mode";
 		}
 
 		// When switching to exam mode, remove any correct/incorrect indicators
@@ -468,9 +459,6 @@ class QuizManager {
 		this.mode = "exam";
 		if (this.modeToggle) {
 			this.modeToggle.checked = false; // Unchecked = exam mode
-		}
-		if (this.modeLabel) {
-			this.modeLabel.textContent = "Exam Mode";
 		}
 
 		// Reset UI elements

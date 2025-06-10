@@ -3,8 +3,9 @@
 	background: var(--card-background);
 	border-radius: var(--border-radius);
 	padding: 1.5rem;
-	margin-bottom: 2rem;
 	box-shadow: var(--shadow);
+	max-width: 800px;
+	margin: 0 auto 1rem;
 }
 
 .quiz-container {
@@ -232,6 +233,8 @@
 .quiz-mode-selector {
 	display: flex;
 	align-items: center;
+	justify-content: center;
+	gap: 1rem;
 	margin-bottom: 1.5rem;
 	background: var(--card-background);
 	padding: 0.75rem 1rem;
@@ -244,7 +247,6 @@
 	display: inline-block;
 	width: 50px;
 	height: 24px;
-	margin-right: 10px;
 }
 
 .quiz-mode-selector .switch input {
@@ -291,8 +293,14 @@
 	transform: translateX(26px);
 }
 
-.quiz-mode-selector #quiz-mode-label {
+#exam-mode-label,
+#instant-feedback-label {
+	font-size: 1rem;
 	font-weight: 500;
+	color: var(--text-secondary);
+}
+
+#instant-feedback-label {
 	color: var(--text-primary);
 }
 
