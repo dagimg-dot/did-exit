@@ -6,8 +6,7 @@ import { QuizManager } from "./quiz-manager.js";
 import { UIComponents } from "./ui-components.js";
 import { DatabaseManager } from "./database-manager.js";
 import { BatchProcessor } from "./batch-processor.js";
-
-const CURRENT_APP_VERSION = "1.2";
+import { content, CURRENT_APP_VERSION } from "./app-info.js";
 
 class App {
 	constructor() {
@@ -651,21 +650,6 @@ class App {
 
 	showNewFeaturesPrompt() {
 		const lastSeenVersion = localStorage.getItem("did-exit-version") || "0.0";
-		const content = {
-			version: CURRENT_APP_VERSION,
-			features: [
-				{
-					title: "Exam Mode vs. Instant Feedback",
-					description:
-						"Easily toggle between a realistic exam simulation and a mode with instant answer feedback.",
-				},
-				{
-					title: "Keyboard Shortcuts",
-					description:
-						"Navigate through questions seamlessly using the Left (←) and Right (→) arrow keys.",
-				},
-			],
-		};
 
 		if (CURRENT_APP_VERSION > lastSeenVersion) {
 			const htmlContent = `
