@@ -57,13 +57,40 @@ class PDFProcessor {
 			this.currentPdf = pdf;
 			console.log("PDF loaded:", pdf.numPages, "pages");
 
-			// Extract text from all pages
-			const extractedText = await this.extractTextFromPDF(pdf);
-
-			if (!extractedText.trim()) {
-				throw new Error(
-					"No text found in PDF. Please ensure the PDF contains readable text.",
+			// Detect image-based PDF by sampling first page text items
+			{
+				const firstPage = await pdf.getPage(1);
+				const firstTextContent = await firstPage.getTextContent();
+				console.log(
+					`processFile: first page text items count: ${firstTextContent.items.length}`,
 				);
+				if (!firstTextContent.items.length) {
+					console.warn(
+						"No text items on first page - falling back to image extraction.",
+					);
+					const images = await this.extractImagesFromPDF(pdf);
+					this.emit("imagesExtracted", images);
+					return;
+				}
+			}
+
+			// Extract text from all pages, tracking per-page length
+			const { text: extractedText, pageLengths } =
+				await this.extractTextFromPDF(pdf);
+			const trimmedText = extractedText.trim();
+			// Log pages with significant text
+			const pagesWithText = pageLengths.filter((len) => len > 50).length;
+			console.log(
+				`processFile: pagesWithText=${pagesWithText}/${pdf.numPages} (threshold 50 chars)`,
+			);
+			// If fewer than 20% of pages have meaningful text, use image-based flow
+			if (pagesWithText / pdf.numPages < 0.2) {
+				console.warn(
+					"Insufficient pages with text - falling back to image extraction.",
+				);
+				const images = await this.extractImagesFromPDF(pdf);
+				this.emit("imagesExtracted", images);
+				return;
 			}
 
 			console.log(
@@ -91,25 +118,25 @@ class PDFProcessor {
 
 	async extractTextFromPDF(pdf) {
 		let fullText = "";
-
+		const pageLengths = [];
 		// Process each page
 		for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
 			try {
 				const page = await pdf.getPage(pageNum);
 				const textContent = await page.getTextContent();
-
 				// Extract text items with better formatting
 				const pageText = this.processPageText(textContent);
+				const len = pageText.trim().length;
+				pageLengths.push(len);
 				fullText += pageText + "\n\n";
-
-				console.log(`Page ${pageNum} processed: ${pageText.length} characters`);
+				console.log(`Page ${pageNum} processed: ${len} characters`);
 			} catch (error) {
 				console.warn(`Error processing page ${pageNum}:`, error);
-				// Continue with other pages
+				pageLengths.push(0);
 			}
 		}
-
-		return this.cleanExtractedText(fullText);
+		const cleaned = this.cleanExtractedText(fullText);
+		return { text: cleaned, pageLengths };
 	}
 
 	processPageText(textContent) {
@@ -160,6 +187,32 @@ class PDFProcessor {
 		if (this.events[event]) {
 			this.events[event].forEach((callback) => callback(data));
 		}
+	}
+
+	// Add a new method to extract images from PDF pages
+	async extractImagesFromPDF(pdf) {
+		const images = [];
+		console.log(
+			`extractImagesFromPDF: starting extraction for ${pdf.numPages} pages`,
+		);
+		for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+			console.log(
+				`extractImagesFromPDF: processing page ${pageNum}/${pdf.numPages}`,
+			);
+			const page = await pdf.getPage(pageNum);
+			const viewport = page.getViewport({ scale: 1.5 });
+			const canvas = document.createElement("canvas");
+			const context = canvas.getContext("2d");
+			canvas.width = viewport.width;
+			canvas.height = viewport.height;
+			await page.render({ canvasContext: context, viewport }).promise;
+			const dataUrl = canvas.toDataURL("image/png");
+			console.log(
+				`extractImagesFromPDF: dataUrl length for page ${pageNum}: ${dataUrl.length}`,
+			);
+			images.push(dataUrl);
+		}
+		return images;
 	}
 }
 

@@ -82,6 +82,10 @@ class App {
 		// PDF processing events - simplified
 		this.pdfProcessor.on("textExtracted", this.handleTextExtracted.bind(this));
 		this.pdfProcessor.on("error", this.handleProcessingError.bind(this));
+		this.pdfProcessor.on(
+			"imagesExtracted",
+			this.handleImagesExtracted.bind(this),
+		);
 
 		// Batch processing events - focus on AI
 		this.batchProcessor.on("cacheHit", this.handleCacheHit.bind(this));
@@ -683,6 +687,32 @@ class App {
 					})(),
 				},
 			]);
+		}
+	}
+
+	async handleImagesExtracted(images) {
+		console.log(`Image-based PDF detected with ${images.length} pages`);
+		console.log(
+			"handleImagesExtracted: images array first items:",
+			images.slice(0, 2),
+		);
+		this.ui.updateLoadingMessage(
+			"PDF appears image-based, performing AI image analysis...",
+		);
+		try {
+			console.log(
+				"handleImagesExtracted: invoking batchProcessor.processPDFInBatches",
+			);
+			const result = await this.batchProcessor.processPDFInBatches(
+				this.currentFile,
+				images,
+			);
+			console.log("handleImagesExtracted: batchProcessor result:", result);
+			if (result && result.fromCache) {
+				this.handleCacheHit(result);
+			}
+		} catch (error) {
+			this.handleProcessingError(error);
 		}
 	}
 }

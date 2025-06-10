@@ -572,7 +572,11 @@ ${textContent}`;
 	}
 
 	validateQuestions(questions) {
-		const validQuestions = questions.filter((q, index) => {
+		// First, normalize the questions to handle common format issues
+		const normalizedQuestions = this.normalizeQuestions(questions);
+
+		// Then validate the normalized questions
+		const validQuestions = normalizedQuestions.filter((q, index) => {
 			const hasQuestion = q.question && typeof q.question === "string";
 			const hasOptions = Array.isArray(q.options) && q.options.length > 1;
 			const hasCorrectAnswer = typeof q.correctAnswer === "number";
@@ -585,6 +589,79 @@ ${textContent}`;
 			return true;
 		});
 		return validQuestions;
+	}
+
+	// Add a function to normalize questions with common format issues
+	normalizeQuestions(questions) {
+		return questions.map((q, index) => {
+			// Create a normalized copy
+			const normalized = { ...q };
+
+			// Add ID if missing
+			if (!normalized.id) {
+				normalized.id = index + 1;
+			}
+
+			// Convert 'answer' to 'correctAnswer' if needed
+			if (
+				normalized.answer !== undefined &&
+				normalized.correctAnswer === undefined
+			) {
+				// Only log once if we're doing conversions
+				if (index === 0) {
+					console.log(`ℹ️ Normalizing question format (answer → correctAnswer)`);
+				}
+
+				// If answer is a string (like "A" or "Option A"), convert to index
+				if (typeof normalized.answer === "string") {
+					const answerStr = normalized.answer.trim().toLowerCase();
+
+					// Check if it's a single letter answer (A, B, C, D)
+					if (/^[a-e]$/.test(answerStr)) {
+						// Convert A->0, B->1, etc.
+						normalized.correctAnswer =
+							answerStr.charCodeAt(0) - "a".charCodeAt(0);
+					}
+					// Check if it's something like "Option A" or "A)"
+					else if (/^(option\s*)?[a-e][.)]/.test(answerStr)) {
+						normalized.correctAnswer =
+							answerStr
+								.charAt(answerStr.search(/[a-e]/i))
+								.toLowerCase()
+								.charCodeAt(0) - "a".charCodeAt(0);
+					}
+					// Try to find the answer text in the options
+					else if (Array.isArray(normalized.options)) {
+						const optionIndex = normalized.options.findIndex((opt) =>
+							opt.toLowerCase().includes(answerStr),
+						);
+						if (optionIndex >= 0) {
+							normalized.correctAnswer = optionIndex;
+						} else {
+							// Default to first option if we can't determine
+							normalized.correctAnswer = 0;
+						}
+					} else {
+						// Default to first option
+						normalized.correctAnswer = 0;
+					}
+				} else if (typeof normalized.answer === "number") {
+					// If it's already a number, use it directly
+					normalized.correctAnswer = normalized.answer;
+				} else {
+					// Default to first option
+					normalized.correctAnswer = 0;
+				}
+			}
+
+			// If explanation is missing, add a default one
+			if (!normalized.explanation) {
+				normalized.explanation =
+					"This answer is correct based on the information in the document.";
+			}
+
+			return normalized;
+		});
 	}
 
 	extractQuestionsWithRegex(text) {
@@ -740,6 +817,117 @@ ${textContent}`;
 		if (this.events[event]) {
 			this.events[event].forEach((callback) => callback(data));
 		}
+	}
+
+	// Add support for image-based question generation
+	async generateQuestionsFromImage(imageData, customPrompt = null) {
+		try {
+			// Basic logging with less verbosity
+			console.log(`🤖 Processing image chunk with AI`);
+			const prompt = customPrompt || this.createImageExtractionPrompt();
+
+			if (!this.model) {
+				throw new Error(
+					"Google AI model not initialized. Please check your API key.",
+				);
+			}
+
+			await this.enforceRateLimit();
+
+			// Properly format the request for image data
+			// First, create the multipart request with text and image
+			const parts = [];
+
+			// If imageData is a data URL string (what our PDF renderer produces)
+			if (typeof imageData === "string" && imageData.startsWith("data:image")) {
+				// Extract base64 data and create a Blob
+				const mimeType = imageData.split(";")[0].split(":")[1];
+				const base64Data = imageData.split(",")[1];
+				const binaryData = atob(base64Data);
+				const byteArray = new Uint8Array(binaryData.length);
+				for (let i = 0; i < binaryData.length; i++) {
+					byteArray[i] = binaryData.charCodeAt(i);
+				}
+				const blob = new Blob([byteArray], { type: mimeType });
+
+				// Add image part
+				parts.push({
+					inlineData: {
+						data: base64Data,
+						mimeType: mimeType,
+					},
+				});
+			} else if (imageData instanceof Blob) {
+				// Convert Blob to base64
+				const base64Data = await new Promise((resolve) => {
+					const reader = new FileReader();
+					reader.onloadend = () => resolve(reader.result.split(",")[1]);
+					reader.readAsDataURL(imageData);
+				});
+
+				// Add image part
+				parts.push({
+					inlineData: {
+						data: base64Data,
+						mimeType: imageData.type,
+					},
+				});
+			} else {
+				throw new Error("Unsupported image data format");
+			}
+
+			// Add text prompt part
+			parts.push({
+				text: prompt,
+			});
+
+			// Create the content structure
+			const contents = [
+				{
+					role: "user",
+					parts: parts,
+				},
+			];
+
+			console.log("⏳ Sending image analysis request...");
+
+			// Generate content with properly structured request
+			const result = await this.model.generateContent({ contents });
+			const response = await result.response;
+			const text = response.text();
+			console.log(`✅ Received image analysis response (${text.length} chars)`);
+			const questions = this.parseChunkResponse(text);
+			return questions;
+		} catch (error) {
+			console.error("Failed to process image chunk:", error);
+			console.warn("Falling back to mock questions for image chunk");
+			// Use mock questions when image AI fails or is unavailable
+			return this.generateMockQuestions(imageData);
+		}
+	}
+
+	createImageExtractionPrompt() {
+		return `You are an expert quiz generator. OCR and analyze the content of the provided PDF page image and extract all multiple-choice questions.
+
+Your response MUST be a valid JSON in this exact format:
+{
+  "questions": [
+    {
+      "id": 1,
+      "question": "Full question text",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "explanation": "Explanation of why this answer is correct"
+    }
+  ]
+}
+
+Important details:
+- The correctAnswer field must be a number (0 for Option A, 1 for Option B, etc.)
+- Make sure to extract all visible multiple-choice questions on the page
+- Include all options (usually 4 or 5)
+- Maintain the exact format shown above
+- If answers are indicated on the page (e.g., "Answer: B"), use that for correctAnswer (where A=0, B=1, C=2, D=3, E=4)`;
 	}
 }
 

@@ -161,15 +161,28 @@ class BatchProcessor {
 	// Main Processing Method - Simplified AI-only approach
 	async processPDFInBatches(pdfFile, textContent) {
 		try {
+			console.log(
+				`processPDFInBatches: called with pdfFile.name=${pdfFile.name}, size=${pdfFile.size}, contentType=${Array.isArray(textContent) ? "images" : "text"}`,
+			);
+			console.log(
+				`processPDFInBatches: sample of content:`,
+				Array.isArray(textContent)
+					? textContent.slice(0, 1)
+					: textContent.substring(0, 100),
+			);
 			// Create abort controller for cancellation
 			this.abortController = new AbortController();
 			this.currentOperation = `Processing ${pdfFile.name}`;
 
 			console.log(`🚀 Starting AI-only batch processing for: ${pdfFile.name}`);
 
-			// Generate PDF ID and check cache
-			const pdfId = await this.db.generatePDFHash(textContent);
+			// Generate PDF ID and check cache (support text and image-based PDFs)
+			const pdfId = Array.isArray(textContent)
+				? await this.db.generatePDFHash(`${pdfFile.name}-${pdfFile.size}`)
+				: await this.db.generatePDFHash(textContent);
+			console.log(`processPDFInBatches: generated pdfId=${pdfId}`);
 			const existingPDF = await this.db.getPDF(pdfId);
+			console.log(`processPDFInBatches: existingPDF from db:`, existingPDF);
 
 			if (existingPDF && existingPDF.isComplete) {
 				console.log(`✅ PDF already processed: ${pdfFile.name}`);
@@ -189,8 +202,21 @@ class BatchProcessor {
 				return { pdfId, questions, fromCache: true };
 			}
 
-			// Create text chunks for AI processing
-			const chunks = this.createTextChunks(textContent);
+			// Prepare chunks based on content type (text or images)
+			let chunks;
+			if (Array.isArray(textContent)) {
+				console.log(
+					`📷 Detected image-based PDF, number of pages to chunk: ${textContent.length}`,
+				);
+				chunks = textContent.map((img, idx) => ({
+					content: img,
+					batchNumber: idx + 1,
+					isFirstBatch: idx === 0,
+				}));
+			} else {
+				chunks = this.createTextChunks(textContent);
+			}
+			console.log(`processPDFInBatches: created ${chunks.length} chunks`);
 			const totalBatches = chunks.length;
 
 			console.log(`📋 Will process ${totalBatches} batches with AI`);
@@ -200,7 +226,7 @@ class BatchProcessor {
 				id: pdfId,
 				filename: pdfFile.name,
 				fileSize: pdfFile.size,
-				textContent: textContent,
+				textContent: Array.isArray(textContent) ? null : textContent,
 				totalQuestions: 0,
 				isComplete: false,
 				processingStatus: "processing",
@@ -267,26 +293,31 @@ class BatchProcessor {
 	// Process a single chunk with AI
 	async processChunkWithAI(chunk, pdfId) {
 		try {
-			console.log(
-				`🤖 Processing batch ${chunk.batchNumber} with AI (${
-					chunk.wordsCount || "unknown"
-				} words)`,
-			);
-
 			// Check for cancellation
 			if (this.abortController?.signal.aborted) {
 				console.log("🛑 Processing cancelled");
 				return null;
 			}
 
-			// Create AI prompt for this chunk
-			const prompt = this.createAIPrompt(chunk);
-
-			// Process with AI
-			const questions = await this.ai.generateQuestionsFromText(
-				chunk.content,
-				prompt,
-			);
+			// Determine if content is text or image for AI processing
+			let questions;
+			if (
+				chunk.content instanceof Blob ||
+				(typeof chunk.content === "string" &&
+					chunk.content.startsWith("data:image"))
+			) {
+				console.log(`🤖 Processing image batch ${chunk.batchNumber} with AI`);
+				questions = await this.ai.generateQuestionsFromImage(chunk.content);
+			} else {
+				console.log(
+					`🤖 Processing batch ${chunk.batchNumber} with AI (${chunk.wordsCount || "unknown"} words)`,
+				);
+				const prompt = this.createAIPrompt(chunk);
+				questions = await this.ai.generateQuestionsFromText(
+					chunk.content,
+					prompt,
+				);
+			}
 
 			if (questions && questions.length > 0) {
 				// Check if any explanations indicate provided answers were found
