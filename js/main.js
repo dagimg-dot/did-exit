@@ -201,6 +201,12 @@ class App {
 		if (data.questions.length > 0) {
 			console.log("📚 Starting quiz with first batch immediately");
 			this.startQuizWithProgress(data.totalBatches, data.completedBatches);
+
+			// Set correct answers for immediate feedback to work properly
+			this.correctAnswers = data.questions.map((q) => ({
+				correctAnswer: q.correctAnswer,
+				explanation: q.explanation || "No explanation available.",
+			}));
 		} else {
 			console.warn(
 				"⚠️ First batch was empty, this shouldn't happen with AI processing",
@@ -227,6 +233,22 @@ class App {
 			this.quizData = [...this.quizData, ...data.questions];
 			this.quizManager.addQuestions(data.questions);
 
+			// Update correctAnswers array for all batches - fixes instant feedback issues
+			const newCorrectAnswers = data.questions.map((q) => ({
+				correctAnswer: q.correctAnswer,
+				explanation: q.explanation || "No explanation available.",
+			}));
+
+			// Extend correctAnswers array with new answers
+			if (!this.correctAnswers) {
+				this.correctAnswers = newCorrectAnswers;
+			} else {
+				this.correctAnswers = [...this.correctAnswers, ...newCorrectAnswers];
+			}
+
+			// Pass updated correctAnswers to quiz manager for instant feedback
+			this.quizManager.correctAnswers = this.correctAnswers;
+
 			this.ui.showNotification(
 				`${data.questions.length} new questions added! Total: ${data.newTotal}`,
 				"info",
@@ -234,6 +256,10 @@ class App {
 
 			// Update progress indicator
 			this.ui.updateProgressIndicator(data.completedBatches, data.totalBatches);
+
+			// Refresh feedback if user has already answered current question
+			// This fixes the issue with instant feedback during background processing
+			this.quizManager.refreshFeedbackIfNeeded();
 		}
 	}
 
@@ -283,13 +309,32 @@ class App {
 	startQuiz() {
 		this.ui.hideLoading();
 		this.showSection("quiz-section");
+
+		// Initialize correctAnswers from quizData
+		this.correctAnswers = this.quizData.map((q) => ({
+			correctAnswer: q.correctAnswer,
+			explanation: q.explanation || "No explanation available.",
+		}));
+
+		// Initialize quiz manager and pass correctAnswers
 		this.quizManager.initialize(this.quizData);
+		this.quizManager.correctAnswers = this.correctAnswers;
 	}
 
 	startQuizFromCache() {
 		this.ui.hideLoading();
 		this.showSection("quiz-section");
+
+		// Initialize correctAnswers from quizData
+		this.correctAnswers = this.quizData.map((q) => ({
+			correctAnswer: q.correctAnswer,
+			explanation: q.explanation || "No explanation available.",
+		}));
+
+		// Initialize quiz manager and pass correctAnswers
 		this.quizManager.initialize(this.quizData);
+		this.quizManager.correctAnswers = this.correctAnswers;
+
 		this.ui.showNotification(
 			`Loaded ${this.quizData.length} questions from cache!`,
 			"success",
@@ -299,7 +344,21 @@ class App {
 	startQuizWithProgress(totalBatches, completedBatches) {
 		this.ui.hideLoading();
 		this.showSection("quiz-section");
+
+		// Initialize correctAnswers from quizData if not already set
+		if (
+			!this.correctAnswers ||
+			this.correctAnswers.length !== this.quizData.length
+		) {
+			this.correctAnswers = this.quizData.map((q) => ({
+				correctAnswer: q.correctAnswer,
+				explanation: q.explanation || "No explanation available.",
+			}));
+		}
+
+		// Initialize quiz manager and pass correctAnswers
 		this.quizManager.initialize(this.quizData);
+		this.quizManager.correctAnswers = this.correctAnswers;
 
 		// Show background processing progress
 		if (completedBatches < totalBatches) {
@@ -612,11 +671,20 @@ class App {
 			this.currentPdfId = pdfId;
 			this.quizData = questions;
 			this.userAnswers = [];
-			this.correctAnswers = [];
+
+			// Initialize correctAnswers properly for instant feedback
+			this.correctAnswers = questions.map((q) => ({
+				correctAnswer: q.correctAnswer,
+				explanation: q.explanation || "No explanation available.",
+			}));
 
 			// Start quiz
 			this.showSection("quiz-section");
 			this.quizManager.initialize(this.quizData);
+
+			// Pass the correctAnswers to quiz manager for instant feedback
+			this.quizManager.correctAnswers = this.correctAnswers;
+
 			this.ui.showNotification(
 				`Loaded ${questions.length} questions from "${pdf.filename}"`,
 				"success",

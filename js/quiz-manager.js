@@ -560,6 +560,29 @@ class QuizManager {
 			this.events[event].forEach((callback) => callback(data));
 		}
 	}
+
+	// Add a method to refresh feedback for the current question
+	refreshFeedbackIfNeeded() {
+		// Only refresh if we're in normal mode and have an answer for the current question
+		if (
+			this.mode === "normal" &&
+			this.userAnswers[this.currentQuestionIndex] !== null &&
+			this.correctAnswers &&
+			this.correctAnswers[this.currentQuestionIndex]
+		) {
+			// Get the selected answer for the current question
+			const selectedIndex = this.userAnswers[this.currentQuestionIndex];
+
+			// Show feedback with a small delay to ensure UI is ready
+			setTimeout(() => {
+				this.showImmediateFeedback(selectedIndex);
+			}, 50);
+
+			console.log(
+				`Refreshed feedback for question ${this.currentQuestionIndex + 1}`,
+			);
+		}
+	}
 }
 
 export { QuizManager };
