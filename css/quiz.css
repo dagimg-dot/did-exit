@@ -226,6 +226,99 @@
 	margin-right: 0.5rem;
 }
 
+/* Normal mode styles (handled by existing components) */
+
+/* Quiz Mode Selector */
+.quiz-mode-selector {
+	display: flex;
+	align-items: center;
+	margin-bottom: 1.5rem;
+	background: var(--card-background);
+	padding: 0.75rem 1rem;
+	border-radius: var(--border-radius);
+	box-shadow: var(--shadow);
+}
+
+.quiz-mode-selector .switch {
+	position: relative;
+	display: inline-block;
+	width: 50px;
+	height: 24px;
+	margin-right: 10px;
+}
+
+.quiz-mode-selector .switch input {
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.quiz-mode-selector .slider {
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #ccc;
+	transition: .3s;
+}
+
+.quiz-mode-selector .slider.round {
+	border-radius: 24px;
+}
+
+.quiz-mode-selector .slider.round:before {
+	border-radius: 50%;
+}
+
+.quiz-mode-selector .slider:before {
+	position: absolute;
+	content: "";
+	height: 18px;
+	width: 18px;
+	left: 3px;
+	bottom: 3px;
+	background-color: white;
+	transition: .3s;
+}
+
+.quiz-mode-selector input:checked + .slider {
+	background-color: var(--primary-color);
+}
+
+.quiz-mode-selector input:checked + .slider:before {
+	transform: translateX(26px);
+}
+
+.quiz-mode-selector #quiz-mode-label {
+	font-weight: 500;
+	color: var(--text-primary);
+}
+
+/* Explanation Container Styles */
+.explanation-container {
+	background: #f8faff;
+	border-left: 4px solid var(--primary-color);
+	padding: 1rem 1.5rem;
+	margin: 1.5rem 0 2rem;
+	border-radius: 0 var(--border-radius) var(--border-radius) 0;
+	display: none;
+	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.explanation-container h3 {
+	font-size: 1.1rem;
+	margin-bottom: 0.75rem;
+	color: var(--primary-color);
+}
+
+.explanation-container p {
+	font-size: 0.95rem;
+	line-height: 1.5;
+	color: var(--text-secondary);
+}
+
 /* Responsive Design for Quiz */
 @media (max-width: 768px) {
 	.question-card {
@@ -261,6 +354,17 @@
 
 	.results-actions .btn {
 		width: 100%;
+	}
+
+	.mode-selector {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	.mode-toggle label {
+		padding: 0.4rem 0.8rem;
+		font-size: 0.8rem;
 	}
 }
 

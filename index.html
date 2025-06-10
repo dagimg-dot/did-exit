@@ -107,10 +107,22 @@
                 </div>
                 
                 <div class="quiz-container">
+                    <div class="quiz-mode-selector">
+                        <label class="switch">
+                            <input type="checkbox" id="quiz-mode-toggle">
+                            <span class="slider round"></span>
+                        </label>
+                        <span id="quiz-mode-label">Exam Mode</span>
+                    </div>
+
                     <div class="question-card" id="question-card">
                         <h2 id="question-text">Question will appear here...</h2>
                         <div class="options-container" id="options-container">
                             <!-- Options will be dynamically added -->
+                        </div>
+                        <div class="explanation-container" id="explanation-container" style="display: none;">
+                            <h3>Explanation</h3>
+                            <p id="explanation-text"></p>
                         </div>
                         <div class="quiz-controls">
                             <button id="prev-btn" class="btn btn-secondary" disabled>Previous</button>

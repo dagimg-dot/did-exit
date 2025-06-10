@@ -6,8 +6,18 @@ class QuizManager {
 		this.userAnswers = [];
 		this.currentQuestionIndex = 0;
 		this.isReviewMode = false;
+		this.mode = "exam"; // Default mode: "exam" or "normal"
+		this.correctAnswers = []; // Store correct answers for normal mode
 		this.setupElements();
 		this.setupEventListeners();
+
+		// Ensure UI is in exam mode by default
+		if (this.modeToggle) {
+			this.modeToggle.checked = false; // Unchecked = exam mode
+		}
+		if (this.modeLabel) {
+			this.modeLabel.textContent = "Exam Mode";
+		}
 	}
 
 	setupElements() {
@@ -19,6 +29,69 @@ class QuizManager {
 		this.prevBtn = document.getElementById("prev-btn");
 		this.nextBtn = document.getElementById("next-btn");
 		this.submitBtn = document.getElementById("submit-quiz-btn");
+		this.explanationContainer = document.getElementById(
+			"explanation-container",
+		);
+		this.explanationText = document.getElementById("explanation-text");
+		this.modeToggle = document.getElementById("quiz-mode-toggle");
+		this.modeLabel = document.getElementById("quiz-mode-label");
+
+		// Add event listener for mode toggle
+		if (this.modeToggle) {
+			this.modeToggle.addEventListener("change", () => {
+				const newMode = this.modeToggle.checked ? "normal" : "exam";
+				this.setMode(newMode);
+			});
+		}
+	}
+
+	setMode(mode) {
+		if (this.mode === mode) return;
+
+		this.mode = mode;
+		console.log(`Quiz mode changed to: ${mode}`);
+
+		// Update UI for the mode
+		if (this.modeToggle) {
+			this.modeToggle.checked = mode === "normal";
+		}
+
+		if (this.modeLabel) {
+			this.modeLabel.textContent =
+				mode === "normal" ? "Normal Mode" : "Exam Mode";
+		}
+
+		// When switching to exam mode, remove any correct/incorrect indicators
+		if (mode === "exam") {
+			this.optionsContainer.querySelectorAll(".option").forEach((opt) => {
+				opt.classList.remove("correct");
+				opt.classList.remove("incorrect");
+			});
+
+			// Hide explanation
+			if (this.explanationContainer) {
+				this.explanationContainer.style.display = "none";
+			}
+		}
+
+		// Rerender current question with new mode settings
+		this.displayCurrentQuestion();
+		this.updateNavigation();
+
+		// If switching to normal mode and the current question is already answered,
+		// we need to show feedback immediately
+		if (mode === "normal") {
+			const currentAnswer = this.userAnswers[this.currentQuestionIndex];
+			if (currentAnswer !== null) {
+				// Short timeout to ensure DOM is ready
+				setTimeout(() => {
+					this.showImmediateFeedback(currentAnswer);
+				}, 50);
+			}
+		}
+
+		// Emit event for mode change
+		this.emit("modeChanged", mode);
 	}
 
 	setupEventListeners() {
@@ -28,10 +101,24 @@ class QuizManager {
 	}
 
 	initialize(questions) {
+		console.log("Initializing quiz with questions:", questions);
 		this.questions = questions;
 		this.userAnswers = new Array(questions.length).fill(null);
 		this.currentQuestionIndex = 0;
 		this.isReviewMode = false;
+
+		// Extract correct answers for normal mode
+		this.correctAnswers = questions.map((q, index) => {
+			console.log(`Question ${index} correctAnswer:`, q.correctAnswer);
+			console.log(`Question ${index} explanation:`, q.explanation);
+
+			return {
+				correctAnswer: q.correctAnswer,
+				explanation: q.explanation || "No explanation provided.",
+			};
+		});
+
+		console.log("Extracted correctAnswers:", this.correctAnswers);
 
 		this.totalQuestionsSpan.textContent = questions.length;
 		this.displayCurrentQuestion();
@@ -48,7 +135,21 @@ class QuizManager {
 		this.questionText.textContent = question.question;
 		this.currentQuestionSpan.textContent = this.currentQuestionIndex + 1;
 
+		// Reset explanation container
+		if (this.explanationContainer) {
+			this.explanationContainer.style.display = "none";
+		}
+		if (this.explanationText) {
+			this.explanationText.textContent = "";
+		}
+
 		this.renderOptions(question);
+
+		// If in normal mode and already answered, show the feedback again
+		const currentAnswer = this.userAnswers[this.currentQuestionIndex];
+		if (this.mode === "normal" && currentAnswer !== null) {
+			this.showImmediateFeedback(currentAnswer);
+		}
 	}
 
 	renderOptions(question) {
@@ -78,18 +179,39 @@ class QuizManager {
 
 		// Add click handler for option selection
 		optionDiv.addEventListener("click", () => {
-			if (!this.isReviewMode) {
-				this.selectOption(index);
+			// Don't allow selection in review mode
+			if (this.isReviewMode) {
+				return;
 			}
+
+			// In normal mode, don't allow changing answer after selection
+			const currentAnswer = this.userAnswers[this.currentQuestionIndex];
+			if (
+				this.mode === "normal" &&
+				currentAnswer !== null &&
+				currentAnswer !== index
+			) {
+				return;
+			}
+
+			this.selectOption(index);
 		});
 
 		return optionDiv;
 	}
 
 	selectOption(selectedIndex) {
+		console.log(`Selecting option ${selectedIndex} in ${this.mode} mode`);
+
 		// Remove previous selection
 		this.optionsContainer.querySelectorAll(".option").forEach((opt) => {
 			opt.classList.remove("selected");
+
+			// Only remove correct/incorrect classes in exam mode
+			if (this.mode === "exam") {
+				opt.classList.remove("correct");
+				opt.classList.remove("incorrect");
+			}
 		});
 
 		// Add selection to clicked option
@@ -103,6 +225,14 @@ class QuizManager {
 		// Store user answer
 		this.userAnswers[this.currentQuestionIndex] = selectedIndex;
 
+		// In normal mode, show feedback immediately
+		if (this.mode === "normal") {
+			// Short timeout to ensure DOM updates
+			setTimeout(() => {
+				this.showImmediateFeedback(selectedIndex);
+			}, 10);
+		}
+
 		// Update navigation
 		this.updateNavigation();
 
@@ -110,12 +240,77 @@ class QuizManager {
 		this.emit("answerSelected", this.currentQuestionIndex, selectedIndex);
 
 		console.log(
-			`Question ${this.currentQuestionIndex + 1}: Selected option ${selectedIndex}`,
+			`Question ${this.currentQuestionIndex + 1}: Selected option ${selectedIndex} in ${this.mode} mode`,
 		);
+	}
+
+	showImmediateFeedback(selectedIndex) {
+		console.log("Showing immediate feedback for answer:", selectedIndex);
+		console.log("Current question index:", this.currentQuestionIndex);
+		console.log("Current mode:", this.mode);
+		console.log("correctAnswers:", this.correctAnswers);
+
+		// Guard clause in case correctAnswers is not properly initialized
+		if (
+			!this.correctAnswers ||
+			!this.correctAnswers[this.currentQuestionIndex]
+		) {
+			console.error("No correct answer data available for this question");
+			return;
+		}
+
+		const correctAnswer =
+			this.correctAnswers[this.currentQuestionIndex].correctAnswer;
+		const explanation =
+			this.correctAnswers[this.currentQuestionIndex].explanation;
+
+		console.log("Correct answer:", correctAnswer);
+		console.log("Explanation:", explanation);
+
+		// First clear any existing feedback
+		this.optionsContainer.querySelectorAll(".option").forEach((opt) => {
+			opt.classList.remove("correct");
+			opt.classList.remove("incorrect");
+		});
+
+		// Then mark options as correct/incorrect
+		this.optionsContainer.querySelectorAll(".option").forEach((opt) => {
+			const optIndex = parseInt(opt.dataset.optionIndex);
+
+			if (optIndex === correctAnswer) {
+				opt.classList.add("correct");
+				console.log("Marking option", optIndex, "as correct");
+			}
+
+			if (optIndex === selectedIndex && selectedIndex !== correctAnswer) {
+				opt.classList.add("incorrect");
+				console.log("Marking option", optIndex, "as incorrect");
+			}
+		});
+
+		// Show explanation
+		if (this.explanationText) {
+			console.log("Setting explanation text");
+			this.explanationText.textContent =
+				explanation || "No explanation available.";
+		} else {
+			console.error("Explanation text element not found");
+		}
+
+		if (this.explanationContainer) {
+			console.log("Showing explanation container");
+			this.explanationContainer.style.display = "block";
+		} else {
+			console.error("Explanation container element not found");
+		}
+
+		// Force a reflow to ensure CSS updates are applied
+		void this.optionsContainer.offsetHeight;
 	}
 
 	previousQuestion() {
 		if (this.currentQuestionIndex > 0) {
+			console.log("Moving to previous question");
 			this.currentQuestionIndex--;
 			this.displayCurrentQuestion();
 			this.updateNavigation();
@@ -125,6 +320,7 @@ class QuizManager {
 
 	nextQuestion() {
 		if (this.currentQuestionIndex < this.questions.length - 1) {
+			console.log("Moving to next question");
 			this.currentQuestionIndex++;
 			this.displayCurrentQuestion();
 			this.updateNavigation();
@@ -146,7 +342,10 @@ class QuizManager {
 			this.submitBtn.style.display = hasAnswer ? "inline-flex" : "none";
 		} else {
 			this.nextBtn.style.display = "inline-flex";
-			this.nextBtn.disabled = !hasAnswer;
+
+			// In normal mode, enable Next button regardless of answer
+			this.nextBtn.disabled = this.mode === "exam" ? !hasAnswer : false;
+
 			this.submitBtn.style.display = "none";
 		}
 	}
@@ -265,12 +464,29 @@ class QuizManager {
 		this.currentQuestionIndex = 0;
 		this.isReviewMode = false;
 
+		// Reset to exam mode
+		this.mode = "exam";
+		if (this.modeToggle) {
+			this.modeToggle.checked = false; // Unchecked = exam mode
+		}
+		if (this.modeLabel) {
+			this.modeLabel.textContent = "Exam Mode";
+		}
+
 		// Reset UI elements
 		this.questionText.textContent = "Question will appear here...";
 		this.optionsContainer.innerHTML = "";
 		this.currentQuestionSpan.textContent = "1";
 		this.totalQuestionsSpan.textContent = "10";
 		this.progressFill.style.width = "0%";
+
+		// Reset explanation
+		if (this.explanationContainer) {
+			this.explanationContainer.style.display = "none";
+		}
+		if (this.explanationText) {
+			this.explanationText.textContent = "";
+		}
 
 		// Reset buttons
 		this.prevBtn.disabled = true;
