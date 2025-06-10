@@ -45,7 +45,6 @@ class QuizManager {
 		if (this.mode === mode) return;
 
 		this.mode = mode;
-		console.log(`Quiz mode changed to: ${mode}`);
 
 		// Update UI for the mode
 		if (this.modeToggle) {
@@ -106,7 +105,6 @@ class QuizManager {
 	}
 
 	initialize(questions) {
-		console.log("Initializing quiz with questions:", questions);
 		this.questions = questions;
 		this.userAnswers = new Array(questions.length).fill(null);
 		this.currentQuestionIndex = 0;
@@ -114,23 +112,16 @@ class QuizManager {
 
 		// Extract correct answers for normal mode
 		this.correctAnswers = questions.map((q, index) => {
-			console.log(`Question ${index} correctAnswer:`, q.correctAnswer);
-			console.log(`Question ${index} explanation:`, q.explanation);
-
 			return {
 				correctAnswer: q.correctAnswer,
 				explanation: q.explanation || "No explanation provided.",
 			};
 		});
 
-		console.log("Extracted correctAnswers:", this.correctAnswers);
-
 		this.totalQuestionsSpan.textContent = questions.length;
 		this.displayCurrentQuestion();
 		this.updateNavigation();
 		this.updateProgress();
-
-		console.log("Quiz initialized with", questions.length, "questions");
 	}
 
 	displayCurrentQuestion() {
@@ -206,8 +197,6 @@ class QuizManager {
 	}
 
 	selectOption(selectedIndex) {
-		console.log(`Selecting option ${selectedIndex} in ${this.mode} mode`);
-
 		// Remove previous selection
 		this.optionsContainer.querySelectorAll(".option").forEach((opt) => {
 			opt.classList.remove("selected");
@@ -243,24 +232,14 @@ class QuizManager {
 
 		// Emit event
 		this.emit("answerSelected", this.currentQuestionIndex, selectedIndex);
-
-		console.log(
-			`Question ${this.currentQuestionIndex + 1}: Selected option ${selectedIndex} in ${this.mode} mode`,
-		);
 	}
 
 	showImmediateFeedback(selectedIndex) {
-		console.log("Showing immediate feedback for answer:", selectedIndex);
-		console.log("Current question index:", this.currentQuestionIndex);
-		console.log("Current mode:", this.mode);
-		console.log("correctAnswers:", this.correctAnswers);
-
 		// Guard clause in case correctAnswers is not properly initialized
 		if (
 			!this.correctAnswers ||
 			!this.correctAnswers[this.currentQuestionIndex]
 		) {
-			console.error("No correct answer data available for this question");
 			return;
 		}
 
@@ -268,9 +247,6 @@ class QuizManager {
 			this.correctAnswers[this.currentQuestionIndex].correctAnswer;
 		const explanation =
 			this.correctAnswers[this.currentQuestionIndex].explanation;
-
-		console.log("Correct answer:", correctAnswer);
-		console.log("Explanation:", explanation);
 
 		// First clear any existing feedback
 		this.optionsContainer.querySelectorAll(".option").forEach((opt) => {
@@ -284,18 +260,15 @@ class QuizManager {
 
 			if (optIndex === correctAnswer) {
 				opt.classList.add("correct");
-				console.log("Marking option", optIndex, "as correct");
 			}
 
 			if (optIndex === selectedIndex && selectedIndex !== correctAnswer) {
 				opt.classList.add("incorrect");
-				console.log("Marking option", optIndex, "as incorrect");
 			}
 		});
 
 		// Show explanation
 		if (this.explanationText) {
-			console.log("Setting explanation text");
 			this.explanationText.textContent =
 				explanation || "No explanation available.";
 		} else {
@@ -303,19 +276,14 @@ class QuizManager {
 		}
 
 		if (this.explanationContainer) {
-			console.log("Showing explanation container");
 			this.explanationContainer.style.display = "block";
 		} else {
 			console.error("Explanation container element not found");
 		}
-
-		// Force a reflow to ensure CSS updates are applied
-		void this.optionsContainer.offsetHeight;
 	}
 
 	previousQuestion() {
 		if (this.currentQuestionIndex > 0) {
-			console.log("Moving to previous question");
 			this.currentQuestionIndex--;
 			this.displayCurrentQuestion();
 			this.updateNavigation();
@@ -325,7 +293,6 @@ class QuizManager {
 
 	nextQuestion() {
 		if (this.currentQuestionIndex < this.questions.length - 1) {
-			console.log("Moving to next question");
 			this.currentQuestionIndex++;
 			this.displayCurrentQuestion();
 			this.updateNavigation();
@@ -378,7 +345,6 @@ class QuizManager {
 			}
 		}
 
-		console.log("Quiz submitted:", this.userAnswers);
 		this.emit("quizCompleted", this.userAnswers);
 	}
 
@@ -501,11 +467,8 @@ class QuizManager {
 	// Add questions dynamically (for batch processing)
 	addQuestions(newQuestions) {
 		if (!Array.isArray(newQuestions) || newQuestions.length === 0) {
-			console.warn("No valid questions to add");
 			return;
 		}
-
-		console.log(`📚 Adding ${newQuestions.length} new questions to quiz`);
 
 		// Add new questions to the existing array
 		this.questions.push(...newQuestions);
@@ -527,8 +490,6 @@ class QuizManager {
 
 		// Update progress bar calculation
 		this.updateProgress();
-
-		console.log(`✅ Quiz now has ${this.questions.length} total questions`);
 
 		// Emit event for any listeners
 		this.emit("questionsAdded", {
