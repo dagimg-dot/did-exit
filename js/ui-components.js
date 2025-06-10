@@ -267,6 +267,78 @@ class UIComponents {
 		// Remove existing modal if any
 		this.hideModal();
 
+		// Add CSS for modal if it doesn't exist yet
+		if (!document.getElementById("modal-custom-styles")) {
+			const style = document.createElement("style");
+			style.id = "modal-custom-styles";
+			style.textContent = `
+				.modal-backdrop {
+					position: fixed;
+					top: 0;
+					left: 0;
+					right: 0;
+					bottom: 0;
+					background-color: rgba(0, 0, 0, 0.5);
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					z-index: 1000;
+				}
+				.modal-dialog {
+					background-color: white;
+					border-radius: 8px;
+					box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+					width: 90%;
+					max-width: 600px;
+					display: flex;
+					flex-direction: column;
+					max-height: 80vh; /* Limit modal height */
+				}
+				.modal-header {
+					display: flex;
+					align-items: center;
+					justify-content: space-between;
+					padding: 1rem;
+					border-bottom: 1px solid #e5e7eb;
+				}
+				.modal-title {
+					margin: 0;
+					font-size: 1.25rem;
+					font-weight: 600;
+				}
+				.modal-close-btn {
+					background: none;
+					border: none;
+					font-size: 1.5rem;
+					cursor: pointer;
+					padding: 0.25rem;
+					line-height: 1;
+				}
+				.modal-content {
+					padding: 1rem;
+					overflow-y: auto; /* Make content scrollable */
+					max-height: calc(80vh - 120px); /* Adjust for header and footer */
+				}
+				.modal-footer {
+					display: flex;
+					justify-content: flex-end;
+					gap: 0.5rem;
+					padding: 1rem;
+					border-top: 1px solid #e5e7eb;
+				}
+				.version-block {
+					margin-bottom: 1rem;
+					padding-bottom: 1rem;
+					border-bottom: 1px solid #e5e7eb;
+				}
+				.version-block:last-child {
+					border-bottom: none;
+					margin-bottom: 0;
+				}
+			`;
+			document.head.appendChild(style);
+		}
+
 		const modalHTML = `
             <div class="modal-backdrop">
                 <div class="modal-dialog">

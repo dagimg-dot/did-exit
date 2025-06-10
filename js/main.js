@@ -998,21 +998,47 @@ class App {
 		const lastSeenVersion = localStorage.getItem("did-exit-version") || "0.0";
 
 		if (CURRENT_APP_VERSION > lastSeenVersion) {
+			// Generate version history HTML
+			let versionHistoryHTML = "";
+
+			// Sort versions in descending order (newest first)
+			const sortedVersions = [...content.versionHistory].sort(
+				(a, b) => parseFloat(b.version) - parseFloat(a.version),
+			);
+
+			// Get all versions that are newer than the last seen version
+			const newVersions = sortedVersions.filter(
+				(version) => version.version > lastSeenVersion,
+			);
+
+			if (newVersions.length > 0) {
+				versionHistoryHTML = newVersions
+					.map(
+						(versionInfo) => `
+					<div class="version-block">
+						<h4 style="margin-bottom: 0.5rem;">Version ${versionInfo.version}</h4>
+						<ul style="padding-left: 20px; margin-top: 0.5rem;">
+							${versionInfo.features
+								.map(
+									(feature) => `
+								<li style="margin-bottom: 0.5rem;">
+									<strong>${feature.title}:</strong> ${feature.description}
+								</li>
+							`,
+								)
+								.join("")}
+						</ul>
+					</div>
+				`,
+					)
+					.join("");
+			}
+
 			const htmlContent = `
                 <div style="text-align: left; padding: 0 1rem;">
-                    <h3 style="margin-top: 0;">New Features in v${CURRENT_APP_VERSION}!</h3>
-                    <p>We've added some exciting new features to improve your experience:</p>
-                    <ul style="padding-left: 20px;">
-						${content.features
-							.map(
-								(feature) => `
-							<li style="margin-bottom: 0.5rem;">
-								<strong>${feature.title}:</strong> ${feature.description}
-							</li>
-						`,
-							)
-							.join("")}
-                    </ul>
+                    <h3 style="margin-top: 0;">What's New in v${CURRENT_APP_VERSION}!</h3>
+                    <p>We've added new features to improve your experience:</p>
+                    ${versionHistoryHTML}
                 </div>
             `;
 
