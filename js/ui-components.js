@@ -120,6 +120,17 @@ class UIComponents {
 		this.addResultsSummary(results);
 	}
 
+	// Helper method to escape HTML content
+	escapeHTML(str) {
+		if (!str) return "";
+		return String(str)
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;");
+	}
+
 	generateResultsHTML(results) {
 		let html = `
             <div class="results-summary">
@@ -154,19 +165,19 @@ class UIComponents {
                             <span class="status-icon">${statusIcon}</span>
                             Question ${index + 1}
                         </span>
-                        <p>${detail.question}</p>
+                        <p>${this.escapeHTML(detail.question)}</p>
                     </div>
                     <div class="result-answers">
                         <div class="result-answer your-answer">
                             <div class="result-answer-label">Your Answer</div>
-                            <div>${detail.userAnswerText}</div>
+                            <div>${this.escapeHTML(detail.userAnswerText)}</div>
                         </div>
                         ${
 													!detail.isCorrect
 														? `
                             <div class="result-answer correct-answer">
                                 <div class="result-answer-label">Correct Answer</div>
-                                <div>${detail.correctAnswerText}</div>
+                                <div>${this.escapeHTML(detail.correctAnswerText)}</div>
                             </div>
                         `
 														: ""
@@ -176,7 +187,7 @@ class UIComponents {
 														? `
                             <div class="result-explanation">
                                 <div class="result-answer-label">Explanation</div>
-                                <div>${detail.explanation}</div>
+                                <div>${this.escapeHTML(detail.explanation)}</div>
                             </div>
                         `
 														: ""

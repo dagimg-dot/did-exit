@@ -169,10 +169,18 @@ class QuizManager {
 			optionDiv.classList.add("selected");
 		}
 
-		optionDiv.innerHTML = `
-            <div class="option-radio"></div>
-            <div class="option-text">${optionText}</div>
-        `;
+		// Create option radio element
+		const optionRadio = document.createElement("div");
+		optionRadio.className = "option-radio";
+
+		// Create option text element
+		const optionTextDiv = document.createElement("div");
+		optionTextDiv.className = "option-text";
+		optionTextDiv.textContent = optionText;
+
+		// Append children
+		optionDiv.appendChild(optionRadio);
+		optionDiv.appendChild(optionTextDiv);
 
 		// Add click handler for option selection
 		optionDiv.addEventListener("click", () => {
@@ -401,10 +409,18 @@ class QuizManager {
 			}
 		}
 
-		optionDiv.innerHTML = `
-            <div class="option-radio"></div>
-            <div class="option-text">${optionText}</div>
-        `;
+		// Create option radio element
+		const optionRadio = document.createElement("div");
+		optionRadio.className = "option-radio";
+
+		// Create option text element
+		const optionTextDiv = document.createElement("div");
+		optionTextDiv.className = "option-text";
+		optionTextDiv.textContent = optionText;
+
+		// Append children
+		optionDiv.appendChild(optionRadio);
+		optionDiv.appendChild(optionTextDiv);
 
 		return optionDiv;
 	}
