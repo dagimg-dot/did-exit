@@ -1,0 +1,40 @@
+/* Theme-Toggle Styles */
+.theme-switcher {
+	position: absolute;
+	top: 1rem;
+	right: 1rem;
+	display: flex;
+	align-items: center;
+}
+
+.theme-switcher button {
+	background: none;
+	border: 1px solid var(--border-color);
+	color: var(--text-secondary);
+	padding: 0.5rem;
+	cursor: pointer;
+	transition: background-color 0.2s, color 0.2s;
+	border-radius: 6px;
+}
+
+.theme-switcher button:first-child {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.theme-switcher button:last-child {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	border-left: 0;
+}
+
+.theme-switcher button:hover {
+	background-color: var(--primary-color);
+	color: white;
+}
+
+.theme-switcher button.active {
+	background-color: var(--primary-color);
+	color: white;
+	font-weight: bold;
+}

@@ -129,3 +129,26 @@ body {
 		font-size: 1.75rem;
 	}
 }
+
+/* Dark Mode */
+.dark-theme {
+	--background-color: #111827;
+	--card-background: #1f2937;
+	--text-primary: #f9fafb;
+	--text-secondary: #9ca3af;
+	--border-color: #374151;
+	--shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not(.light-theme) {
+		--background-color: #111827;
+		--card-background: #1f2937;
+		--text-primary: #f9fafb;
+		--text-secondary: #9ca3af;
+		--border-color: #374151;
+		--shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+		--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+	}
+}

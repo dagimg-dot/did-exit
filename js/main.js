@@ -7,6 +7,7 @@ import { UIComponents } from "./ui-components.js";
 import { DatabaseManager } from "./database-manager.js";
 import { BatchProcessor } from "./batch-processor.js";
 import { content, CURRENT_APP_VERSION } from "./app-info.js";
+import { initializeTheme } from "./theme-manager.js";
 
 class App {
 	constructor() {
@@ -25,6 +26,7 @@ class App {
 		await this.initializeComponents();
 		this.setupEventListeners();
 		this.showNewFeaturesPrompt();
+		initializeTheme();
 	}
 
 	async initializeComponents() {
