@@ -26,6 +26,7 @@ class QuizManager {
 		this.prevBtn = document.getElementById("prev-btn");
 		this.nextBtn = document.getElementById("next-btn");
 		this.submitBtn = document.getElementById("submit-quiz-btn");
+		this.resumeBtn = document.getElementById("resume-btn");
 		this.explanationContainer = document.getElementById(
 			"explanation-container",
 		);
@@ -88,6 +89,11 @@ class QuizManager {
 		this.prevBtn.addEventListener("click", () => this.previousQuestion());
 		this.nextBtn.addEventListener("click", () => this.nextQuestion());
 		this.submitBtn.addEventListener("click", () => this.submitQuiz());
+		if (this.resumeBtn) {
+			this.resumeBtn.addEventListener("click", () =>
+				this.navigateToLastAnswered(),
+			);
+		}
 		this.setupKeydownListener();
 	}
 
@@ -123,6 +129,7 @@ class QuizManager {
 		this.displayCurrentQuestion();
 		this.updateNavigation();
 		this.updateProgress();
+		this.updateResumeButton();
 	}
 
 	displayCurrentQuestion() {
@@ -238,6 +245,7 @@ class QuizManager {
 
 		// Update navigation
 		this.updateNavigation();
+		this.updateResumeButton();
 
 		// Emit event
 		this.emit("answerSelected", this.currentQuestionIndex, selectedIndex);
@@ -297,6 +305,7 @@ class QuizManager {
 			this.displayCurrentQuestion();
 			this.updateNavigation();
 			this.updateProgress();
+			this.updateResumeButton();
 		}
 	}
 
@@ -306,6 +315,7 @@ class QuizManager {
 			this.displayCurrentQuestion();
 			this.updateNavigation();
 			this.updateProgress();
+			this.updateResumeButton();
 		}
 	}
 
@@ -604,6 +614,46 @@ class QuizManager {
 				`Refreshed feedback for question ${this.currentQuestionIndex + 1}`,
 			);
 		}
+	}
+
+	// Find the index of the last answered question
+	findLastAnsweredQuestionIndex() {
+		for (let i = this.userAnswers.length - 1; i >= 0; i--) {
+			if (this.userAnswers[i] !== null) {
+				return i;
+			}
+		}
+		return -1; // No answered questions found
+	}
+
+	// Navigate to the last answered question
+	navigateToLastAnswered() {
+		const lastAnsweredIndex = this.findLastAnsweredQuestionIndex();
+		if (
+			lastAnsweredIndex !== -1 &&
+			lastAnsweredIndex !== this.currentQuestionIndex
+		) {
+			this.currentQuestionIndex = lastAnsweredIndex;
+			this.displayCurrentQuestion();
+			this.updateNavigation();
+			this.updateProgress();
+			this.updateResumeButton();
+		}
+	}
+
+	// Update the resume button visibility based on answered questions
+	updateResumeButton() {
+		if (!this.resumeBtn) return;
+
+		// Only show the resume button if we're not already on the last answered question
+		// and there's at least one answered question
+		const lastAnsweredIndex = this.findLastAnsweredQuestionIndex();
+		const shouldShow =
+			!this.isReviewMode &&
+			lastAnsweredIndex !== -1 &&
+			this.currentQuestionIndex !== lastAnsweredIndex;
+
+		this.resumeBtn.style.display = shouldShow ? "inline-flex" : "none";
 	}
 }
 
