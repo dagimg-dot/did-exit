@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/quiz.css">
+    <link rel="stylesheet" href="css/theme-toggle.css">
 </head>
 <body>
     <div class="container">
@@ -20,6 +21,12 @@
             <h1>Did Exit</h1>
             <p>Upload your exam PDF and make it interactive</p>
         </header>
+
+        <div class="theme-switcher">
+            <button id="theme-light">Light</button>
+            <button id="theme-dark">Dark</button>
+            <button id="theme-system">System</button>
+        </div>
 
         <main class="app-main">
             <!-- File Upload Section -->
@@ -66,8 +73,17 @@
                     </div>
                     <div class="file-info" id="file-info" style="display: none;">
                         <p><strong>Selected:</strong> <span id="file-name"></span></p>
-                        <button id="process-btn" class="btn btn-success">Process PDF</button>
-                        <button id="change-file-btn" class="btn btn-secondary">Change File</button>
+                        <div id="file-actions">
+                            <button id="process-btn" class="btn btn-success">Process PDF</button>
+                            <button id="change-file-btn" class="btn btn-secondary">Change File</button>
+                        </div>
+                        <div class="processing-status" id="processing-status" style="display: none;">
+                            <div class="spinner"></div>
+                            <p id="loading-message">Processing PDF and generating questions...</p>
+                            <button id="cancel-processing-btn" class="btn btn-secondary">
+                                Cancel Processing
+                            </button>
+                        </div>
                     </div>
                 </div>
                 
@@ -84,14 +100,6 @@
                             <p>No recent exams found</p>
                         </div>
                     </div>
-                </div>
-
-                <div class="loading" id="loading" style="display: none;">
-                    <div class="spinner"></div>
-                    <p id="loading-message">Processing PDF and generating questions...</p>
-                    <button id="cancel-processing-btn" class="btn btn-secondary" style="display: none; margin-top: 1rem; margin-left: auto; margin-right: auto;">
-                        Cancel Processing
-                    </button>
                 </div>
             </section>
 

@@ -137,9 +137,6 @@ class App {
 		this.currentFile = file;
 		this.ui.showLoading("Extracting text from PDF...");
 
-		// Show cancel button immediately
-		this.showCancelButton();
-
 		try {
 			await this.pdfProcessor.processFile(file);
 		} catch (error) {
@@ -314,7 +311,7 @@ class App {
 
 	handleProcessingComplete(data) {
 		console.log("✅ All batches completed for PDF:", data.pdfId);
-		this.hideCancelButton();
+		this.ui.hideLoading();
 
 		if (this.currentPdfId === data.pdfId) {
 			this.ui.showNotification(
@@ -327,7 +324,6 @@ class App {
 
 	handleProcessingCancelled(event) {
 		console.log("🛑 Processing was cancelled:", event);
-		this.hideCancelButton();
 		this.ui.hideLoading();
 		this.ui.showNotification(
 			"Processing cancelled. You can upload a new PDF.",
@@ -337,22 +333,8 @@ class App {
 
 	cancelProcessing() {
 		console.log("🛑 User requested to cancel processing");
-		this.batchProcessor.cancelProcessing();
-	}
-
-	showCancelButton() {
-		const cancelBtn = document.getElementById("cancel-processing-btn");
-		if (cancelBtn) {
-			cancelBtn.style.display = "block";
-			cancelBtn.style.margin = "1rem auto 0 auto";
-		}
-	}
-
-	hideCancelButton() {
-		const cancelBtn = document.getElementById("cancel-processing-btn");
-		if (cancelBtn) {
-			cancelBtn.style.display = "none";
-		}
+		this.batchProcessor.cancel();
+		this.ui.hideLoading();
 	}
 
 	async startQuiz() {
@@ -630,7 +612,6 @@ class App {
 		this.quizManager.reset();
 		this.ui.hideProgressIndicator();
 		this.ui.clearNotifications();
-		this.hideCancelButton();
 		this.loadRecentExams(); // Refresh recent exams
 		this.showSection("upload-section");
 	}
@@ -651,7 +632,6 @@ class App {
 	handleProcessingError(error) {
 		console.error("Processing error:", error);
 		this.ui.hideLoading();
-		this.hideCancelButton();
 		this.ui.showError("Error processing PDF: " + error.message);
 	}
 

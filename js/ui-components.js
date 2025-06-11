@@ -6,25 +6,26 @@ class UIComponents {
 	}
 
 	setupElements() {
-		this.loadingElement = document.getElementById("loading");
-		this.loadingMessage = this.loadingElement?.querySelector("p");
+		this.fileActions = document.getElementById("file-actions");
+		this.processingStatus = document.getElementById("processing-status");
+		this.loadingMessage = document.getElementById("loading-message");
 		this.resultsContainer = document.getElementById("results-breakdown");
 		this.finalScore = document.getElementById("final-score");
 		this.scorePercentage = document.getElementById("score-percentage");
 	}
 
-	showLoading(message = "Loading...") {
-		if (this.loadingElement) {
-			this.loadingElement.style.display = "block";
-			if (this.loadingMessage) {
-				this.loadingMessage.textContent = message;
-			}
+	showLoading(message = "Processing PDF...") {
+		if (this.fileActions) this.fileActions.style.display = "none";
+		if (this.processingStatus) {
+			this.processingStatus.style.display = "block";
 		}
+		this.updateLoadingMessage(message);
 	}
 
 	hideLoading() {
-		if (this.loadingElement) {
-			this.loadingElement.style.display = "none";
+		if (this.fileActions) this.fileActions.style.display = "block";
+		if (this.processingStatus) {
+			this.processingStatus.style.display = "none";
 		}
 	}
 
