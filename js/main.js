@@ -392,7 +392,11 @@ class App {
 		}
 
 		// Initialize quiz manager and pass correctAnswers
-		this.quizManager.initialize(this.quizData, this.userAnswers);
+		this.quizManager.initialize(
+			this.quizData,
+			this.userAnswers,
+			this.currentPdfId,
+		);
 		this.quizManager.correctAnswers = this.correctAnswers;
 	}
 
@@ -451,7 +455,11 @@ class App {
 		}
 
 		// Initialize quiz manager and pass correctAnswers
-		this.quizManager.initialize(this.quizData, this.userAnswers);
+		this.quizManager.initialize(
+			this.quizData,
+			this.userAnswers,
+			this.currentFile.name,
+		);
 		this.quizManager.correctAnswers = this.correctAnswers;
 
 		this.ui.showNotification(
@@ -520,7 +528,11 @@ class App {
 		}
 
 		// Initialize quiz manager and pass correctAnswers
-		this.quizManager.initialize(this.quizData, this.userAnswers);
+		this.quizManager.initialize(
+			this.quizData,
+			this.userAnswers,
+			this.currentFile.name,
+		);
 		this.quizManager.correctAnswers = this.correctAnswers;
 
 		// Show background processing progress
@@ -948,7 +960,11 @@ class App {
 
 			// Start quiz
 			this.showSection("quiz-section");
-			this.quizManager.initialize(this.quizData, this.userAnswers); // Pass user answers
+			this.quizManager.initialize(
+				this.quizData,
+				this.userAnswers,
+				pdf.filename,
+			); // Pass user answers and filename
 
 			// Pass the correctAnswers to quiz manager for instant feedback
 			this.quizManager.correctAnswers = this.correctAnswers;

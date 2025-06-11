@@ -21,6 +21,7 @@ class QuizManager {
 		this.questionText = document.getElementById("question-text");
 		this.optionsContainer = document.getElementById("options-container");
 		this.currentQuestionSpan = document.getElementById("current-question");
+		this.pdfFileSpan = document.getElementById("pdf-file-name");
 		this.totalQuestionsSpan = document.getElementById("total-questions");
 		this.progressFill = document.getElementById("progress-fill");
 		this.prevBtn = document.getElementById("prev-btn");
@@ -110,7 +111,7 @@ class QuizManager {
 		});
 	}
 
-	initialize(questions, existingAnswers = null) {
+	initialize(questions, existingAnswers = null, pdfName) {
 		this.questions = questions;
 		this.userAnswers =
 			existingAnswers || new Array(questions.length).fill(null);
@@ -126,6 +127,7 @@ class QuizManager {
 		});
 
 		this.totalQuestionsSpan.textContent = questions.length;
+		this.pdfFileSpan.textContent = pdfName ? `- ${pdfName}` : "";
 		this.displayCurrentQuestion();
 		this.updateNavigation();
 		this.updateProgress();
@@ -474,6 +476,7 @@ class QuizManager {
 		this.currentQuestionSpan.textContent = "1";
 		this.totalQuestionsSpan.textContent = "10";
 		this.progressFill.style.width = "0%";
+		this.pdfFileSpan.textContent = "";
 
 		// Reset explanation
 		if (this.explanationContainer) {
