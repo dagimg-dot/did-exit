@@ -240,7 +240,7 @@ class UIComponents {
                 }
                 
                 .result-explanation {
-                    background: #f8fafc;
+                    background: var(--card-background);
                     border-left: 4px solid var(--primary-color);
                     padding: 0.75rem;
                     border-radius: 4px;
