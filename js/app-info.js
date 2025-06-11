@@ -1,8 +1,18 @@
-export const CURRENT_APP_VERSION = "1.4";
+export const CURRENT_APP_VERSION = "1.5";
 
 export const content = {
 	version: CURRENT_APP_VERSION,
 	versionHistory: [
+		{
+			version: "1.5",
+			features: [
+				{
+					title: "Buy me a coffee 😁😁 (I don't like coffee, but I like money)",
+					description:
+						"You can now buy me a coffee to support the app. It's a small gesture, but it's appreciated. Go to <a href='https://jami.bio/jdlix' target='_blank'>https://jami.bio/jdlix</a> to buy me a coffee.",
+				},
+			],
+		},
 		{
 			version: "1.4",
 			features: [
