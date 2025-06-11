@@ -1,8 +1,22 @@
-export const CURRENT_APP_VERSION = "1.3";
+export const CURRENT_APP_VERSION = "1.4";
 
 export const content = {
 	version: CURRENT_APP_VERSION,
 	versionHistory: [
+		{
+			version: "1.4",
+			features: [
+				{
+					title: "Dark Mode",
+					description:
+						"The app now supports dark mode. You can toggle it on the top right corner of the app.",
+				},
+				{
+					title: "Resume Button",
+					description: "You can now resume your exam from where you left off.",
+				},
+			],
+		},
 		{
 			version: "1.3",
 			features: [
