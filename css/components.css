@@ -677,7 +677,6 @@
 
 .recent-exams-section:hover {
 	border-color: var(--primary-color);
-	background-color: #f8faff;
 }
 
 .recent-exams-icon {
@@ -720,7 +719,7 @@
 }
 
 .recent-exam-item:hover {
-	background: #f0f7ff;
+	background: var(--card-background);
 	border-color: var(--primary-color);
 	transform: translateY(-1px);
 	box-shadow: var(--shadow);
@@ -864,6 +863,96 @@
 
 @media (max-width: 768px) {
 	.modal-dialog {
-		width: 95%;
+		width: 90%;
 	}
+}
+
+/* Dark Mode Overrides */
+.dark-theme .api-key-section:hover {
+	background-color: #2c3a4b;
+}
+
+.dark-theme .upload-area:hover {
+	border-color: var(--primary-color);
+	background-color: #2c3a4b;
+}
+
+.dark-theme .upload-area.dragover {
+	background-color: #314155;
+}
+
+.dark-theme .notification {
+	background-color: #2d3748;
+	border-color: #4a5568;
+	color: var(--text-primary);
+}
+
+.dark-theme .notification.success {
+	background-color: #2f5c4b;
+	border-color: #38a169;
+}
+
+.dark-theme .notification.error {
+	background-color: #632525;
+	border-color: #e53e3e;
+}
+
+.dark-theme .notification.warning {
+	background-color: #65432d;
+	border-color: #dd6b20;
+}
+
+.dark-theme .notification.info {
+	background-color: #2c5282;
+	border-color: #4299e1;
+}
+
+.dark-theme .notification-close {
+	color: var(--text-primary);
+}
+
+.dark-theme .recent-exam-item {
+	background-color: #2d3748;
+	border-color: #4a5568;
+}
+
+.dark-theme .recent-exam-item:hover {
+	background-color: #4a5568;
+	border-color: var(--primary-color);
+}
+
+.dark-theme .delete-exam-btn:hover {
+	background-color: #c53030;
+	color: white;
+}
+
+.dark-theme .modal-backdrop {
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+.dark-theme .modal-dialog {
+	background-color: var(--card-background);
+}
+
+.dark-theme .modal-header,
+.dark-theme .modal-footer {
+	border-color: var(--border-color);
+	background-color: var(--card-background);
+}
+
+.dark-theme .modal-close-btn {
+	color: var(--text-secondary);
+}
+
+.dark-theme .modal-close-btn:hover {
+	color: var(--text-primary);
+}
+
+.dark-theme .recent-exam-name,
+.dark-theme .recent-exam-meta {
+	color: var(--text-primary);
+}
+
+.dark-theme .quiz-mode-selector .slider {
+	background-color: #4a5568;
 }
