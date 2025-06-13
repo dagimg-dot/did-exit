@@ -150,6 +150,7 @@ class QuizManager {
 		}
 
 		this.renderOptions(question);
+		this.displayQuestionNavigation();
 
 		// If in normal mode and already answered, show the feedback again
 		const currentAnswer = this.userAnswers[this.currentQuestionIndex];
@@ -246,6 +247,7 @@ class QuizManager {
 		}
 
 		// Update navigation
+		this.displayQuestionNavigation();
 		this.updateNavigation();
 		this.updateResumeButton();
 
@@ -319,6 +321,37 @@ class QuizManager {
 			this.updateProgress();
 			this.updateResumeButton();
 		}
+	}
+
+	displayQuestionNavigation() {
+		const navList = document.getElementById("nav-list");
+		if (!navList) return;
+		navList.innerHTML = "";
+		this.questions.forEach((question, index) => {
+			const navItem = document.createElement("li");
+			const btn = document.createElement("button");
+			btn.className = "question-nav-btn";
+			btn.textContent = index + 1;
+			// if (this.userAnswers[index] !== null) {
+			// 	btn.classList.add("answered");
+			// 	btn.title = "Answered";
+			// } else {
+			// 	btn.classList.add("unanswered");
+			// 	btn.title = "Unanswered";
+			// }
+			if (index === this.currentQuestionIndex) {
+				btn.classList.add("active");
+			}
+			btn.addEventListener("click", () => {
+				this.currentQuestionIndex = index;
+				this.displayCurrentQuestion();
+				this.updateNavigation();
+				this.updateProgress();
+				this.updateResumeButton();
+			});
+			navItem.appendChild(btn);
+			navList.appendChild(navItem);
+		});
 	}
 
 	updateNavigation() {
