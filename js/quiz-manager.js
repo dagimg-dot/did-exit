@@ -332,13 +332,13 @@ class QuizManager {
 			const btn = document.createElement("button");
 			btn.className = "question-nav-btn";
 			btn.textContent = index + 1;
-			// if (this.userAnswers[index] !== null) {
-			// 	btn.classList.add("answered");
-			// 	btn.title = "Answered";
-			// } else {
-			// 	btn.classList.add("unanswered");
-			// 	btn.title = "Unanswered";
-			// }
+			if (this.userAnswers[index] !== null) {
+				btn.classList.add("answered");
+				btn.title = "Answered";
+			} else {
+				btn.classList.add("unanswered");
+				btn.title = "Unanswered";
+			}
 			if (index === this.currentQuestionIndex) {
 				btn.classList.add("active");
 			}
