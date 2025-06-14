@@ -319,6 +319,15 @@ class App {
 				"success",
 			);
 			this.ui.hideProgressIndicator();
+
+			// 📊 Analytics: track successful PDF processing
+			if (window.plausible) {
+				window.plausible("pdf_processed", {
+					props: {
+						questions: data.totalQuestions,
+					},
+				});
+			}
 		}
 	}
 
@@ -597,6 +606,17 @@ class App {
 					.catch((error) =>
 						console.error("Error saving final answers:", error),
 					);
+			}
+
+			// 📊 Analytics: track quiz completion event with score
+			if (window.plausible) {
+				const correctCount = results.correct;
+				window.plausible("quiz_completed", {
+					props: {
+						total: results.total,
+						correct: correctCount,
+					},
+				});
 			}
 		} catch (error) {
 			this.handleAIError(error);
