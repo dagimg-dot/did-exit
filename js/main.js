@@ -8,6 +8,7 @@ import { DatabaseManager } from "./database-manager.js";
 import { BatchProcessor } from "./batch-processor.js";
 import { content, CURRENT_APP_VERSION } from "./app-info.js";
 import { initializeTheme } from "./theme-manager.js";
+import { P2PSyncManager } from "./p2p-sync-manager.js";
 
 class App {
 	constructor() {
@@ -45,6 +46,10 @@ class App {
 			this.aiIntegration,
 			this.databaseManager,
 		);
+
+		// Initialize P2P sync engine
+		this.p2pSyncManager = new P2PSyncManager(this.databaseManager);
+		this.p2pSyncManager.on("dataReceived", this.handleSyncedData.bind(this));
 	}
 
 	setupEventListeners() {
@@ -130,6 +135,12 @@ class App {
 		document
 			.getElementById("cancel-processing-btn")
 			.addEventListener("click", this.cancelProcessing.bind(this));
+
+		// Global receive button
+		document.getElementById("receive-btn").addEventListener("click", () => {
+			console.log("[UI] Global 'Receive an Exam' button clicked.");
+			this.ui.showSyncModal(null, this.p2pSyncManager);
+		});
 	}
 
 	async handleFileSelected(file) {
@@ -880,6 +891,7 @@ class App {
 				</div>
 				<div class="recent-exam-actions">
 					${hasUserAnswers ? `<button class="reset-answers-btn" data-pdf-id="${pdf.id}" title="Reset answers">↺</button>` : ""}
+					<button class="sync-exam-btn" data-pdf-id="${pdf.id}" title="Sync exam">🔄</button>
 					<button class="delete-exam-btn" data-pdf-id="${pdf.id}" title="Delete exam">×</button>
 				</div>
 			</div>
@@ -917,6 +929,16 @@ class App {
 				e.stopPropagation(); // Prevent exam item click
 				const pdfId = btn.dataset.pdfId;
 				this.resetExamAnswers(pdfId);
+			});
+		});
+
+		// Handle sync button clicks
+		document.querySelectorAll(".sync-exam-btn").forEach((btn) => {
+			btn.addEventListener("click", (e) => {
+				e.stopPropagation();
+				const pdfId = btn.dataset.pdfId;
+				console.log(`[UI] Sync button clicked for PDF:`, pdfId);
+				this.ui.showSyncModal(pdfId, this.p2pSyncManager);
 			});
 		});
 	}
@@ -1177,6 +1199,21 @@ class App {
 				// We already have correct answers, just refresh the feedback
 				this.quizManager.refreshFeedbackIfNeeded();
 			}
+		}
+	}
+
+	async handleSyncedData(data) {
+		try {
+			console.log("[App] Received synced data, refreshing UI.", data);
+			this.ui.showNotification(
+				"Questions synchronized successfully!",
+				"success",
+			);
+			// Refresh recent exams list so the newly imported PDF appears
+			await this.loadRecentExams();
+		} catch (err) {
+			console.error("Failed handling synced data", err);
+			this.ui.showError("Sync failed: " + err.message);
 		}
 	}
 }

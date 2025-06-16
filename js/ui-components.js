@@ -513,6 +513,156 @@ class UIComponents {
 			`${questionsReady} questions ready...`,
 		);
 	}
+
+	// ───────────────────────────────── Sync Modal ─────────────────────────────────
+	createSyncModal() {
+		// Use the same structure as the generic modal for consistent styling
+		const modalContent = `
+			<div class="sync-tabs" style="display:flex; gap:0.5rem; margin-bottom:1rem; border-bottom: 1px solid #e5e7eb;">
+				<button class="tab-btn active" data-tab="share" style="padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent;">Share</button>
+				<button class="tab-btn" data-tab="receive" style="padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent;">Receive</button>
+			</div>
+
+			<!-- Share Tab -->
+			<div class="tab-content" id="share-tab">
+				<p>Share this exam by having another device scan the QR code below.</p>
+				<div id="qrcode-container" style="display:flex; justify-content:center; margin: 1.5rem 0;"></div>
+				<p style="text-align:center; font-size:0.9rem; color:#6b7280;">Or copy the code:</p>
+				<div class="connection-code" style="display:flex; gap:0.5rem; align-items:center;">
+					<input type="text" id="connection-code" readonly style="flex:1; min-width:0; background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.5rem;">
+					<button id="copy-code-btn" class="btn btn-secondary btn-sm">Copy</button>
+				</div>
+			</div>
+
+			<!-- Receive Tab -->
+			<div class="tab-content" id="receive-tab" style="display:none">
+				<p>Paste the connection code from the other device below to connect.</p>
+				<div class="connection-input" style="display:flex; flex-direction:column; gap:0.5rem; margin-top: 1.5rem;">
+					<input type="text" id="peer-connection-input" placeholder="Paste connection code here" style="flex:1; min-width:0; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.5rem;">
+					<button id="connect-btn" class="btn btn-primary" style="align-self: flex-end;">Connect</button>
+				</div>
+			</div>
+
+			<div id="sync-status" style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280; text-align: center; min-height: 20px;"></div>
+		`;
+		return modalContent;
+	}
+
+	showSyncModal(pdfId, p2pSyncManager) {
+		const isReceiveOnly = pdfId === null;
+		const modalContent = this.createSyncModal();
+		this.showModal(isReceiveOnly ? "Receive Exam" : "Sync Exam", modalContent, [
+			{
+				text: "Close",
+				className: "btn-secondary",
+				onClick: () => this.hideModal(),
+			},
+		]);
+
+		// The generic showModal call creates this.modalElement
+		const modal = this.modalElement;
+
+		// Tab switching logic
+		const shareTabBtn = modal.querySelector('.tab-btn[data-tab="share"]');
+		const receiveTabBtn = modal.querySelector('.tab-btn[data-tab="receive"]');
+		const shareTab = modal.querySelector("#share-tab");
+		const receiveTab = modal.querySelector("#receive-tab");
+		const activeStyle = "border-bottom: 2px solid #4f46e5; font-weight: 600;";
+
+		if (isReceiveOnly) {
+			// Default to Receive tab and hide the Share tab
+			shareTab.style.display = "none";
+			shareTabBtn.style.display = "none";
+			receiveTab.style.display = "block";
+			receiveTabBtn.style.cssText += activeStyle;
+		} else {
+			// Default to Share tab
+			shareTabBtn.style.cssText += activeStyle;
+		}
+
+		shareTabBtn.addEventListener("click", () => {
+			shareTabBtn.style.cssText += activeStyle;
+			receiveTabBtn.style.cssText = receiveTabBtn.style.cssText.replace(
+				activeStyle,
+				"",
+			);
+			shareTab.style.display = "none";
+			receiveTab.style.display = "block";
+		});
+		receiveTabBtn.addEventListener("click", () => {
+			receiveTabBtn.style.cssText += activeStyle;
+			shareTabBtn.style.cssText = shareTabBtn.style.cssText.replace(
+				activeStyle,
+				"",
+			);
+			shareTab.style.display = "block";
+			receiveTab.style.display = "none";
+		});
+
+		const statusEl = modal.querySelector("#sync-status");
+
+		// --- Share logic (only if a pdfId is provided) ---
+		if (!isReceiveOnly) {
+			(async () => {
+				try {
+					statusEl.textContent = "Creating share session…";
+					const { roomUrl } = await p2pSyncManager.createShareSession(pdfId);
+					const connectionInfo = { pdfId, roomUrl };
+					const connectionString = JSON.stringify(connectionInfo);
+
+					const qrContainer = modal.querySelector("#qrcode-container");
+					const canvas = document.createElement("canvas");
+					qrContainer.appendChild(canvas);
+					// eslint-disable-next-line no-undef
+					QRCode.toCanvas(canvas, connectionString, { width: 220, margin: 1 });
+
+					modal.querySelector("#connection-code").value =
+						btoa(connectionString);
+					statusEl.textContent = "Ready to connect.";
+				} catch (err) {
+					console.error("Failed to create share session", err);
+					statusEl.textContent = "Error: " + err.message;
+					this.showError("Failed to create share session: " + err.message);
+				}
+			})();
+
+			// Copy code
+			modal.querySelector("#copy-code-btn").addEventListener("click", () => {
+				const input = modal.querySelector("#connection-code");
+				input.select();
+				document.execCommand("copy");
+				statusEl.textContent = "Copied to clipboard!";
+			});
+		}
+
+		// --- Receive logic ---
+		modal.querySelector("#connect-btn").addEventListener("click", async () => {
+			try {
+				const raw = modal.querySelector("#peer-connection-input").value.trim();
+				if (!raw) {
+					statusEl.textContent = "Please paste a connection code.";
+					return;
+				}
+				let decoded;
+				try {
+					decoded = atob(raw);
+				} catch (_) {
+					decoded = raw; // maybe plain JSON
+				}
+				const info = JSON.parse(decoded);
+				statusEl.textContent = "Connecting…";
+				await p2pSyncManager.joinShareSession(info);
+				statusEl.textContent = "Connected! Receiving data...";
+				// The dataReceived event in main.js will handle the rest.
+				// We can close the modal after a short delay.
+				setTimeout(() => this.hideModal(), 2000);
+			} catch (err) {
+				console.error("Failed to join session", err);
+				statusEl.textContent = "Connection error: " + err.message;
+				this.showError("Could not connect: " + err.message);
+			}
+		});
+	}
 }
 
 export { UIComponents };

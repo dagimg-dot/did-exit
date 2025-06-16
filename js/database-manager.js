@@ -215,15 +215,15 @@ class DatabaseManager {
 		const store = transaction.objectStore("questions");
 
 		const promises = questions.map((question, index) => {
-			// Generate a guaranteed-unique questionId, ignoring any ID from the AI
+			// For synced questions, questionId is preserved. For new AI questions, it's generated.
 			const generatedQuestionId =
-				(batchNumber - 1) * 1000 + (question.id || index) + 1;
+				question.questionId || (batchNumber - 1) * 1000 + index + 1;
 
 			const questionRecord = {
 				id: `${pdfId}_${generatedQuestionId}`, // Unique primary key for the record
 				pdfId: pdfId,
-				questionId: generatedQuestionId, // This is now guaranteed to be unique across batches
-				batchNumber: batchNumber,
+				questionId: generatedQuestionId,
+				batchNumber: question.batchNumber || batchNumber, // Use original batchNumber from sync if present
 				question: question.question,
 				options: question.options,
 				correctAnswer: question.correctAnswer,
@@ -600,6 +600,46 @@ class DatabaseManager {
 			};
 			getRequest.onerror = () => reject(getRequest.error);
 		});
+	}
+
+	// ≡≡≡≡≡≡≡ Sync Support Methods (metadata-only transfers) ≡≡≡≡≡≡≡
+
+	// Return PDF metadata without the heavy textContent field so it can be transferred quickly over the wire
+	async getPDFMetadata(pdfId) {
+		const pdf = await this.getPDF(pdfId);
+		if (!pdf) return null;
+
+		// Create a shallow copy and strip the large textContent payload if present
+		const metadata = { ...pdf };
+		delete metadata.textContent;
+		return metadata;
+	}
+
+	// Store just the metadata (no textContent) when data is synced from another peer
+	async storePDFMetadata(metadata) {
+		console.log(`[DB] Storing synced metadata for PDF:`, metadata.id);
+		// Ensure we never store large content accidentally
+		const cleaned = { ...metadata };
+		delete cleaned.textContent;
+
+		// Re-use the existing storePDF logic so we benefit from a single code path
+		// but override textContent with an empty string to keep record sizes small.
+		return this.storePDF({ ...cleaned, textContent: "" });
+	}
+
+	// Import metadata and its associated questions coming from the sync engine
+	async importSyncedData(metadata, questions) {
+		// 1. Persist the metadata first so foreign-key style look-ups succeed
+		await this.storePDFMetadata(metadata);
+
+		// 2. Store all questions in a single, efficient transaction.
+		// The `questions` objects from sync already have `questionId` and `batchNumber`,
+		// which our updated storeQuestions method will now correctly preserve.
+		await this.storeQuestions(metadata.id, questions, 1); // The '1' is a dummy default batch number.
+
+		console.log(
+			`📥 Imported synced data for PDF ${metadata.id} – ${questions.length} questions`,
+		);
 	}
 }
 
