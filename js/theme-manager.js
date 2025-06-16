@@ -31,7 +31,7 @@ function handleThemeSelection(selectedTheme) {
 }
 
 export function initializeTheme() {
-	const savedTheme = localStorage.getItem("theme") || "system";
+	const savedTheme = localStorage.getItem("theme") || "dark";
 
 	for (const key in themeButtons) {
 		if (themeButtons[key]) {
