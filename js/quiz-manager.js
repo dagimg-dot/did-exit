@@ -354,6 +354,7 @@ class QuizManager {
         flagImg.height = "16";
         flagImg.style.position = "absolute";
         flagImg.style.top = "-10px";
+		flagImg.style.left="16px"
         navItem.appendChild(flagImg);
       }
 
