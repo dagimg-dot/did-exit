@@ -628,17 +628,45 @@ class DatabaseManager {
 	}
 
 	// Import metadata and its associated questions coming from the sync engine
-	async importSyncedData(metadata, questions) {
-		// 1. Persist the metadata first so foreign-key style look-ups succeed
-		await this.storePDFMetadata(metadata);
+	async importSyncedData(metadata, questions, userAnswers = []) {
+		// Check if the PDF already exists locally
+		const existingPDF = await this.db
+			.transaction("pdfs", "readonly")
+			.objectStore("pdfs")
+			.get(metadata.id);
 
-		// 2. Store all questions in a single, efficient transaction.
-		// The `questions` objects from sync already have `questionId` and `batchNumber`,
-		// which our updated storeQuestions method will now correctly preserve.
-		await this.storeQuestions(metadata.id, questions, 1); // The '1' is a dummy default batch number.
+		if (existingPDF) {
+			console.log(`[DB] PDF ${metadata.id} already exists. Merging answers.`);
+			// If it exists, just update the answers, don't re-import everything.
+			const existingAnswers = await this.getUserAnswers(metadata.id);
+			// A simple merge: incoming answers overwrite existing ones if they exist at the same index.
+			// This could be made more sophisticated (e.g., based on timestamps) if needed.
+			const mergedAnswers = [...existingAnswers];
+			userAnswers.forEach((answer, index) => {
+				if (answer !== null) {
+					// Only overwrite with non-empty answers
+					mergedAnswers[index] = answer;
+				}
+			});
+			await this.storeUserAnswers(metadata.id, mergedAnswers);
+			console.log(`[DB] Merged ${mergedAnswers.length} answers.`);
+		} else {
+			// If it's a new PDF, perform the full import.
+			// 1. Persist the metadata first so foreign-key style look-ups succeed
+			await this.storePDFMetadata(metadata);
+
+			// 2. Store all questions in a single, efficient transaction.
+			await this.storeQuestions(metadata.id, questions, 1);
+
+			// 3. If user answers were synced, store them as well.
+			if (userAnswers && userAnswers.length > 0) {
+				console.log(`[DB] Storing ${userAnswers.length} synced user answers.`);
+				await this.storeUserAnswers(metadata.id, userAnswers);
+			}
+		}
 
 		console.log(
-			`📥 Imported synced data for PDF ${metadata.id} – ${questions.length} questions`,
+			`📥 Imported/Updated data for PDF ${metadata.id} – ${questions.length} questions.`,
 		);
 	}
 }

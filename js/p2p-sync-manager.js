@@ -96,7 +96,7 @@ export class P2PSyncManager {
 			try {
 				const prepared = await this.#prepareDataForSync(pdfId);
 				console.log(
-					`${this.logPrefix} Sending metadata for ${prepared.totalQuestions} questions...`,
+					`${this.logPrefix} Sending metadata, ${prepared.totalQuestions} questions, and ${prepared.userAnswers.length} answers...`,
 				);
 				// Send metadata first
 				peer.send(
@@ -104,6 +104,7 @@ export class P2PSyncManager {
 						type: "metadata",
 						data: prepared.metadata,
 						totalQuestions: prepared.totalQuestions,
+						userAnswers: prepared.userAnswers,
 					}),
 				);
 
@@ -190,6 +191,7 @@ export class P2PSyncManager {
 		// Incoming data buffering
 		let incomingMetadata = null;
 		let questionAccumulator = [];
+		let incomingUserAnswers = [];
 
 		peer.on("data", async (raw) => {
 			try {
@@ -197,6 +199,7 @@ export class P2PSyncManager {
 				console.log(`${this.logPrefix} Received data chunk:`, msg.type);
 				if (msg.type === "metadata") {
 					incomingMetadata = msg.data;
+					incomingUserAnswers = msg.userAnswers || [];
 				} else if (msg.type === "questions") {
 					// Emit progress for the UI on the receiver side
 					this.emit("receivingProgress", {
@@ -212,6 +215,7 @@ export class P2PSyncManager {
 					await this.databaseManager.importSyncedData(
 						incomingMetadata,
 						questionAccumulator,
+						incomingUserAnswers,
 					);
 					this.emit("dataReceived", {
 						metadata: incomingMetadata,
@@ -260,9 +264,10 @@ export class P2PSyncManager {
 	async #prepareDataForSync(pdfId) {
 		const metadata = await this.databaseManager.getPDFMetadata(pdfId);
 		const questions = await this.databaseManager.getQuestions(pdfId);
+		const userAnswers = await this.databaseManager.getUserAnswers(pdfId);
 
 		console.log(
-			`${this.logPrefix} Preparing data: ${questions.length} questions found.`,
+			`${this.logPrefix} Preparing data: ${questions.length} questions and ${userAnswers.length} answers found.`,
 		);
 
 		const CHUNK_SIZE = 20;
@@ -274,6 +279,7 @@ export class P2PSyncManager {
 			metadata,
 			questionChunks: chunks,
 			totalQuestions: questions.length,
+			userAnswers,
 		};
 	}
 
