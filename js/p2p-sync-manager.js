@@ -50,15 +50,29 @@ export class P2PSyncManager {
 		const peer = this.#createPeer(true);
 		this.peers.set(roomId, peer);
 
-		// Publish offer to signalling room once emitted
-		peer.on("signal", async (offer) => {
-			if (!peer.__offerPublished) {
-				console.log(
-					`${this.logPrefix} Got initiator signal (offer). Publishing to room...`,
-				);
-				await this.#publishOffer(roomUrl, offer);
-				peer.__offerPublished = true;
-			}
+		// Wrap offer generation in a promise to eliminate race conditions.
+		// The function will not return the roomId until the offer is published.
+		const offerPublishedPromise = new Promise((resolve, reject) => {
+			peer.on("signal", async (offer) => {
+				if (!peer.__offerPublished) {
+					try {
+						console.log(
+							`${this.logPrefix} Got initiator signal (offer). Publishing to room...`,
+						);
+						await this.#publishOffer(roomUrl, { offer, pdfId });
+						peer.__offerPublished = true;
+						console.log(`${this.logPrefix} Offer successfully published.`);
+						resolve();
+					} catch (err) {
+						console.error(`${this.logPrefix} Failed to publish offer:`, err);
+						reject(err);
+					}
+				}
+			});
+			setTimeout(
+				() => reject(new Error("Timeout waiting for signal event")),
+				10000,
+			);
 		});
 
 		// Poll for answer in background
@@ -69,12 +83,13 @@ export class P2PSyncManager {
 				peer.signal(answer);
 			})
 			.catch((err) => {
-				console.error(`${this.logPrefix} Polling failed:`, err);
-				this.emit("error", err);
+				// Don't treat polling timeout as a critical error, just log it.
+				console.log(`${this.logPrefix} Polling stopped:`, err.message);
 			});
 
 		// Once WebRTC channel is open, send the data
 		peer.on("connect", async () => {
+			this.emit("syncStart");
 			console.log(
 				`${this.logPrefix} Peer connection established. Preparing data for sync...`,
 			);
@@ -98,6 +113,11 @@ export class P2PSyncManager {
 				);
 				for (let i = 0; i < prepared.questionChunks.length; i++) {
 					const chunk = prepared.questionChunks[i];
+					// Emit a progress event for the UI
+					this.emit("sendingProgress", {
+						current: i + 1,
+						total: prepared.questionChunks.length,
+					});
 					peer.send(
 						JSON.stringify({
 							type: "questions",
@@ -123,23 +143,32 @@ export class P2PSyncManager {
 		});
 		peer.on("close", () => {
 			console.log(`${this.logPrefix} Peer connection closed for room:`, roomId);
+			this.emit("syncComplete");
 			this.peers.delete(roomId);
 		});
 
-		return { pdfId, roomUrl };
+		// Wait for the offer to be published before returning the roomId.
+		await offerPublishedPromise;
+
+		console.log(
+			`${this.logPrefix} Share session ready. Returning roomId to UI.`,
+		);
+		return { roomId };
 	}
 
 	// Called by the device that wants to *receive* questions
-	async joinShareSession(connectionInfo) {
-		console.log(`${this.logPrefix} Joining share session:`, connectionInfo);
-		const { roomUrl, pdfId } = connectionInfo;
+	async joinShareSession(roomId) {
+		console.log(`${this.logPrefix} Joining share session for room:`, roomId);
+		const roomUrl = `${window.location.origin}/.netlify/functions/webrtc-room/${roomId}`;
 		const peer = this.#createPeer(false);
 
-		// Fetch offer and feed into peer
+		// Fetch offer and pdfId from the room
 		console.log(`${this.logPrefix} Fetching offer from room:`, roomUrl);
 		const res = await fetch(roomUrl);
-		const { offer } = await res.json();
+		const { offer, pdfId } = await res.json();
 		if (!offer) throw new Error("No offer present in room");
+		if (!pdfId) throw new Error("No pdfId present in room for syncing");
+
 		peer.signal(offer);
 
 		// When we produce our answer, PUT it back
@@ -148,6 +177,14 @@ export class P2PSyncManager {
 				`${this.logPrefix} Got receiver signal (answer). Publishing to room...`,
 			);
 			await this.#publishAnswer(roomUrl, answer);
+		});
+
+		// Also emit a 'syncStart' event on the receiver side when connected.
+		peer.on("connect", () => {
+			this.emit("syncStart");
+			console.log(
+				`${this.logPrefix} Receiver peer connection established. Ready for data.`,
+			);
 		});
 
 		// Incoming data buffering
@@ -161,6 +198,11 @@ export class P2PSyncManager {
 				if (msg.type === "metadata") {
 					incomingMetadata = msg.data;
 				} else if (msg.type === "questions") {
+					// Emit progress for the UI on the receiver side
+					this.emit("receivingProgress", {
+						current: msg.chunkIndex + 1,
+						total: msg.totalChunks,
+					});
 					questionAccumulator.push(...msg.data);
 				} else if (msg.type === "complete") {
 					console.log(`${this.logPrefix} Sync complete. Importing data...`);
@@ -175,6 +217,7 @@ export class P2PSyncManager {
 						metadata: incomingMetadata,
 						questions: questionAccumulator,
 					});
+					// Now that processing is done, the receiver can destroy the connection.
 					peer.destroy();
 				}
 			} catch (err) {
@@ -190,7 +233,12 @@ export class P2PSyncManager {
 			this.emit("error", err);
 		});
 
-		return { pdfId, roomUrl };
+		peer.on("close", () => {
+			console.log(`${this.logPrefix} Receiver peer connection closed.`);
+			this.emit("syncComplete");
+		});
+
+		return { pdfId, roomId };
 	}
 
 	/* ───────────────────── Helper utilities ───────────────────── */
@@ -233,10 +281,10 @@ export class P2PSyncManager {
 		return crypto.randomUUID();
 	}
 
-	async #publishOffer(roomUrl, offer) {
+	async #publishOffer(roomUrl, payload) {
 		await fetch(roomUrl, {
 			method: "PUT",
-			body: JSON.stringify({ offer }),
+			body: JSON.stringify(payload),
 		});
 	}
 

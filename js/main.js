@@ -50,6 +50,19 @@ class App {
 		// Initialize P2P sync engine
 		this.p2pSyncManager = new P2PSyncManager(this.databaseManager);
 		this.p2pSyncManager.on("dataReceived", this.handleSyncedData.bind(this));
+		this.p2pSyncManager.on("syncStart", () =>
+			this.ui.showProgressIndicator(0, 1, "Starting sync..."),
+		);
+		this.p2pSyncManager.on("sendingProgress", ({ current, total }) =>
+			this.ui.updateProgressIndicator(current, total, "Sending questions..."),
+		);
+		this.p2pSyncManager.on("receivingProgress", ({ current, total }) =>
+			this.ui.updateProgressIndicator(current, total, "Receiving questions..."),
+		);
+		this.p2pSyncManager.on("syncComplete", () =>
+			this.ui.hideProgressIndicator(),
+		);
+		this.p2pSyncManager.on("error", () => this.ui.hideProgressIndicator());
 	}
 
 	setupEventListeners() {
