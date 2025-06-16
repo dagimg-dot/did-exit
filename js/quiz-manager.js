@@ -349,17 +349,18 @@ class QuizManager {
 				btn.classList.add("active");
 			}
 
-			if (this.flaggedQuestions[index]) {
-				navItem.style.position = "relative";
-				const flagImg = document.createElement("img");
-				flagImg.src = "./assets/red-flag.png";
-				flagImg.alt = "Flagged";
-				flagImg.width = "16";
-				flagImg.height = "16";
-				flagImg.style.position = "absolute";
-				flagImg.style.top = "-10px";
-				navItem.appendChild(flagImg);
-			}
+      if (this.flaggedQuestions[index]) {
+        navItem.style.position = "relative";
+        const flagImg = document.createElement("img");
+        flagImg.src = "./assets/red-flag.png";
+        flagImg.alt = "Flagged";
+        flagImg.width = "16";
+        flagImg.height = "16";
+        flagImg.style.position = "absolute";
+        flagImg.style.top = "-10px";
+		flagImg.style.left="16px"
+        navItem.appendChild(flagImg);
+      }
 
 			btn.addEventListener("click", () => {
 				this.currentQuestionIndex = index;
