@@ -525,7 +525,7 @@ class DatabaseManager {
 		});
 	}
 
-	async storeUserAnswers(pdfId, userAnswers) {
+	async storeUserAnswers(pdfId, userAnswers, flaggedQuestions) {
 		const transaction = this.db.transaction(["pdfs"], "readwrite");
 		const store = transaction.objectStore("pdfs");
 
@@ -535,6 +535,7 @@ class DatabaseManager {
 				if (getRequest.result) {
 					const pdf = getRequest.result;
 					pdf.userAnswers = userAnswers;
+					pdf.flaggedQuestions = flaggedQuestions;
 					pdf.lastAnswerSaved = new Date();
 
 					const updateRequest = store.put(pdf);
@@ -564,10 +565,16 @@ class DatabaseManager {
 					console.log(
 						`📝 Loaded ${request.result.userAnswers.filter((a) => a !== null).length} saved user answers for PDF ${pdfId.substring(0, 8)}...`,
 					);
-					resolve(request.result.userAnswers);
+					resolve({
+						userAnswers: request.result.userAnswers,
+						flaggedQuestions: request.result.flaggedQuestions,
+					});
 				} else {
 					// No saved answers found
-					resolve([]);
+					resolve({
+						userAnswers: [],
+						flaggedQuestions: [],
+					});
 				}
 			};
 			request.onerror = () => reject(request.error);
