@@ -4,8 +4,8 @@
 	"description": "Exam Generator from PDF - Upload your exam PDF and make it interactive",
 	"type": "module",
 	"scripts": {
-		"dev": "python -m http.server 8000",
-		"dev:watch": "watchmedo auto-restart --patterns='*.html;*.css;*.js' -- python -m http.server 8000",
+		"dev": "live-server --port=8000",
+		"dev:watch": "live-server --port=8000 --watch=.",
 		"format": "biome format . --write",
 		"format:check": "biome format .",
 		"lint": "biome lint .",
@@ -24,7 +24,8 @@
 	"author": "Dagim G. Astatkie",
 	"license": "MIT",
 	"devDependencies": {
-		"@biomejs/biome": "^2.0.0"
+		"@biomejs/biome": "^2.0.0",
+		"live-server": "^1.2.2"
 	},
 	"engines": {
 		"node": ">=18.0.0"
