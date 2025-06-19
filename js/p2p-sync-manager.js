@@ -109,14 +109,17 @@ export class P2PSyncManager {
 					`${this.logPrefix} Sending metadata, ${prepared.totalQuestions} questions, and ${prepared.userAnswers.length} answers...`,
 				);
 				// Send metadata first
-				peer.send(
-					JSON.stringify({
-						type: "metadata",
-						data: prepared.metadata,
-						totalQuestions: prepared.totalQuestions,
-						userAnswers: prepared.userAnswers,
-					}),
+				const metadataMessage = {
+					type: "metadata",
+					data: prepared.metadata,
+					totalQuestions: prepared.totalQuestions,
+					userAnswers: prepared.userAnswers,
+				};
+				console.log(
+					`${this.logPrefix} Sending metadata message:`,
+					metadataMessage,
 				);
+				peer.send(JSON.stringify(metadataMessage));
 
 				// Then send each chunk sequentially to keep memory low
 				console.log(
@@ -129,14 +132,16 @@ export class P2PSyncManager {
 						current: i + 1,
 						total: prepared.questionChunks.length,
 					});
-					peer.send(
-						JSON.stringify({
-							type: "questions",
-							chunkIndex: i,
-							totalChunks: prepared.questionChunks.length,
-							data: chunk,
-						}),
+					const chunkMessage = {
+						type: "questions",
+						chunkIndex: i,
+						totalChunks: prepared.questionChunks.length,
+						data: chunk,
+					};
+					console.log(
+						`${this.logPrefix} Sending chunk ${i + 1}/${prepared.questionChunks.length} with ${chunk.length} questions`,
 					);
+					peer.send(JSON.stringify(chunkMessage));
 				}
 
 				// Indicate completion
@@ -214,28 +219,46 @@ export class P2PSyncManager {
 				const msg = JSON.parse(raw.toString());
 				console.log(`${this.logPrefix} Received data chunk:`, msg.type);
 				if (msg.type === "metadata") {
+					console.log(
+						`${this.logPrefix} Processing metadata with ${msg.totalQuestions} total questions and ${msg.userAnswers?.length || 0} user answers`,
+					);
 					incomingMetadata = msg.data;
 					incomingUserAnswers = msg.userAnswers || [];
 				} else if (msg.type === "questions") {
+					console.log(
+						`${this.logPrefix} Processing questions chunk ${msg.chunkIndex + 1}/${msg.totalChunks} with ${msg.data.length} questions`,
+					);
 					// Emit progress for the UI on the receiver side
 					this.emit("receivingProgress", {
 						current: msg.chunkIndex + 1,
 						total: msg.totalChunks,
 					});
 					questionAccumulator.push(...msg.data);
+					console.log(
+						`${this.logPrefix} Total questions accumulated so far: ${questionAccumulator.length}`,
+					);
 				} else if (msg.type === "complete") {
 					console.log(
 						`${this.logPrefix} Sync complete. Importing data...`,
+					);
+					console.log(
+						`${this.logPrefix} Final stats: ${questionAccumulator.length} questions, ${incomingUserAnswers.length} user answers`,
 					);
 					if (!incomingMetadata)
 						throw new Error(
 							"Sync completed without metadata – aborting",
 						);
 
+					console.log(
+						`${this.logPrefix} Calling importSyncedData...`,
+					);
 					await this.databaseManager.importSyncedData(
 						incomingMetadata,
 						questionAccumulator,
 						incomingUserAnswers,
+					);
+					console.log(
+						`${this.logPrefix} Data import completed successfully`,
 					);
 					this.emit("dataReceived", {
 						metadata: incomingMetadata,
@@ -249,6 +272,12 @@ export class P2PSyncManager {
 					`${this.logPrefix} Failed to process incoming sync data`,
 					err,
 				);
+				console.error(`${this.logPrefix} Error details:`, {
+					errorMessage: err.message,
+					errorStack: err.stack,
+					rawDataLength: raw?.length || 0,
+					rawDataPreview: raw?.toString().substring(0, 100),
+				});
 			}
 		});
 

@@ -558,6 +558,9 @@ class DatabaseManager {
 	}
 
 	async storeUserAnswers(pdfId, userAnswers) {
+		console.log(
+			`[DB] storeUserAnswers called for PDF ${pdfId.substring(0, 8)}... with ${userAnswers.length} answers`,
+		);
 		const transaction = this.db.transaction(["pdfs"], "readwrite");
 		const store = transaction.objectStore("pdfs");
 
@@ -565,6 +568,9 @@ class DatabaseManager {
 			const getRequest = store.get(pdfId);
 			getRequest.onsuccess = () => {
 				if (getRequest.result) {
+					console.log(
+						`[DB] Found PDF for storing answers: ${getRequest.result.filename}`,
+					);
 					const pdf = getRequest.result;
 					pdf.userAnswers = userAnswers;
 					pdf.lastAnswerSaved = new Date();
@@ -576,12 +582,47 @@ class DatabaseManager {
 						);
 						resolve(pdf);
 					};
-					updateRequest.onerror = () => reject(updateRequest.error);
+					updateRequest.onerror = () => {
+						console.error(
+							`[DB] Error updating PDF with answers:`,
+							updateRequest.error,
+						);
+						reject(updateRequest.error);
+					};
 				} else {
+					console.error(
+						`[DB] PDF ${pdfId} not found when trying to store user answers`,
+					);
+					console.log(`[DB] Attempting to list all PDFs to debug...`);
+
+					// Debug: List all PDFs to see what's in the database
+					const debugTransaction = this.db.transaction(
+						["pdfs"],
+						"readonly",
+					);
+					const debugStore = debugTransaction.objectStore("pdfs");
+					const debugRequest = debugStore.getAll();
+
+					debugRequest.onsuccess = () => {
+						console.log(
+							`[DB] All PDFs in database:`,
+							debugRequest.result.map((pdf) => ({
+								id: pdf.id.substring(0, 8) + "...",
+								filename: pdf.filename,
+							})),
+						);
+					};
+
 					reject(new Error("PDF not found"));
 				}
 			};
-			getRequest.onerror = () => reject(getRequest.error);
+			getRequest.onerror = () => {
+				console.error(
+					`[DB] Error retrieving PDF for storing answers:`,
+					getRequest.error,
+				);
+				reject(getRequest.error);
+			};
 		});
 	}
 
@@ -661,49 +702,94 @@ class DatabaseManager {
 
 	// Import metadata and its associated questions coming from the sync engine
 	async importSyncedData(metadata, questions, userAnswers = []) {
-		// Check if the PDF already exists locally
-		const existingPDF = await this.db
-			.transaction("pdfs", "readonly")
-			.objectStore("pdfs")
-			.get(metadata.id);
+		console.log(`[DB] importSyncedData called with:`, {
+			metadataId: metadata?.id,
+			questionsCount: questions?.length || 0,
+			userAnswersCount: userAnswers?.length || 0,
+		});
 
-		if (existingPDF) {
-			console.log(
-				`[DB] PDF ${metadata.id} already exists. Merging answers.`,
-			);
-			// If it exists, just update the answers, don't re-import everything.
-			const existingAnswers = await this.getUserAnswers(metadata.id);
-			// A simple merge: incoming answers overwrite existing ones if they exist at the same index.
-			// This could be made more sophisticated (e.g., based on timestamps) if needed.
-			const mergedAnswers = [...existingAnswers];
-			userAnswers.forEach((answer, index) => {
-				if (answer !== null) {
-					// Only overwrite with non-empty answers
-					mergedAnswers[index] = answer;
-				}
+		try {
+			// Check if the PDF already exists locally
+			const existingPDF = await new Promise((resolve, reject) => {
+				const transaction = this.db.transaction("pdfs", "readonly");
+				const store = transaction.objectStore("pdfs");
+				const request = store.get(metadata.id);
+
+				request.onsuccess = () => resolve(request.result);
+				request.onerror = () => reject(request.error);
 			});
-			await this.storeUserAnswers(metadata.id, mergedAnswers);
-			console.log(`[DB] Merged ${mergedAnswers.length} answers.`);
-		} else {
-			// If it's a new PDF, perform the full import.
-			// 1. Persist the metadata first so foreign-key style look-ups succeed
-			await this.storePDFMetadata(metadata);
 
-			// 2. Store all questions in a single, efficient transaction.
-			await this.storeQuestions(metadata.id, questions, 1);
-
-			// 3. If user answers were synced, store them as well.
-			if (userAnswers && userAnswers.length > 0) {
+			if (existingPDF) {
 				console.log(
-					`[DB] Storing ${userAnswers.length} synced user answers.`,
+					`[DB] PDF ${metadata.id} already exists. Merging answers.`,
 				);
-				await this.storeUserAnswers(metadata.id, userAnswers);
-			}
-		}
+				// If it exists, just update the answers, don't re-import everything.
+				try {
+					const existingAnswers = await this.getUserAnswers(
+						metadata.id,
+					);
+					console.log(
+						`[DB] Retrieved ${existingAnswers.length} existing answers`,
+					);
 
-		console.log(
-			`📥 Imported/Updated data for PDF ${metadata.id} – ${questions.length} questions.`,
-		);
+					// A simple merge: incoming answers overwrite existing ones if they exist at the same index.
+					// This could be made more sophisticated (e.g., based on timestamps) if needed.
+					const mergedAnswers = [...existingAnswers];
+					userAnswers.forEach((answer, index) => {
+						if (answer !== null) {
+							// Only overwrite with non-empty answers
+							mergedAnswers[index] = answer;
+						}
+					});
+
+					console.log(
+						`[DB] Attempting to store ${mergedAnswers.length} merged answers`,
+					);
+					await this.storeUserAnswers(metadata.id, mergedAnswers);
+					console.log(
+						`[DB] Successfully merged ${mergedAnswers.length} answers.`,
+					);
+				} catch (answerError) {
+					console.error(`[DB] Error merging answers:`, answerError);
+					// If answer merging fails, we should still consider the sync successful
+					// since the PDF and questions already exist
+					console.log(
+						`[DB] Continuing despite answer merge error...`,
+					);
+				}
+			} else {
+				console.log(
+					`[DB] PDF ${metadata.id} is new. Performing full import.`,
+				);
+				// If it's a new PDF, perform the full import.
+				// 1. Persist the metadata first so foreign-key style look-ups succeed
+				console.log(`[DB] Step 1: Storing PDF metadata...`);
+				await this.storePDFMetadata(metadata);
+
+				// 2. Store all questions in a single, efficient transaction.
+				console.log(
+					`[DB] Step 2: Storing ${questions.length} questions...`,
+				);
+				await this.storeQuestions(metadata.id, questions, 1);
+
+				// 3. If user answers were synced, store them as well.
+				if (userAnswers && userAnswers.length > 0) {
+					console.log(
+						`[DB] Step 3: Storing ${userAnswers.length} synced user answers.`,
+					);
+					await this.storeUserAnswers(metadata.id, userAnswers);
+				} else {
+					console.log(`[DB] Step 3: No user answers to store.`);
+				}
+			}
+
+			console.log(
+				`📥 Imported/Updated data for PDF ${metadata.id} – ${questions.length} questions.`,
+			);
+		} catch (error) {
+			console.error(`[DB] Error in importSyncedData:`, error);
+			throw error;
+		}
 	}
 }
 
