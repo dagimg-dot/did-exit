@@ -155,7 +155,7 @@ class AIIntegration {
         IMPORTANT: Extract ALL questions found in the document, not just a limited number. If the document contains many questions, extract them all.
 
         Please format your response as valid JSON with this structure:
-        {
+        {	
             "questions": [
                 {
                     "id": 1,
