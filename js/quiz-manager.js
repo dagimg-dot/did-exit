@@ -99,18 +99,21 @@ class QuizManager {
     this.setupKeydownListener();
   }
 
-  setupKeydownListener() {
-    document.addEventListener("keydown", (event) => {
-      const quizSection = document.getElementById("quiz-section");
-      if (quizSection.classList.contains("active")) {
-        if (event.key === "ArrowLeft" && !this.prevBtn.disabled) {
-          this.previousQuestion();
-        } else if (event.key === "ArrowRight" && !this.nextBtn.disabled) {
-          this.nextQuestion();
-        }
-      }
-    });
-  }
+	setupKeydownListener() {
+		document.addEventListener("keydown", (event) => {
+			const quizSection = document.getElementById("quiz-section");
+			if (quizSection.classList.contains("active")) {
+				if (event.key === "ArrowLeft" && !this.prevBtn.disabled) {
+					this.previousQuestion();
+				} else if (
+					event.key === "ArrowRight" &&
+					!this.nextBtn.disabled
+				) {
+					this.nextQuestion();
+				}
+			}
+		});
+	}
 
   initialize(questions, existingAnswers = null, pdfName) {
     this.questions = questions;
@@ -175,11 +178,12 @@ class QuizManager {
     optionDiv.className = "option";
     optionDiv.dataset.optionIndex = index;
 
-    // Check if this option is selected
-    const isSelected = this.userAnswers[this.currentQuestionIndex] === index;
-    if (isSelected) {
-      optionDiv.classList.add("selected");
-    }
+		// Check if this option is selected
+		const isSelected =
+			this.userAnswers[this.currentQuestionIndex] === index;
+		if (isSelected) {
+			optionDiv.classList.add("selected");
+		}
 
     // Create option radio element
     const optionRadio = document.createElement("div");
@@ -459,8 +463,12 @@ class QuizManager {
     this.questionText.textContent = question.question;
     this.currentQuestionSpan.textContent = this.currentQuestionIndex + 1;
 
-    this.renderReviewOptions(question, userAnswer, correctAnswer.correctAnswer);
-  }
+		this.renderReviewOptions(
+			question,
+			userAnswer,
+			correctAnswer.correctAnswer,
+		);
+	}
 
   renderReviewOptions(question, userAnswer, correctAnswer) {
     this.optionsContainer.innerHTML = "";
@@ -574,14 +582,15 @@ class QuizManager {
     // Add new questions to the existing array
     this.questions.push(...newQuestions);
 
-    // Extend user answers array to accommodate new questions
-    // Only extend if the current array isn't already large enough
-    // This preserves existing answers when extending
-    if (this.userAnswers.length < this.questions.length) {
-      const additionalCount = this.questions.length - this.userAnswers.length;
-      const additionalAnswers = new Array(additionalCount).fill(null);
-      this.userAnswers.push(...additionalAnswers);
-    }
+		// Extend user answers array to accommodate new questions
+		// Only extend if the current array isn't already large enough
+		// This preserves existing answers when extending
+		if (this.userAnswers.length < this.questions.length) {
+			const additionalCount =
+				this.questions.length - this.userAnswers.length;
+			const additionalAnswers = new Array(additionalCount).fill(null);
+			this.userAnswers.push(...additionalAnswers);
+		}
 
     // Update total questions display
     this.totalQuestionsSpan.textContent = this.questions.length;
@@ -604,17 +613,19 @@ class QuizManager {
     });
   }
 
-  // Get current question context for batch processing
-  getCurrentContext() {
-    return {
-      currentQuestionIndex: this.currentQuestionIndex,
-      totalQuestions: this.questions.length,
-      answeredCount: this.userAnswers.filter((answer) => answer !== null)
-        .length,
-      isOnLastQuestion: this.currentQuestionIndex === this.questions.length - 1,
-      hasAnsweredCurrent: this.userAnswers[this.currentQuestionIndex] !== null,
-    };
-  }
+	// Get current question context for batch processing
+	getCurrentContext() {
+		return {
+			currentQuestionIndex: this.currentQuestionIndex,
+			totalQuestions: this.questions.length,
+			answeredCount: this.userAnswers.filter((answer) => answer !== null)
+				.length,
+			isOnLastQuestion:
+				this.currentQuestionIndex === this.questions.length - 1,
+			hasAnsweredCurrent:
+				this.userAnswers[this.currentQuestionIndex] !== null,
+		};
+	}
 
   // Method to handle seamless question expansion
   handleQuestionExpansion(newQuestions) {
@@ -645,13 +656,14 @@ class QuizManager {
     ).length;
     const totalQuestions = this.questions.length;
 
-    return {
-      totalQuestions,
-      answeredCount,
-      unansweredCount: totalQuestions - answeredCount,
-      progress: totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0,
-    };
-  }
+		return {
+			totalQuestions,
+			answeredCount,
+			unansweredCount: totalQuestions - answeredCount,
+			progress:
+				totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0,
+		};
+	}
 
   // Event system
   on(event, callback) {

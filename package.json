@@ -1,0 +1,32 @@
+{
+	"name": "did-exit",
+	"version": "1.5.0",
+	"description": "Exam Generator from PDF - Upload your exam PDF and make it interactive",
+	"type": "module",
+	"scripts": {
+		"dev": "python -m http.server 8000",
+		"dev:watch": "watchmedo auto-restart --patterns='*.html;*.css;*.js' -- python -m http.server 8000",
+		"format": "biome format . --write",
+		"format:check": "biome format .",
+		"lint": "biome lint .",
+		"lint:fix": "biome lint . --write",
+		"check": "biome check .",
+		"check:fix": "biome check . --write"
+	},
+	"keywords": [
+		"pdf",
+		"exam",
+		"quiz",
+		"ai",
+		"education",
+		"javascript"
+	],
+	"author": "Dagim G. Astatkie",
+	"license": "MIT",
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.0"
+	},
+	"engines": {
+		"node": ">=18.0.0"
+	}
+}

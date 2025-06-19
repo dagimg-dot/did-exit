@@ -35,7 +35,6 @@
 
 .question-nav-btn {
   width: 100%;
-  variant: outline;
   height: 100%;
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
@@ -307,14 +306,14 @@
 }
 
 .quiz-mode-selector .slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: #ccc;
-  transition: 0.3s;
+	position: absolute;
+	cursor: pointer;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #ccc;
+	transition: 0.3s;
 }
 
 .quiz-mode-selector .slider.round {
@@ -326,14 +325,14 @@
 }
 
 .quiz-mode-selector .slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
+	position: absolute;
+	content: "";
+	height: 18px;
+	width: 18px;
+	left: 3px;
+	bottom: 3px;
+	background-color: white;
+	transition: 0.3s;
 }
 
 .quiz-mode-selector input:checked + .slider {

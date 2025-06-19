@@ -43,7 +43,9 @@ class DatabaseManager {
 			const pdfStore = db.createObjectStore("pdfs", { keyPath: "id" });
 			pdfStore.createIndex("filename", "filename", { unique: false });
 			pdfStore.createIndex("uploadDate", "uploadDate", { unique: false });
-			pdfStore.createIndex("lastAccessed", "lastAccessed", { unique: false });
+			pdfStore.createIndex("lastAccessed", "lastAccessed", {
+				unique: false,
+			});
 			console.log("📄 Created PDFs object store");
 		}
 
@@ -59,17 +61,25 @@ class DatabaseManager {
 			questionStore.createIndex("createdDate", "createdDate", {
 				unique: false,
 			});
-			questionStore.createIndex("pdfIdQuestionId", ["pdfId", "questionId"], {
-				unique: true,
-			});
+			questionStore.createIndex(
+				"pdfIdQuestionId",
+				["pdfId", "questionId"],
+				{
+					unique: true,
+				},
+			);
 			console.log("❓ Created Questions object store");
 		}
 
 		// Store user quiz sessions and progress
 		if (!db.objectStoreNames.contains("sessions")) {
-			const sessionStore = db.createObjectStore("sessions", { keyPath: "id" });
+			const sessionStore = db.createObjectStore("sessions", {
+				keyPath: "id",
+			});
 			sessionStore.createIndex("pdfId", "pdfId", { unique: false });
-			sessionStore.createIndex("startDate", "startDate", { unique: false });
+			sessionStore.createIndex("startDate", "startDate", {
+				unique: false,
+			});
 			console.log("📊 Created Sessions object store");
 		}
 	}
@@ -151,7 +161,10 @@ class DatabaseManager {
 			getRequest.onsuccess = () => {
 				if (getRequest.result) {
 					const pdf = getRequest.result;
-					pdf.completedBatches = Math.max(pdf.completedBatches, completedBatch);
+					pdf.completedBatches = Math.max(
+						pdf.completedBatches,
+						completedBatch,
+					);
 					pdf.lastAccessed = new Date();
 
 					const updateRequest = store.put(pdf);
@@ -185,7 +198,9 @@ class DatabaseManager {
 
 					const updateRequest = store.put(pdf);
 					updateRequest.onsuccess = () => {
-						console.log(`✅ PDF processing completed: ${pdf.filename}`);
+						console.log(
+							`✅ PDF processing completed: ${pdf.filename}`,
+						);
 						resolve(pdf);
 					};
 					updateRequest.onerror = () => reject(updateRequest.error);
@@ -258,7 +273,9 @@ class DatabaseManager {
 
 			// Verify storage by counting total questions for this PDF
 			const totalCount = await this.getQuestionCount(pdfId);
-			console.log(`📊 Total questions now stored for this PDF: ${totalCount}`);
+			console.log(
+				`📊 Total questions now stored for this PDF: ${totalCount}`,
+			);
 
 			// Update the PDF record with the current total question count
 			await this.updatePDFQuestionCount(pdfId, totalCount);
@@ -286,7 +303,9 @@ class DatabaseManager {
 
 				// Filter by batch number if specified
 				if (batchNumber !== null) {
-					questions = questions.filter((q) => q.batchNumber === batchNumber);
+					questions = questions.filter(
+						(q) => q.batchNumber === batchNumber,
+					);
 				}
 
 				// Sort by question ID
@@ -323,15 +342,20 @@ class DatabaseManager {
 			const request = index.getAll(pdfId);
 			request.onsuccess = () => {
 				const questions = request.result;
-				console.log(`🔍 DEBUG: Found ${questions.length} questions for PDF:`, {
-					pdfId: pdfId.substring(0, 8) + "...",
-					totalQuestions: questions.length,
-					batchBreakdown: questions.reduce((acc, q) => {
-						acc[q.batchNumber] = (acc[q.batchNumber] || 0) + 1;
-						return acc;
-					}, {}),
-					questionIds: questions.map((q) => q.questionId).sort((a, b) => a - b),
-				});
+				console.log(
+					`🔍 DEBUG: Found ${questions.length} questions for PDF:`,
+					{
+						pdfId: pdfId.substring(0, 8) + "...",
+						totalQuestions: questions.length,
+						batchBreakdown: questions.reduce((acc, q) => {
+							acc[q.batchNumber] = (acc[q.batchNumber] || 0) + 1;
+							return acc;
+						}, {}),
+						questionIds: questions
+							.map((q) => q.questionId)
+							.sort((a, b) => a - b),
+					},
+				);
 				resolve(questions);
 			};
 			request.onerror = () => reject(request.error);
@@ -424,7 +448,9 @@ class DatabaseManager {
 		const index = store.index("lastAccessed");
 
 		return new Promise((resolve, reject) => {
-			const request = index.openCursor(IDBKeyRange.upperBound(cutoffDate));
+			const request = index.openCursor(
+				IDBKeyRange.upperBound(cutoffDate),
+			);
 			const toDelete = [];
 
 			request.onsuccess = (event) => {
@@ -434,9 +460,13 @@ class DatabaseManager {
 					cursor.continue();
 				} else {
 					// Delete old PDFs and their questions
-					Promise.all(toDelete.map((id) => this.deletePDFAndQuestions(id)))
+					Promise.all(
+						toDelete.map((id) => this.deletePDFAndQuestions(id)),
+					)
 						.then(() => {
-							console.log(`🧹 Cleaned up ${toDelete.length} old PDFs`);
+							console.log(
+								`🧹 Cleaned up ${toDelete.length} old PDFs`,
+							);
 							resolve(toDelete.length);
 						})
 						.catch(reject);
@@ -459,7 +489,9 @@ class DatabaseManager {
 		// Delete questions
 		const questionStore = transaction.objectStore("questions");
 		const questionIndex = questionStore.index("pdfId");
-		const questionRequest = questionIndex.openCursor(IDBKeyRange.only(pdfId));
+		const questionRequest = questionIndex.openCursor(
+			IDBKeyRange.only(pdfId),
+		);
 
 		questionRequest.onsuccess = (event) => {
 			const cursor = event.target.result;

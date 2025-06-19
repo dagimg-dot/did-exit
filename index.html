@@ -25,289 +25,319 @@
         <p>Upload your exam PDF and make it interactive</p>
       </header>
 
-      <div class="theme-switcher">
-        <button id="theme-light">Light</button>
-        <button id="theme-dark">Dark</button>
-      </div>
+			<div class="theme-switcher">
+				<button id="theme-light">Light</button>
+				<button id="theme-dark">Dark</button>
+			</div>
 
-      <main class="app-main">
-        <!-- File Upload Section -->
-        <section id="upload-section" class="section active">
-          <!-- API Key Configuration -->
-          <div class="api-key-container">
-            <!-- Collapsed State - shown when API key is configured -->
-            <div
-              class="api-key-collapsed"
-              id="api-key-collapsed"
-              style="display: none"
-            >
-              <div class="api-key-status-bar">
-                <span class="api-key-status-icon">🔑</span>
-                <span class="api-key-status-text">API Key Configured</span>
-                <button
-                  id="change-api-key-btn"
-                  class="btn btn-secondary btn-sm"
-                >
-                  Change API Key
-                </button>
-              </div>
-            </div>
+			<main class="app-main">
+				<!-- File Upload Section -->
+				<section id="upload-section" class="section active">
+					<!-- API Key Configuration -->
+					<div class="api-key-container">
+						<!-- Collapsed State - shown when API key is configured -->
+						<div
+							class="api-key-collapsed"
+							id="api-key-collapsed"
+							style="display: none;"
+						>
+							<div class="api-key-status-bar">
+								<span class="api-key-status-icon">🔑</span>
+								<span class="api-key-status-text"
+									>API Key Configured</span
+								>
+								<button
+									id="change-api-key-btn"
+									class="btn btn-secondary btn-sm"
+								>
+									Change API Key
+								</button>
+							</div>
+						</div>
 
-            <!-- Expanded State - shown when configuring API key -->
-            <div class="api-key-section" id="api-key-section">
-              <div class="api-key-icon">🔑</div>
-              <h3>API Key Configuration</h3>
-              <p>
-                Enter your Google AI API key to generate questions from PDFs
-              </p>
-              <div class="api-key-input-group">
-                <input
-                  type="password"
-                  id="api-key-input"
-                  placeholder="Enter your Google AI API key"
-                  class="api-key-input"
-                />
-                <button id="save-api-key-btn" class="btn btn-primary">
-                  Save Key
-                </button>
-              </div>
-              <div class="api-key-status" id="api-key-status">
-                <!-- Status will be shown here -->
-              </div>
-              <div class="api-key-help">
-                <small
-                  >Get your free API key at
-                  <a
-                    href="https://makersuite.google.com/app/apikey"
-                    target="_blank"
-                    >Google AI Studio</a
-                  ></small
-                >
-              </div>
-              <div class="api-key-actions">
-                <button
-                  id="cancel-api-key-btn"
-                  class="btn btn-secondary"
-                  style="display: none"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+						<!-- Expanded State - shown when configuring API key -->
+						<div class="api-key-section" id="api-key-section">
+							<div class="api-key-icon">🔑</div>
+							<h3>API Key Configuration</h3>
+							<p>
+								Enter your Google AI API key to generate
+								questions from PDFs
+							</p>
+							<div class="api-key-input-group">
+								<input
+									type="password"
+									id="api-key-input"
+									placeholder="Enter your Google AI API key"
+									class="api-key-input"
+								>
+								<button
+									id="save-api-key-btn"
+									class="btn btn-primary"
+								>
+									Save Key
+								</button>
+							</div>
+							<div class="api-key-status" id="api-key-status">
+								<!-- Status will be shown here -->
+							</div>
+							<div class="api-key-help">
+								<small
+									>Get your free API key at
+									<a
+										href="https://makersuite.google.com/app/apikey"
+										target="_blank"
+										>Google AI Studio</a
+									></small
+								>
+							</div>
+							<div class="api-key-actions">
+								<button
+									id="cancel-api-key-btn"
+									class="btn btn-secondary"
+									style="display: none;"
+								>
+									Cancel
+								</button>
+							</div>
+						</div>
+					</div>
 
-          <div class="upload-container" id="upload-container">
-            <div class="upload-area" id="upload-area">
-              <div class="upload-icon">📄</div>
-              <h3>Upload PDF File</h3>
-              <p>Drag and drop your exam PDF here or click to browse</p>
-              <input type="file" id="pdf-input" accept=".pdf" hidden />
-              <button id="browse-btn" class="btn btn-primary">
-                Browse Files
-              </button>
-            </div>
-            <div class="file-info" id="file-info" style="display: none">
-              <p><strong>Selected:</strong> <span id="file-name"></span></p>
-              <div id="file-actions">
-                <button id="process-btn" class="btn btn-success">
-                  Process PDF
-                </button>
-                <button id="change-file-btn" class="btn btn-secondary">
-                  Change File
-                </button>
-              </div>
-              <div
-                class="processing-status"
-                id="processing-status"
-                style="display: none"
-              >
-                <div class="spinner"></div>
-                <p id="loading-message">
-                  Processing PDF and generating questions...
-                </p>
-                <button id="cancel-processing-btn" class="btn btn-secondary">
-                  Cancel Processing
-                </button>
-              </div>
-            </div>
-          </div>
+					<div class="upload-container" id="upload-container">
+						<div class="upload-area" id="upload-area">
+							<div class="upload-icon">📄</div>
+							<h3>Upload PDF File</h3>
+							<p>
+								Drag and drop your exam PDF here or click to
+								browse
+							</p>
+							<input
+								type="file"
+								id="pdf-input"
+								accept=".pdf"
+								hidden
+							>
+							<button id="browse-btn" class="btn btn-primary">
+								Browse Files
+							</button>
+						</div>
+						<div
+							class="file-info"
+							id="file-info"
+							style="display: none;"
+						>
+							<p>
+								<strong>Selected:</strong>
+								<span id="file-name"></span>
+							</p>
+							<div id="file-actions">
+								<button
+									id="process-btn"
+									class="btn btn-success"
+								>
+									Process PDF
+								</button>
+								<button
+									id="change-file-btn"
+									class="btn btn-secondary"
+								>
+									Change File
+								</button>
+							</div>
+							<div
+								class="processing-status"
+								id="processing-status"
+								style="display: none;"
+							>
+								<div class="spinner"></div>
+								<p id="loading-message">
+									Processing PDF and generating questions...
+								</p>
+								<button
+									id="cancel-processing-btn"
+									class="btn btn-secondary"
+								>
+									Cancel Processing
+								</button>
+							</div>
+						</div>
+					</div>
 
-          <!-- Recent Exams Section -->
-          <div class="recent-exams-container">
-            <div class="recent-exams-section" id="recent-exams-section">
-              <div class="recent-exams-icon">📚</div>
-              <h3>Recent Exams</h3>
-              <p>Previously processed PDFs - click to start quiz</p>
-              <div class="recent-exams-list" id="recent-exams-list">
-                <!-- Recent exams will be dynamically added here -->
-              </div>
-              <div
-                class="no-recent-exams"
-                id="no-recent-exams"
-                style="display: none"
-              >
-                <p>No recent exams found</p>
-              </div>
-            </div>
-          </div>
-        </section>
+					<!-- Recent Exams Section -->
+					<div class="recent-exams-container">
+						<div
+							class="recent-exams-section"
+							id="recent-exams-section"
+						>
+							<div class="recent-exams-icon">📚</div>
+							<h3>Recent Exams</h3>
+							<p>
+								Previously processed PDFs - click to start quiz
+							</p>
+							<div
+								class="recent-exams-list"
+								id="recent-exams-list"
+							>
+								<!-- Recent exams will be dynamically added here -->
+							</div>
+							<div
+								class="no-recent-exams"
+								id="no-recent-exams"
+								style="display: none;"
+							>
+								<p>No recent exams found</p>
+							</div>
+						</div>
+					</div>
+				</section>
 
-        <!-- Quiz Section -->
-        <section id="quiz-section" class="section">
-          <div class="quiz-header">
-            <div class="progress-bar">
-              <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <div class="question-counter">
-              <span id="current-question">1</span> /
-              <span id="total-questions">10</span>
-              <span id="pdf-file-name">Unnamed</span>
-            </div>
-          </div>
+				<!-- Quiz Section -->
+				<section id="quiz-section" class="section">
+					<div class="quiz-header">
+						<div class="progress-bar">
+							<div class="progress-fill" id="progress-fill"></div>
+						</div>
+						<div class="question-counter">
+							<span id="current-question">1</span>/ <span
+								id="total-questions"
+								>10</span
+							> <span id="pdf-file-name">Unnamed</span>
+						</div>
+					</div>
 
-          <div class="quiz-container">
-            <div class="quiz-mode-selector">
-              <span id="exam-mode-label">Exam Mode</span>
-              <label class="switch">
-                <input type="checkbox" id="quiz-mode-toggle" />
-                <span class="slider round"></span>
-              </label>
-              <span id="instant-feedback-label">Instant Feedback</span>
-            </div>
-            <div class="quiz-layout">
-              <div class="question-nav" id="question-nav">
-                <h3>Question Navigation</h3>
-                <p>Click on a question to jump to it</p>
-                <ul class="nav-list" id="nav-list">
-                  <!-- Question navigation items will be dynamically added -->
-                </ul>
-                <div class="nav-legend">
-                  <div class="legend-item">
-                    <span class="dot current"></span> Current Question
-                  </div>
-                  <div class="legend-item">
-                    <span class="dot answered"></span> Answered
-                  </div>
-                  <div class="legend-item">
-                    <span class="dot unanswered"></span> Unanswered
-                  </div>
-                  <div class="legend-item flagged">
-                    <span class="dot flagged"> </span>
-                    Flagged (Long press to flag)
-                    <img
-                      src="./assets/red-flag.png"
-                      alt="Flag"
-                      class="flag-icon"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div class="question-card" id="question-card">
-                <h2 id="question-text">Question will appear here...</h2>
-                <div class="options-container" id="options-container">
-                  <!-- Options will be dynamically added -->
-                </div>
-                <div
-                  class="explanation-container"
-                  id="explanation-container"
-                  style="display: none"
-                >
-                  <h3>Explanation</h3>
-                  <p id="explanation-text"></p>
-                </div>
-                <div class="quiz-controls">
-                  <button id="prev-btn" class="btn btn-secondary" disabled>
-                    Previous
-                  </button>
-                  <button
-                    id="resume-btn"
-                    class="btn btn-primary"
-                    style="display: none"
-                  >
-                    Resume
-                  </button>
-                  <button id="next-btn" class="btn btn-primary" disabled>
-                    Next
-                  </button>
-                  <button
-                    id="submit-quiz-btn"
-                    class="btn btn-success"
-                    style="display: none"
-                  >
-                    Submit Quiz
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+					<div class="quiz-container">
+						<div class="quiz-mode-selector">
+							<span id="exam-mode-label">Exam Mode</span>
+							<label class="switch">
+								<input type="checkbox" id="quiz-mode-toggle" >
+								<span class="slider round"></span>
+							</label>
+							<span id="instant-feedback-label"
+								>Instant Feedback</span
+							>
+						</div>
 
-        <!-- Results Section -->
-        <section id="results-section" class="section">
-          <div class="results-container">
-            <div class="results-header">
-              <h2>Quiz Results</h2>
-              <div class="score-display">
-                <span class="score" id="final-score">0/0</span>
-                <span class="percentage" id="score-percentage">0%</span>
-              </div>
-            </div>
-            <div class="results-breakdown" id="results-breakdown">
-              <!-- Results will be populated here -->
-            </div>
-            <div class="results-actions">
-              <button id="restart-btn" class="btn btn-primary">
-                Take Another Quiz
-              </button>
-              <button id="review-btn" class="btn btn-secondary">
-                Review Answers
-              </button>
-            </div>
-          </div>
-        </section>
-      </main>
+						<div class="question-card" id="question-card">
+							<h2 id="question-text">
+								Question will appear here...
+							</h2>
+							<div
+								class="options-container"
+								id="options-container"
+							>
+								<!-- Options will be dynamically added -->
+							</div>
+							<div
+								class="explanation-container"
+								id="explanation-container"
+								style="display: none;"
+							>
+								<h3>Explanation</h3>
+								<p id="explanation-text"></p>
+							</div>
+							<div class="quiz-controls">
+								<button
+									id="prev-btn"
+									class="btn btn-secondary"
+									disabled
+								>
+									Previous
+								</button>
+								<button
+									id="resume-btn"
+									class="btn btn-primary"
+									style="display: none;"
+								>
+									Resume
+								</button>
+								<button
+									id="next-btn"
+									class="btn btn-primary"
+									disabled
+								>
+									Next
+								</button>
+								<button
+									id="submit-quiz-btn"
+									class="btn btn-success"
+									style="display: none;"
+								>
+									Submit Quiz
+								</button>
+							</div>
+						</div>
+					</div>
+				</section>
 
-      <footer class="app-footer">
-        <a
-          href="https://jami.bio/jdlix"
-          target="_blank"
-          rel="noopener noreferrer"
-          >Buy me a coffee ☕</a
-        >
-      </footer>
+				<!-- Results Section -->
+				<section id="results-section" class="section">
+					<div class="results-container">
+						<div class="results-header">
+							<h2>Quiz Results</h2>
+							<div class="score-display">
+								<span class="score" id="final-score">0/0</span>
+								<span class="percentage" id="score-percentage"
+									>0%</span
+								>
+							</div>
+						</div>
+						<div class="results-breakdown" id="results-breakdown">
+							<!-- Results will be populated here -->
+						</div>
+						<div class="results-actions">
+							<button id="restart-btn" class="btn btn-primary">
+								Take Another Quiz
+							</button>
+							<button id="review-btn" class="btn btn-secondary">
+								Review Answers
+							</button>
+						</div>
+					</div>
+				</section>
+			</main>
 
-      <!-- Notification System -->
-      <div id="notification-container" class="notification-container">
-        <!-- Notifications will be dynamically added here -->
-      </div>
+			<footer class="app-footer">
+				<a
+					href="https://jami.bio/jdlix"
+					target="_blank"
+					rel="noopener noreferrer"
+					>Buy me a coffee ☕</a
+				>
+			</footer>
 
-      <!-- Background Processing Indicator -->
-      <div
-        id="processing-indicator"
-        class="processing-indicator"
-        style="display: none"
-      >
-        <div class="processing-content">
-          <div class="processing-spinner"></div>
-          <div class="processing-text">
-            <span id="processing-message"
-              >Processing questions in background...</span
-            >
-            <div class="processing-progress">
-              <div class="processing-progress-bar">
-                <div
-                  id="processing-progress-fill"
-                  class="processing-progress-fill"
-                ></div>
-              </div>
-              <span id="processing-progress-text">Batch 1 of 5</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+			<!-- Notification System -->
+			<div id="notification-container" class="notification-container">
+				<!-- Notifications will be dynamically added here -->
+			</div>
 
-    <!-- Scripts -->
-    <script type="module" src="js/main.js"></script>
-  </body>
+			<!-- Background Processing Indicator -->
+			<div
+				id="processing-indicator"
+				class="processing-indicator"
+				style="display: none;"
+			>
+				<div class="processing-content">
+					<div class="processing-spinner"></div>
+					<div class="processing-text">
+						<span id="processing-message"
+							>Processing questions in background...</span
+						>
+						<div class="processing-progress">
+							<div class="processing-progress-bar">
+								<div
+									id="processing-progress-fill"
+									class="processing-progress-fill"
+								></div>
+							</div>
+							<span id="processing-progress-text"
+								>Batch 1 of 5</span
+							>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Scripts -->
+		<script type="module" src="js/main.js"></script>
+	</body>
 </html>

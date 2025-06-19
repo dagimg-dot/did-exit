@@ -30,7 +30,9 @@ class PDFAnalyzer {
 		}
 
 		// Simple pattern detection
-		const questionAnalysis = this.detectQuestionPatterns(analysis.textContent);
+		const questionAnalysis = this.detectQuestionPatterns(
+			analysis.textContent,
+		);
 		analysis.metadata = { ...analysis.metadata, ...questionAnalysis };
 
 		console.log(
@@ -66,7 +68,8 @@ class PDFAnalyzer {
 			text.match(questionPatterns.mainQuestions) || [];
 		const parenthesisMatches =
 			text.match(questionPatterns.parenthesisQuestions) || [];
-		const keywordMatches = text.match(questionPatterns.questionKeywords) || [];
+		const keywordMatches =
+			text.match(questionPatterns.questionKeywords) || [];
 		const optionMatches = text.match(questionPatterns.optionGroups) || [];
 		const spacedOptionMatches =
 			text.match(questionPatterns.spacedOptions) || [];
@@ -151,8 +154,12 @@ class PDFAnalyzer {
 			15,
 			Math.max(5, Math.floor(estimatedQuestions / 6)),
 		);
-		const targetChunkCount = Math.ceil(estimatedQuestions / questionsPerChunk);
-		const actualChunkSize = Math.floor(textContent.length / targetChunkCount);
+		const targetChunkCount = Math.ceil(
+			estimatedQuestions / questionsPerChunk,
+		);
+		const actualChunkSize = Math.floor(
+			textContent.length / targetChunkCount,
+		);
 
 		for (let i = 0; i < targetChunkCount; i++) {
 			const start = i * actualChunkSize;
