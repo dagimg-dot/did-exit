@@ -230,15 +230,15 @@ class DatabaseManager {
 		const store = transaction.objectStore("questions");
 
 		const promises = questions.map((question, index) => {
-			// Generate a guaranteed-unique questionId, ignoring any ID from the AI
+			// For synced questions, questionId is preserved. For new AI questions, it's generated.
 			const generatedQuestionId =
-				(batchNumber - 1) * 1000 + (question.id || index) + 1;
+				question.questionId || (batchNumber - 1) * 1000 + index + 1;
 
 			const questionRecord = {
 				id: `${pdfId}_${generatedQuestionId}`, // Unique primary key for the record
 				pdfId: pdfId,
-				questionId: generatedQuestionId, // This is now guaranteed to be unique across batches
-				batchNumber: batchNumber,
+				questionId: generatedQuestionId,
+				batchNumber: question.batchNumber || batchNumber, // Use original batchNumber from sync if present
 				question: question.question,
 				options: question.options,
 				correctAnswer: question.correctAnswer,
@@ -632,6 +632,78 @@ class DatabaseManager {
 			};
 			getRequest.onerror = () => reject(getRequest.error);
 		});
+	}
+
+	// ≡≡≡≡≡≡≡ Sync Support Methods (metadata-only transfers) ≡≡≡≡≡≡≡
+
+	// Return PDF metadata without the heavy textContent field so it can be transferred quickly over the wire
+	async getPDFMetadata(pdfId) {
+		const pdf = await this.getPDF(pdfId);
+		if (!pdf) return null;
+
+		// Create a shallow copy and strip the large textContent payload if present
+		const metadata = { ...pdf };
+		delete metadata.textContent;
+		return metadata;
+	}
+
+	// Store just the metadata (no textContent) when data is synced from another peer
+	async storePDFMetadata(metadata) {
+		console.log(`[DB] Storing synced metadata for PDF:`, metadata.id);
+		// Ensure we never store large content accidentally
+		const cleaned = { ...metadata };
+		delete cleaned.textContent;
+
+		// Re-use the existing storePDF logic so we benefit from a single code path
+		// but override textContent with an empty string to keep record sizes small.
+		return this.storePDF({ ...cleaned, textContent: "" });
+	}
+
+	// Import metadata and its associated questions coming from the sync engine
+	async importSyncedData(metadata, questions, userAnswers = []) {
+		// Check if the PDF already exists locally
+		const existingPDF = await this.db
+			.transaction("pdfs", "readonly")
+			.objectStore("pdfs")
+			.get(metadata.id);
+
+		if (existingPDF) {
+			console.log(
+				`[DB] PDF ${metadata.id} already exists. Merging answers.`,
+			);
+			// If it exists, just update the answers, don't re-import everything.
+			const existingAnswers = await this.getUserAnswers(metadata.id);
+			// A simple merge: incoming answers overwrite existing ones if they exist at the same index.
+			// This could be made more sophisticated (e.g., based on timestamps) if needed.
+			const mergedAnswers = [...existingAnswers];
+			userAnswers.forEach((answer, index) => {
+				if (answer !== null) {
+					// Only overwrite with non-empty answers
+					mergedAnswers[index] = answer;
+				}
+			});
+			await this.storeUserAnswers(metadata.id, mergedAnswers);
+			console.log(`[DB] Merged ${mergedAnswers.length} answers.`);
+		} else {
+			// If it's a new PDF, perform the full import.
+			// 1. Persist the metadata first so foreign-key style look-ups succeed
+			await this.storePDFMetadata(metadata);
+
+			// 2. Store all questions in a single, efficient transaction.
+			await this.storeQuestions(metadata.id, questions, 1);
+
+			// 3. If user answers were synced, store them as well.
+			if (userAnswers && userAnswers.length > 0) {
+				console.log(
+					`[DB] Storing ${userAnswers.length} synced user answers.`,
+				);
+				await this.storeUserAnswers(metadata.id, userAnswers);
+			}
+		}
+
+		console.log(
+			`📥 Imported/Updated data for PDF ${metadata.id} – ${questions.length} questions.`,
+		);
 	}
 }
 

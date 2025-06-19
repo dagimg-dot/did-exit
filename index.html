@@ -29,6 +29,15 @@
 				<p>Upload your exam PDF and make it interactive</p>
 			</header>
 
+			<div
+				class="global-actions"
+				style="text-align: center; margin-bottom: 1rem;"
+			>
+				<button id="receive-btn" class="btn btn-secondary">
+					Receive an Exam
+				</button>
+			</div>
+
 			<div class="theme-switcher">
 				<button id="theme-light">Light</button>
 				<button id="theme-dark">Dark</button>
@@ -374,6 +383,20 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- External dependencies for P2P sync -->
+		<script
+			src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"
+		></script>
+		<script
+			src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"
+		></script>
+		<!-- End dependencies -->
+
+		<script
+			src="https://unpkg.com/html5-qrcode"
+			type="text/javascript"
+		></script>
 
 		<!-- Scripts -->
 		<script type="module" src="js/main.js"></script>
