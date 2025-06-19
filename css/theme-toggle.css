@@ -13,7 +13,9 @@
 	color: var(--text-secondary);
 	padding: 0.5rem;
 	cursor: pointer;
-	transition: background-color 0.2s, color 0.2s;
+	transition:
+		background-color 0.2s,
+		color 0.2s;
 	border-radius: 6px;
 }
 

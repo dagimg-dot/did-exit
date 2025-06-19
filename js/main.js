@@ -49,7 +49,10 @@ class App {
 
 	setupEventListeners() {
 		// File upload events
-		this.fileUploader.on("fileSelected", this.handleFileSelected.bind(this));
+		this.fileUploader.on(
+			"fileSelected",
+			this.handleFileSelected.bind(this),
+		);
 		this.fileUploader.on(
 			"processingStart",
 			this.handleProcessingStart.bind(this),
@@ -83,7 +86,10 @@ class App {
 		this.loadRecentExams();
 
 		// PDF processing events - simplified
-		this.pdfProcessor.on("textExtracted", this.handleTextExtracted.bind(this));
+		this.pdfProcessor.on(
+			"textExtracted",
+			this.handleTextExtracted.bind(this),
+		);
 		this.pdfProcessor.on("error", this.handleProcessingError.bind(this));
 		this.pdfProcessor.on(
 			"imagesExtracted",
@@ -114,8 +120,14 @@ class App {
 		);
 
 		// Quiz events
-		this.quizManager.on("answerSelected", this.handleAnswerSelected.bind(this));
-		this.quizManager.on("quizCompleted", this.handleQuizCompleted.bind(this));
+		this.quizManager.on(
+			"answerSelected",
+			this.handleAnswerSelected.bind(this),
+		);
+		this.quizManager.on(
+			"quizCompleted",
+			this.handleQuizCompleted.bind(this),
+		);
 		this.quizManager.on("modeChanged", this.handleModeChanged.bind(this));
 
 		// Navigation events
@@ -194,7 +206,11 @@ class App {
 	}
 
 	handleFirstBatchReady(data) {
-		console.log("⚡ First batch ready:", data.questions.length, "questions");
+		console.log(
+			"⚡ First batch ready:",
+			data.questions.length,
+			"questions",
+		);
 		this.currentPdfId = data.pdfId;
 		this.quizData = data.questions;
 
@@ -206,7 +222,9 @@ class App {
 				if (savedAnswers && savedAnswers.length > 0) {
 					// Resize if needed
 					if (savedAnswers.length !== data.questions.length) {
-						this.userAnswers = new Array(data.questions.length).fill(null);
+						this.userAnswers = new Array(
+							data.questions.length,
+						).fill(null);
 						// Copy over existing answers that fit within the new array
 						savedAnswers.forEach((answer, index) => {
 							if (index < this.userAnswers.length) {
@@ -224,7 +242,9 @@ class App {
 					}
 				} else {
 					// No saved answers, create empty array
-					this.userAnswers = new Array(data.questions.length).fill(null);
+					this.userAnswers = new Array(data.questions.length).fill(
+						null,
+					);
 				}
 			})
 			.catch((error) => {
@@ -234,13 +254,19 @@ class App {
 			.finally(() => {
 				// Immediately show the questions
 				if (data.questions.length > 0) {
-					console.log("📚 Starting quiz with first batch immediately");
-					this.startQuizWithProgress(data.totalBatches, data.completedBatches);
+					console.log(
+						"📚 Starting quiz with first batch immediately",
+					);
+					this.startQuizWithProgress(
+						data.totalBatches,
+						data.completedBatches,
+					);
 
 					// Set correct answers for immediate feedback to work properly
 					this.correctAnswers = data.questions.map((q) => ({
 						correctAnswer: q.correctAnswer,
-						explanation: q.explanation || "No explanation available.",
+						explanation:
+							q.explanation || "No explanation available.",
 					}));
 				} else {
 					console.warn(
@@ -270,7 +296,9 @@ class App {
 
 			// Extend userAnswers array with nulls for new questions
 			// This preserves existing answers while adding space for new ones
-			const additionalAnswers = new Array(data.questions.length).fill(null);
+			const additionalAnswers = new Array(data.questions.length).fill(
+				null,
+			);
 			this.userAnswers = [...this.userAnswers, ...additionalAnswers];
 
 			// Update the quiz manager
@@ -289,7 +317,10 @@ class App {
 			if (!this.correctAnswers) {
 				this.correctAnswers = newCorrectAnswers;
 			} else {
-				this.correctAnswers = [...this.correctAnswers, ...newCorrectAnswers];
+				this.correctAnswers = [
+					...this.correctAnswers,
+					...newCorrectAnswers,
+				];
 			}
 
 			// Pass updated correctAnswers to quiz manager for instant feedback
@@ -301,7 +332,10 @@ class App {
 			);
 
 			// Update progress indicator
-			this.ui.updateProgressIndicator(data.completedBatches, data.totalBatches);
+			this.ui.updateProgressIndicator(
+				data.completedBatches,
+				data.totalBatches,
+			);
 
 			// Refresh feedback if user has already answered current question
 			// This fixes the issue with instant feedback during background processing
@@ -368,7 +402,9 @@ class App {
 					// we need to resize the array
 					if (savedAnswers.length !== this.quizData.length) {
 						// Keep existing answers for questions that still exist
-						this.userAnswers = new Array(this.quizData.length).fill(null);
+						this.userAnswers = new Array(this.quizData.length).fill(
+							null,
+						);
 						savedAnswers.forEach((answer, index) => {
 							if (index < this.userAnswers.length) {
 								this.userAnswers[index] = answer;
@@ -389,7 +425,9 @@ class App {
 					}
 				} else {
 					// No saved answers, create empty array
-					this.userAnswers = new Array(this.quizData.length).fill(null);
+					this.userAnswers = new Array(this.quizData.length).fill(
+						null,
+					);
 				}
 			} catch (error) {
 				console.error("Error loading saved answers:", error);
@@ -431,7 +469,9 @@ class App {
 					// we need to resize the array
 					if (savedAnswers.length !== this.quizData.length) {
 						// Keep existing answers for questions that still exist
-						this.userAnswers = new Array(this.quizData.length).fill(null);
+						this.userAnswers = new Array(this.quizData.length).fill(
+							null,
+						);
 						savedAnswers.forEach((answer, index) => {
 							if (index < this.userAnswers.length) {
 								this.userAnswers[index] = answer;
@@ -452,7 +492,9 @@ class App {
 					}
 				} else {
 					// No saved answers, create empty array
-					this.userAnswers = new Array(this.quizData.length).fill(null);
+					this.userAnswers = new Array(this.quizData.length).fill(
+						null,
+					);
 				}
 			} catch (error) {
 				console.error("Error loading saved answers:", error);
@@ -504,7 +546,9 @@ class App {
 					// we need to resize the array
 					if (savedAnswers.length !== this.quizData.length) {
 						// Keep existing answers for questions that still exist
-						this.userAnswers = new Array(this.quizData.length).fill(null);
+						this.userAnswers = new Array(this.quizData.length).fill(
+							null,
+						);
 						savedAnswers.forEach((answer, index) => {
 							if (index < this.userAnswers.length) {
 								this.userAnswers[index] = answer;
@@ -525,7 +569,9 @@ class App {
 					}
 				} else {
 					// No saved answers, create empty array
-					this.userAnswers = new Array(this.quizData.length).fill(null);
+					this.userAnswers = new Array(this.quizData.length).fill(
+						null,
+					);
 				}
 			} catch (error) {
 				console.error("Error loading saved answers:", error);
@@ -569,7 +615,9 @@ class App {
 			this._saveAnswersTimeout = setTimeout(() => {
 				this.databaseManager
 					.storeUserAnswers(this.currentPdfId, this.userAnswers)
-					.catch((error) => console.error("Error saving user answers:", error));
+					.catch((error) =>
+						console.error("Error saving user answers:", error),
+					);
 			}, 500); // Wait 500ms after last answer before saving
 		}
 	}
@@ -586,9 +634,8 @@ class App {
 				this.correctAnswers.length !== this.quizData.length
 			) {
 				console.log("Getting correct answers from AI...");
-				this.correctAnswers = await this.aiIntegration.getCorrectAnswers(
-					this.quizData,
-				);
+				this.correctAnswers =
+					await this.aiIntegration.getCorrectAnswers(this.quizData);
 			}
 
 			// Use the updated userAnswers for analysis
@@ -696,7 +743,10 @@ class App {
 			if (testResult.success) {
 				// Save the API key
 				this.aiIntegration.setAPIKey(apiKey);
-				this.showAPIKeyStatus("✅ API key saved and verified!", "success");
+				this.showAPIKeyStatus(
+					"✅ API key saved and verified!",
+					"success",
+				);
 
 				// Clear the input for security
 				apiKeyInput.value = "";
@@ -785,7 +835,8 @@ class App {
 
 	async loadRecentExams() {
 		try {
-			const recentExamsList = document.getElementById("recent-exams-list");
+			const recentExamsList =
+				document.getElementById("recent-exams-list");
 			const noRecentExams = document.getElementById("no-recent-exams");
 
 			// Add CSS for the reset answers button if it doesn't exist
@@ -829,7 +880,9 @@ class App {
 			}
 
 			// Sort PDFs by last accessed date (most recent first)
-			pdfs.sort((a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed));
+			pdfs.sort(
+				(a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed),
+			);
 
 			// Generate HTML for each PDF
 			const examsHTML = pdfs
@@ -863,7 +916,8 @@ class App {
 		const lastAccessed = new Date(pdf.lastAccessed).toLocaleDateString();
 		const questionCount = pdf.totalQuestions || 0;
 		const hasUserAnswers =
-			pdf.userAnswers && pdf.userAnswers.filter((a) => a !== null).length > 0;
+			pdf.userAnswers &&
+			pdf.userAnswers.filter((a) => a !== null).length > 0;
 		const answeredCount = hasUserAnswers
 			? pdf.userAnswers.filter((a) => a !== null).length
 			: 0;
@@ -938,13 +992,16 @@ class App {
 
 			// Try to load saved user answers
 			try {
-				const savedAnswers = await this.databaseManager.getUserAnswers(pdfId);
+				const savedAnswers =
+					await this.databaseManager.getUserAnswers(pdfId);
 				if (savedAnswers && savedAnswers.length > 0) {
 					// If we have saved answers but they don't match the question count,
 					// we need to resize the array
 					if (savedAnswers.length !== questions.length) {
 						// Keep existing answers for questions that still exist
-						this.userAnswers = new Array(questions.length).fill(null);
+						this.userAnswers = new Array(questions.length).fill(
+							null,
+						);
 						savedAnswers.forEach((answer, index) => {
 							if (index < questions.length) {
 								this.userAnswers[index] = answer;
@@ -1025,7 +1082,8 @@ class App {
 	}
 
 	showNewFeaturesPrompt() {
-		const lastSeenVersion = localStorage.getItem("did-exit-version") || "0.0";
+		const lastSeenVersion =
+			localStorage.getItem("did-exit-version") || "0.0";
 
 		if (CURRENT_APP_VERSION > lastSeenVersion) {
 			// Generate version history HTML
@@ -1079,7 +1137,10 @@ class App {
 					onClick: (() => {
 						const self = this;
 						return function () {
-							localStorage.setItem("did-exit-version", CURRENT_APP_VERSION);
+							localStorage.setItem(
+								"did-exit-version",
+								CURRENT_APP_VERSION,
+							);
 							self.ui.hideModal();
 						};
 					})(),
@@ -1105,7 +1166,10 @@ class App {
 				this.currentFile,
 				images,
 			);
-			console.log("handleImagesExtracted: batchProcessor result:", result);
+			console.log(
+				"handleImagesExtracted: batchProcessor result:",
+				result,
+			);
 			if (result && result.fromCache) {
 				this.handleCacheHit(result);
 			}

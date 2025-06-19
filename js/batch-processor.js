@@ -144,8 +144,10 @@ class BatchProcessor {
 				// Add remaining words to last chunk
 				if (i + wordsPerChunk < words.length) {
 					const remainingWords = words.slice(i + wordsPerChunk);
-					chunks[chunks.length - 1].content += " " + remainingWords.join(" ");
-					chunks[chunks.length - 1].wordsCount += remainingWords.length;
+					chunks[chunks.length - 1].content +=
+						" " + remainingWords.join(" ");
+					chunks[chunks.length - 1].wordsCount +=
+						remainingWords.length;
 					chunks[chunks.length - 1].hasAppendedContent = true;
 				}
 				break;
@@ -174,15 +176,22 @@ class BatchProcessor {
 			this.abortController = new AbortController();
 			this.currentOperation = `Processing ${pdfFile.name}`;
 
-			console.log(`🚀 Starting AI-only batch processing for: ${pdfFile.name}`);
+			console.log(
+				`🚀 Starting AI-only batch processing for: ${pdfFile.name}`,
+			);
 
 			// Generate PDF ID and check cache (support text and image-based PDFs)
 			const pdfId = Array.isArray(textContent)
-				? await this.db.generatePDFHash(`${pdfFile.name}-${pdfFile.size}`)
+				? await this.db.generatePDFHash(
+						`${pdfFile.name}-${pdfFile.size}`,
+					)
 				: await this.db.generatePDFHash(textContent);
 			console.log(`processPDFInBatches: generated pdfId=${pdfId}`);
 			const existingPDF = await this.db.getPDF(pdfId);
-			console.log(`processPDFInBatches: existingPDF from db:`, existingPDF);
+			console.log(
+				`processPDFInBatches: existingPDF from db:`,
+				existingPDF,
+			);
 
 			if (existingPDF && existingPDF.isComplete) {
 				console.log(`✅ PDF already processed: ${pdfFile.name}`);
@@ -194,11 +203,16 @@ class BatchProcessor {
 				// Verify we have questions from all expected batches
 				const batchCounts = {};
 				questions.forEach((q) => {
-					batchCounts[q.batchNumber] = (batchCounts[q.batchNumber] || 0) + 1;
+					batchCounts[q.batchNumber] =
+						(batchCounts[q.batchNumber] || 0) + 1;
 				});
 				console.log(`📊 Questions per batch from cache:`, batchCounts);
 
-				this.emit("cacheHit", { pdfId, questions, pdfData: existingPDF });
+				this.emit("cacheHit", {
+					pdfId,
+					questions,
+					pdfData: existingPDF,
+				});
 				return { pdfId, questions, fromCache: true };
 			}
 
@@ -267,7 +281,11 @@ class BatchProcessor {
 
 				// Queue remaining batches for background processing
 				if (chunks.length > 1) {
-					this.queueRemainingBatches(chunks.slice(1), pdfId, totalBatches);
+					this.queueRemainingBatches(
+						chunks.slice(1),
+						pdfId,
+						totalBatches,
+					);
 				} else {
 					// Mark as complete if only one batch
 					await this.db.markPDFComplete(pdfId);
@@ -277,7 +295,11 @@ class BatchProcessor {
 					});
 				}
 
-				return { pdfId, questions: firstBatchQuestions, fromCache: false };
+				return {
+					pdfId,
+					questions: firstBatchQuestions,
+					fromCache: false,
+				};
 			} else {
 				throw new Error(
 					"First batch generated no questions. The content might not contain extractable questions.",
@@ -306,8 +328,12 @@ class BatchProcessor {
 				(typeof chunk.content === "string" &&
 					chunk.content.startsWith("data:image"))
 			) {
-				console.log(`🤖 Processing image batch ${chunk.batchNumber} with AI`);
-				questions = await this.ai.generateQuestionsFromImage(chunk.content);
+				console.log(
+					`🤖 Processing image batch ${chunk.batchNumber} with AI`,
+				);
+				questions = await this.ai.generateQuestionsFromImage(
+					chunk.content,
+				);
 			} else {
 				console.log(
 					`🤖 Processing batch ${chunk.batchNumber} with AI (${chunk.wordsCount || "unknown"} words)`,
@@ -324,9 +350,15 @@ class BatchProcessor {
 				const providedAnswers = questions.filter(
 					(q) =>
 						q.explanation &&
-						(q.explanation.toLowerCase().includes("answer provided") ||
-							q.explanation.toLowerCase().includes("provided in source") ||
-							q.explanation.toLowerCase().includes("given answer")),
+						(q.explanation
+							.toLowerCase()
+							.includes("answer provided") ||
+							q.explanation
+								.toLowerCase()
+								.includes("provided in source") ||
+							q.explanation
+								.toLowerCase()
+								.includes("given answer")),
 				);
 
 				if (providedAnswers.length > 0) {
@@ -346,7 +378,10 @@ class BatchProcessor {
 				return [];
 			}
 		} catch (error) {
-			console.error(`❌ Error processing batch ${chunk.batchNumber}:`, error);
+			console.error(
+				`❌ Error processing batch ${chunk.batchNumber}:`,
+				error,
+			);
 
 			// Return empty array instead of throwing to allow other batches to continue
 			return [];
@@ -447,7 +482,12 @@ ${chunk.content}`;
 					this.processChunkWithAI(item.chunk, item.pdfId),
 					new Promise((_, reject) =>
 						setTimeout(
-							() => reject(new Error("Batch timeout after 120 seconds")),
+							() =>
+								reject(
+									new Error(
+										"Batch timeout after 120 seconds",
+									),
+								),
 							120000,
 						),
 					),
@@ -460,7 +500,10 @@ ${chunk.content}`;
 						questions,
 						item.chunk.batchNumber,
 					);
-					await this.db.updatePDFProgress(item.pdfId, item.chunk.batchNumber);
+					await this.db.updatePDFProgress(
+						item.pdfId,
+						item.chunk.batchNumber,
+					);
 
 					// Get updated question count and debug info
 					const allQuestions = await this.db.getQuestions(item.pdfId);
@@ -487,7 +530,9 @@ ${chunk.content}`;
 							`🎉 All ${item.totalBatches} batches completed! Marking PDF as complete.`,
 						);
 						await this.db.markPDFComplete(item.pdfId);
-						const finalQuestions = await this.db.getQuestions(item.pdfId);
+						const finalQuestions = await this.db.getQuestions(
+							item.pdfId,
+						);
 
 						this.emit("processingComplete", {
 							pdfId: item.pdfId,
@@ -505,7 +550,9 @@ ${chunk.content}`;
 							`🎉 Reached final batch ${item.totalBatches}. Marking PDF as complete.`,
 						);
 						await this.db.markPDFComplete(item.pdfId);
-						const finalQuestions = await this.db.getQuestions(item.pdfId);
+						const finalQuestions = await this.db.getQuestions(
+							item.pdfId,
+						);
 
 						this.emit("processingComplete", {
 							pdfId: item.pdfId,
@@ -520,18 +567,26 @@ ${chunk.content}`;
 				);
 
 				// Log detailed error information for debugging
-				console.error(`🔍 Batch ${item.chunk.batchNumber} error details:`, {
-					batchNumber: item.chunk.batchNumber,
-					totalBatches: item.totalBatches,
-					errorType: error.name,
-					errorMessage: error.message,
-					contentLength: item.chunk.content?.length || 0,
-					isLastBatch: item.chunk.batchNumber === item.totalBatches,
-				});
+				console.error(
+					`🔍 Batch ${item.chunk.batchNumber} error details:`,
+					{
+						batchNumber: item.chunk.batchNumber,
+						totalBatches: item.totalBatches,
+						errorType: error.name,
+						errorMessage: error.message,
+						contentLength: item.chunk.content?.length || 0,
+						isLastBatch:
+							item.chunk.batchNumber === item.totalBatches,
+					},
+				);
 
 				// Store empty result to track failed batch
 				try {
-					await this.db.storeQuestions(item.pdfId, [], item.chunk.batchNumber);
+					await this.db.storeQuestions(
+						item.pdfId,
+						[],
+						item.chunk.batchNumber,
+					);
 					console.log(
 						`📝 Stored empty result for failed batch ${item.chunk.batchNumber}`,
 					);
@@ -550,7 +605,9 @@ ${chunk.content}`;
 
 					try {
 						await this.db.markPDFComplete(item.pdfId);
-						const finalQuestions = await this.db.getQuestions(item.pdfId);
+						const finalQuestions = await this.db.getQuestions(
+							item.pdfId,
+						);
 
 						this.emit("processingComplete", {
 							pdfId: item.pdfId,
@@ -559,7 +616,10 @@ ${chunk.content}`;
 							failedBatch: item.chunk.batchNumber,
 						});
 					} catch (completionError) {
-						console.error("Failed to mark PDF as complete:", completionError);
+						console.error(
+							"Failed to mark PDF as complete:",
+							completionError,
+						);
 						// Emit completion anyway to prevent hanging
 						this.emit("processingComplete", {
 							pdfId: item.pdfId,
@@ -637,7 +697,9 @@ ${chunk.content}`;
 			return new Promise((resolve, reject) => {
 				const request = store.getAll();
 				request.onsuccess = () => {
-					const pdfs = request.result.filter((pdf) => !pdf.isComplete);
+					const pdfs = request.result.filter(
+						(pdf) => !pdf.isComplete,
+					);
 					resolve(pdfs);
 				};
 				request.onerror = () => reject(request.error);
@@ -656,7 +718,9 @@ ${chunk.content}`;
 			now - this.lastRequestTime < this.rateLimitDelay
 		) {
 			const waitTime = this.rateLimitDelay - (now - this.lastRequestTime);
-			console.log(`⏱️ Rate limiting: waiting ${Math.ceil(waitTime / 1000)}s...`);
+			console.log(
+				`⏱️ Rate limiting: waiting ${Math.ceil(waitTime / 1000)}s...`,
+			);
 			await new Promise((resolve) => setTimeout(resolve, waitTime));
 		}
 		this.lastRequestTime = now;

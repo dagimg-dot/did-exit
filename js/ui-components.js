@@ -174,25 +174,25 @@ class UIComponents {
                             <div>${this.escapeHTML(detail.userAnswerText)}</div>
                         </div>
                         ${
-													!detail.isCorrect
-														? `
+							!detail.isCorrect
+								? `
                             <div class="result-answer correct-answer">
                                 <div class="result-answer-label">Correct Answer</div>
                                 <div>${this.escapeHTML(detail.correctAnswerText)}</div>
                             </div>
                         `
-														: ""
-												}
+								: ""
+						}
                         ${
-													detail.explanation
-														? `
+							detail.explanation
+								? `
                             <div class="result-explanation">
                                 <div class="result-answer-label">Explanation</div>
                                 <div>${this.escapeHTML(detail.explanation)}</div>
                             </div>
                         `
-														: ""
-												}
+								: ""
+						}
                     </div>
                 </div>
             `;

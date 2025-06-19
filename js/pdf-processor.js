@@ -53,7 +53,8 @@ class PDFProcessor {
 			const arrayBuffer = await this.fileToArrayBuffer(file);
 
 			// Load PDF document
-			const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+			const pdf = await pdfjsLib.getDocument({ data: arrayBuffer })
+				.promise;
 			this.currentPdf = pdf;
 			console.log("PDF loaded:", pdf.numPages, "pages");
 

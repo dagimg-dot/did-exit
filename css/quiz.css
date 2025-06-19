@@ -263,7 +263,7 @@
 	right: 0;
 	bottom: 0;
 	background-color: #ccc;
-	transition: .3s;
+	transition: 0.3s;
 }
 
 .quiz-mode-selector .slider.round {
@@ -282,7 +282,7 @@
 	left: 3px;
 	bottom: 3px;
 	background-color: white;
-	transition: .3s;
+	transition: 0.3s;
 }
 
 .quiz-mode-selector input:checked + .slider {

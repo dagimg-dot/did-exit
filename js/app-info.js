@@ -23,7 +23,8 @@ export const content = {
 				},
 				{
 					title: "Resume Button",
-					description: "You can now resume your exam from where you left off.",
+					description:
+						"You can now resume your exam from where you left off.",
 				},
 			],
 		},

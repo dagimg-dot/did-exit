@@ -104,7 +104,10 @@ class QuizManager {
 			if (quizSection.classList.contains("active")) {
 				if (event.key === "ArrowLeft" && !this.prevBtn.disabled) {
 					this.previousQuestion();
-				} else if (event.key === "ArrowRight" && !this.nextBtn.disabled) {
+				} else if (
+					event.key === "ArrowRight" &&
+					!this.nextBtn.disabled
+				) {
 					this.nextQuestion();
 				}
 			}
@@ -173,7 +176,8 @@ class QuizManager {
 		optionDiv.dataset.optionIndex = index;
 
 		// Check if this option is selected
-		const isSelected = this.userAnswers[this.currentQuestionIndex] === index;
+		const isSelected =
+			this.userAnswers[this.currentQuestionIndex] === index;
 		if (isSelected) {
 			optionDiv.classList.add("selected");
 		}
@@ -388,7 +392,11 @@ class QuizManager {
 		this.questionText.textContent = question.question;
 		this.currentQuestionSpan.textContent = this.currentQuestionIndex + 1;
 
-		this.renderReviewOptions(question, userAnswer, correctAnswer.correctAnswer);
+		this.renderReviewOptions(
+			question,
+			userAnswer,
+			correctAnswer.correctAnswer,
+		);
 	}
 
 	renderReviewOptions(question, userAnswer, correctAnswer) {
@@ -507,7 +515,8 @@ class QuizManager {
 		// Only extend if the current array isn't already large enough
 		// This preserves existing answers when extending
 		if (this.userAnswers.length < this.questions.length) {
-			const additionalCount = this.questions.length - this.userAnswers.length;
+			const additionalCount =
+				this.questions.length - this.userAnswers.length;
 			const additionalAnswers = new Array(additionalCount).fill(null);
 			this.userAnswers.push(...additionalAnswers);
 		}
@@ -540,8 +549,10 @@ class QuizManager {
 			totalQuestions: this.questions.length,
 			answeredCount: this.userAnswers.filter((answer) => answer !== null)
 				.length,
-			isOnLastQuestion: this.currentQuestionIndex === this.questions.length - 1,
-			hasAnsweredCurrent: this.userAnswers[this.currentQuestionIndex] !== null,
+			isOnLastQuestion:
+				this.currentQuestionIndex === this.questions.length - 1,
+			hasAnsweredCurrent:
+				this.userAnswers[this.currentQuestionIndex] !== null,
 		};
 	}
 
@@ -578,7 +589,8 @@ class QuizManager {
 			totalQuestions,
 			answeredCount,
 			unansweredCount: totalQuestions - answeredCount,
-			progress: totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0,
+			progress:
+				totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0,
 		};
 	}
 
