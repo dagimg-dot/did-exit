@@ -1,6 +1,6 @@
 {
 	"name": "did-exit",
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"description": "Exam Generator from PDF - Upload your exam PDF and make it interactive",
 	"type": "module",
 	"scripts": {
