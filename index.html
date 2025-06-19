@@ -219,54 +219,88 @@
 								>Instant Feedback</span
 							>
 						</div>
+						<div class="quiz-layout">
+							<div class="question-nav" id="question-nav">
+								<h3>Question Navigation</h3>
+								<p>Click on a question to jump to it</p>
+								<ul class="nav-list" id="nav-list">
+									<!-- Question navigation items will be dynamically added -->
+								</ul>
+								<div class="nav-legend">
+									<div class="legend-item">
+										<span class="dot current"></span>Current
+										Question
+									</div>
+									<div class="legend-item">
+										<span
+											class="dot answered"
+										></span>Answered
+									</div>
+									<div class="legend-item">
+										<span
+											class="dot unanswered"
+										></span>Unanswered
+									</div>
+									<div class="legend-item flagged">
+										<span class="dot flagged"> </span>
+										Flagged (Long press to flag)
+										<img
+											src="./assets/red-flag.png"
+											alt="Flag"
+											class="flag-icon"
+										>
+									</div>
+								</div>
+							</div>
 
-						<div class="question-card" id="question-card">
-							<h2 id="question-text">
-								Question will appear here...
-							</h2>
-							<div
-								class="options-container"
-								id="options-container"
-							>
-								<!-- Options will be dynamically added -->
-							</div>
-							<div
-								class="explanation-container"
-								id="explanation-container"
-								style="display: none;"
-							>
-								<h3>Explanation</h3>
-								<p id="explanation-text"></p>
-							</div>
-							<div class="quiz-controls">
-								<button
-									id="prev-btn"
-									class="btn btn-secondary"
-									disabled
+							<div class="question-card" id="question-card">
+								<h2 id="question-text">
+									Question will appear here...
+								</h2>
+								<div
+									class="options-container"
+									id="options-container"
 								>
-									Previous
-								</button>
-								<button
-									id="resume-btn"
-									class="btn btn-primary"
+									<!-- Options will be dynamically added -->
+								</div>
+								<div
+									class="explanation-container"
+									id="explanation-container"
 									style="display: none;"
 								>
-									Resume
-								</button>
-								<button
-									id="next-btn"
-									class="btn btn-primary"
-									disabled
-								>
-									Next
-								</button>
-								<button
-									id="submit-quiz-btn"
-									class="btn btn-success"
-									style="display: none;"
-								>
-									Submit Quiz
-								</button>
+									<h3>Explanation</h3>
+									<p id="explanation-text"></p>
+								</div>
+								<div class="quiz-controls">
+									<button
+										id="prev-btn"
+										class="btn btn-secondary"
+										disabled
+									>
+										Previous
+									</button>
+									<button
+										id="resume-btn"
+										class="btn btn-primary"
+										style="display: none;"
+									>
+										Resume
+									</button>
+									<button
+										id="next-btn"
+										class="btn btn-primary"
+										disabled
+									>
+										Next
+									</button>
+									<button
+										id="submit-quiz-btn"
+										class="btn btn-success"
+										style="display: none;"
+									>
+										Submit Quiz
+									</button>
+								</div>
 							</div>
 						</div>
 					</div>
