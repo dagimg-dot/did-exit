@@ -109,10 +109,6 @@ class QuizManager {
 					event.key === "ArrowRight" &&
 					!this.nextBtn.disabled
 				) {
-				} else if (
-					event.key === "ArrowRight" &&
-					!this.nextBtn.disabled
-				) {
 					this.nextQuestion();
 				}
 			}
@@ -128,7 +124,7 @@ class QuizManager {
 		this.flaggedQuestions = new Array(questions.length).fill(false);
 
 		// Extract correct answers for normal mode
-		this.correctAnswers = questions.map((q, index) => {
+		this.correctAnswers = questions.map((q, _index) => {
 			return {
 				correctAnswer: q.correctAnswer,
 				explanation: q.explanation || "No explanation provided.",
@@ -337,7 +333,7 @@ class QuizManager {
 		const navList = document.getElementById("nav-list");
 		if (!navList) return;
 		navList.innerHTML = "";
-		this.questions.forEach((question, index) => {
+		this.questions.forEach((_question, index) => {
 			const navItem = document.createElement("li");
 			const btn = document.createElement("button");
 			btn.className = "question-nav-btn";
@@ -375,7 +371,7 @@ class QuizManager {
 
 			let pressTimer = null;
 
-			btn.addEventListener("mousedown", (e) => {
+			btn.addEventListener("mousedown", (_e) => {
 				pressTimer = setTimeout(() => {
 					this.flaggedQuestions[index] =
 						!this.flaggedQuestions[index];
@@ -386,7 +382,7 @@ class QuizManager {
 			btn.addEventListener("mouseleave", () => clearTimeout(pressTimer));
 			btn.addEventListener("mouseup", () => clearTimeout(pressTimer));
 
-			btn.addEventListener("touchstart", (e) => {
+			btn.addEventListener("touchstart", (_e) => {
 				pressTimer = setTimeout(() => {
 					this.flaggedQuestions[index] =
 						!this.flaggedQuestions[index];

@@ -1,14 +1,15 @@
 // Main application controller
-import { FileUploader } from "./file-uploader.js";
-import { PDFProcessor } from "./pdf-processor.js";
+
 import { AIIntegration } from "./ai-integration.js";
-import { QuizManager } from "./quiz-manager.js";
-import { UIComponents } from "./ui-components.js";
-import { DatabaseManager } from "./database-manager.js";
+import { CURRENT_APP_VERSION, content } from "./app-info.js";
 import { BatchProcessor } from "./batch-processor.js";
-import { content, CURRENT_APP_VERSION } from "./app-info.js";
-import { initializeTheme } from "./theme-manager.js";
+import { DatabaseManager } from "./database-manager.js";
+import { FileUploader } from "./file-uploader.js";
 import { P2PSyncManager } from "./p2p-sync-manager.js";
+import { PDFProcessor } from "./pdf-processor.js";
+import { QuizManager } from "./quiz-manager.js";
+import { initializeTheme } from "./theme-manager.js";
+import { UIComponents } from "./ui-components.js";
 
 class App {
 	constructor() {
@@ -746,18 +747,18 @@ class App {
 	handleProcessingError(error) {
 		console.error("Processing error:", error);
 		this.ui.hideLoading();
-		this.ui.showError("Error processing PDF: " + error.message);
+		this.ui.showError(`Error processing PDF: ${error.message}`);
 	}
 
 	handleAIError(error) {
 		console.error("AI error:", error);
 		this.ui.hideLoading();
-		this.ui.showError("AI service error: " + error.message);
+		this.ui.showError(`AI service error: ${error.message}`);
 	}
 
 	async handleSaveAPIKey() {
 		const apiKeyInput = document.getElementById("api-key-input");
-		const statusElement = document.getElementById("api-key-status");
+		const _statusElement = document.getElementById("api-key-status");
 		const saveButton = document.getElementById("save-api-key-btn");
 		const apiKey = apiKeyInput.value.trim();
 
@@ -792,7 +793,7 @@ class App {
 					this.hideAPIKeyConfig();
 				}, 1500);
 			} else {
-				this.showAPIKeyStatus("❌ " + testResult.message, "error");
+				this.showAPIKeyStatus(`❌ ${testResult.message}`, "error");
 			}
 		} catch (error) {
 			console.error("API key test error:", error);
@@ -1182,7 +1183,7 @@ class App {
 					className: "btn-primary",
 					onClick: (() => {
 						const self = this;
-						return function () {
+						return () => {
 							localStorage.setItem(
 								"did-exit-version",
 								CURRENT_APP_VERSION,
@@ -1216,7 +1217,7 @@ class App {
 				"handleImagesExtracted: batchProcessor result:",
 				result,
 			);
-			if (result && result.fromCache) {
+			if (result?.fromCache) {
 				this.handleCacheHit(result);
 			}
 		} catch (error) {
@@ -1301,7 +1302,7 @@ class App {
 			await this.loadRecentExams();
 		} catch (err) {
 			console.error("Failed handling synced data", err);
-			this.ui.showError("Sync failed: " + err.message);
+			this.ui.showError(`Sync failed: ${err.message}`);
 		}
 	}
 }

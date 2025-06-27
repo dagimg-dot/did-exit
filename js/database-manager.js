@@ -345,7 +345,7 @@ class DatabaseManager {
 				console.log(
 					`🔍 DEBUG: Found ${questions.length} questions for PDF:`,
 					{
-						pdfId: pdfId.substring(0, 8) + "...",
+						pdfId: `${pdfId.substring(0, 8)}...`,
 						totalQuestions: questions.length,
 						batchBreakdown: questions.reduce((acc, q) => {
 							acc[q.batchNumber] = (acc[q.batchNumber] || 0) + 1;
@@ -427,19 +427,16 @@ class DatabaseManager {
 	}
 
 	generateUUID() {
-		return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
-			/[xy]/g,
-			function (c) {
-				const r = (Math.random() * 16) | 0;
-				const v = c == "x" ? r : (r & 0x3) | 0x8;
-				return v.toString(16);
-			},
-		);
+		return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+			const r = (Math.random() * 16) | 0;
+			const v = c === "x" ? r : (r & 0x3) | 0x8;
+			return v.toString(16);
+		});
 	}
 
 	// Cache Management
 	async cleanupOldPDFs() {
-		const maxPDFs = 50;
+		const _maxPDFs = 50;
 		const maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
 		const cutoffDate = new Date(Date.now() - maxAge);
 
@@ -607,7 +604,7 @@ class DatabaseManager {
 						console.log(
 							`[DB] All PDFs in database:`,
 							debugRequest.result.map((pdf) => ({
-								id: pdf.id.substring(0, 8) + "...",
+								id: `${pdf.id.substring(0, 8)}...`,
 								filename: pdf.filename,
 							})),
 						);
@@ -633,7 +630,7 @@ class DatabaseManager {
 		return new Promise((resolve, reject) => {
 			const request = store.get(pdfId);
 			request.onsuccess = () => {
-				if (request.result && request.result.userAnswers) {
+				if (request.result?.userAnswers) {
 					console.log(
 						`📝 Loaded ${request.result.userAnswers.filter((a) => a !== null).length} saved user answers for PDF ${pdfId.substring(0, 8)}...`,
 					);
