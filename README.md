@@ -1,6 +1,6 @@
 # Did Exit - Exam Generator from PDF
 
-🎯 **Transform your PDF exams into interactive quizzes using Google AI**
+🎯 **Transform your PDF exams into interactive quizzes using Gemini AI**
 
 A sleek web application that extracts questions from PDF files and creates engaging quiz experiences with AI-powered analysis.
 
@@ -16,12 +16,15 @@ A sleek web application that extracts questions from PDF files and creates engag
 - **🎓 Exam Mode vs. Instant Feedback**: Easily toggle between a realistic exam simulation and a mode with instant answer feedback.
 - **⌨️ Keyboard Shortcuts**: Navigate through questions seamlessly using the Left (←) and Right (→) arrow keys.
 - **🕑 Recent Exams**: Get a list of your recently uploaded exams and start them instantly.
+- **🔄 Peer-to-peer Exam Sharing**: Share your exam with your friends or between your devices. This also shares your progress and answers.
+- **🔍 Question Navigation**: Navigate through questions using the question navigation box. You can also flag questions for later review.
+- **🌙 Dark Mode**: The app now starts with Dark Mode.
 
 ## 🚀 Quick Start
 
 1. **Get Your API Key**
    - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Create a free Google AI API key
+   - Create a free Gemini AI API key
 
 2. **Configure & Use**
    - Enter your API key in the configuration box

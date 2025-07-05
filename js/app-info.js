@@ -1,8 +1,28 @@
-export const CURRENT_APP_VERSION = "1.5";
+export const CURRENT_APP_VERSION = "1.6";
 
 export const content = {
 	version: CURRENT_APP_VERSION,
 	versionHistory: [
+		{
+			version: "1.6",
+			features: [
+				{
+					title: "Question Navigation",
+					description:
+						"You can now navigate through questions using the question navigation box. You can also flag questions for later review.",
+				},
+				{
+					title: "Peer-to-peer Exam Sharing",
+					description:
+						"You can now share your exam with your friends or between your devices. This also shares your progress and answers.",
+				},
+				{
+					title: "Dark Mode Fix",
+					description:
+						"The app now starts with Dark Mode enabled correctly.",
+				},
+			],
+		},
 		{
 			version: "1.5",
 			features: [
@@ -23,7 +43,8 @@ export const content = {
 				},
 				{
 					title: "Resume Button",
-					description: "You can now resume your exam from where you left off.",
+					description:
+						"You can now resume your exam from where you left off.",
 				},
 			],
 		},

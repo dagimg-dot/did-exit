@@ -65,7 +65,6 @@ class AIIntegration {
 						`❌ Failed to initialize model ${modelName}:`,
 						modelError,
 					);
-					continue;
 				}
 			}
 
@@ -95,9 +94,14 @@ class AIIntegration {
 		}
 
 		// Free tier: ~15 requests per minute max, so we'll be conservative with 12
-		if (this.requestCount >= 12 && timeSinceLastRequest < this.requestWindow) {
+		if (
+			this.requestCount >= 12 &&
+			timeSinceLastRequest < this.requestWindow
+		) {
 			const waitTime = this.requestWindow - timeSinceLastRequest;
-			console.log(`⏱️ Rate limiting: waiting ${Math.ceil(waitTime / 1000)}s...`);
+			console.log(
+				`⏱️ Rate limiting: waiting ${Math.ceil(waitTime / 1000)}s...`,
+			);
 			await new Promise((resolve) => setTimeout(resolve, waitTime));
 			this.requestCount = 0;
 		}
@@ -131,7 +135,7 @@ class AIIntegration {
 			console.error("Question generation error:", error);
 
 			// If rate limited, provide helpful message
-			if (error.message && error.message.includes("rate")) {
+			if (error.message?.includes("rate")) {
 				console.log("📝 Rate limit hit - trying again in a moment...");
 				await new Promise((resolve) => setTimeout(resolve, 5000));
 				return this.generateMockQuestions(extractedText);
@@ -194,12 +198,15 @@ class AIIntegration {
 			const response = await result.response;
 			const text = response.text();
 
-			console.log(`✅ Received response from Gemini AI (${text.length} chars)`);
+			console.log(
+				`✅ Received response from Gemini AI (${text.length} chars)`,
+			);
 
 			// Clean the response text to extract JSON
 			let jsonText = text;
 			if (text.includes("```json")) {
-				jsonText = text.match(/```json\s*([\s\S]*?)\s*```/)?.[1] || text;
+				jsonText =
+					text.match(/```json\s*([\s\S]*?)\s*```/)?.[1] || text;
 			} else if (text.includes("```")) {
 				jsonText = text.match(/```\s*([\s\S]*?)\s*```/)?.[1] || text;
 			}
@@ -211,7 +218,11 @@ class AIIntegration {
 			const firstBrace = jsonText.indexOf("{");
 			const lastBrace = jsonText.lastIndexOf("}");
 
-			if (firstBrace === -1 || lastBrace === -1 || firstBrace >= lastBrace) {
+			if (
+				firstBrace === -1 ||
+				lastBrace === -1 ||
+				firstBrace >= lastBrace
+			) {
 				throw new Error("No valid JSON object found in response");
 			}
 
@@ -219,7 +230,9 @@ class AIIntegration {
 
 			// Validate JSON structure before parsing
 			if (!jsonText.includes('"questions"')) {
-				throw new Error("Response doesn't contain expected 'questions' field");
+				throw new Error(
+					"Response doesn't contain expected 'questions' field",
+				);
 			}
 
 			let parsed;
@@ -236,14 +249,17 @@ class AIIntegration {
 					.replace(/,\s*}/g, "}")
 					.replace(/,\s*]/g, "]")
 					// Fix unescaped quotes in strings (basic attempt)
-					.replace(/": "([^"]*)"([^"]*)"([^"]*)",/g, '": "$1\\"$2\\"$3",')
+					.replace(
+						/": "([^"]*)"([^"]*)"([^"]*)",/g,
+						'": "$1\\"$2\\"$3",',
+					)
 					// Remove any trailing incomplete objects/arrays
 					.replace(/,\s*$/, "");
 
 				// If it ends abruptly, try to close it properly
-				let openBraces = (fixedJson.match(/{/g) || []).length;
+				const openBraces = (fixedJson.match(/{/g) || []).length;
 				let closeBraces = (fixedJson.match(/}/g) || []).length;
-				let openBrackets = (fixedJson.match(/\[/g) || []).length;
+				const openBrackets = (fixedJson.match(/\[/g) || []).length;
 				let closeBrackets = (fixedJson.match(/]/g) || []).length;
 
 				// Add missing closing brackets/braces
@@ -287,7 +303,9 @@ class AIIntegration {
 					!Array.isArray(q.options) ||
 					typeof q.correctAnswer !== "number"
 				) {
-					console.warn(`Question ${index + 1} has invalid structure, skipping`);
+					console.warn(
+						`Question ${index + 1} has invalid structure, skipping`,
+					);
 					return false;
 				}
 				if (q.options.length < 4 || q.options.length > 5) {
@@ -296,7 +314,10 @@ class AIIntegration {
 					);
 					return false;
 				}
-				if (q.correctAnswer < 0 || q.correctAnswer >= q.options.length) {
+				if (
+					q.correctAnswer < 0 ||
+					q.correctAnswer >= q.options.length
+				) {
 					console.warn(
 						`Question ${index + 1} has invalid correctAnswer index ${q.correctAnswer} for ${q.options.length} options, skipping`,
 					);
@@ -310,7 +331,10 @@ class AIIntegration {
 			);
 			return validQuestions;
 		} catch (error) {
-			console.error("Failed to generate questions with Google AI:", error);
+			console.error(
+				"Failed to generate questions with Google AI:",
+				error,
+			);
 			console.log("🔄 Falling back to mock questions...");
 			return this.generateMockQuestions(extractedText);
 		}
@@ -400,7 +424,9 @@ class AIIntegration {
 			});
 		}
 
-		console.log(`📝 Generated ${mockQuestions.length} mock questions for demo`);
+		console.log(
+			`📝 Generated ${mockQuestions.length} mock questions for demo`,
+		);
 		return mockQuestions;
 	}
 
@@ -435,7 +461,9 @@ class AIIntegration {
 				return [];
 			}
 
-			console.log(`✅ Extracted ${questions.length} questions from text chunk`);
+			console.log(
+				`✅ Extracted ${questions.length} questions from text chunk`,
+			);
 			return questions;
 		} catch (error) {
 			console.error("Failed to process text chunk:", error);
@@ -472,7 +500,9 @@ ${textContent}`;
 		const jsonText = this.extractJsonFromText(text);
 
 		if (!jsonText) {
-			console.warn("⚠️ No JSON block found in response. Trying regex fallback.");
+			console.warn(
+				"⚠️ No JSON block found in response. Trying regex fallback.",
+			);
 			return this.extractQuestionsWithRegex(text);
 		}
 
@@ -485,14 +515,17 @@ ${textContent}`;
 				);
 				return this.validateQuestions(parsed.questions);
 			}
-		} catch (e) {
+		} catch (_e) {
 			console.warn("⚠️ Direct JSON.parse failed. Attempting to repair...");
 		}
 
 		// If direct parse fails, try to repair and parse the whole string
 		try {
 			const repairedParsed = this.repairAndParseJson(jsonText);
-			if (repairedParsed.questions && Array.isArray(repairedParsed.questions)) {
+			if (
+				repairedParsed.questions &&
+				Array.isArray(repairedParsed.questions)
+			) {
 				console.log(
 					`✅ Successfully repaired and parsed ${repairedParsed.questions.length} questions.`,
 				);
@@ -519,7 +552,11 @@ ${textContent}`;
 				try {
 					questions.push(JSON.parse(match));
 				} catch (e) {
-					console.warn("Could not parse individual question object:", match, e);
+					console.warn(
+						"Could not parse individual question object:",
+						match,
+						e,
+					);
 				}
 			}
 		}
@@ -543,7 +580,7 @@ ${textContent}`;
 	// Utility to extract JSON from markdown or plain text
 	extractJsonFromText(text) {
 		const match = text.match(/```json\s*([\s\S]*?)\s*```/);
-		if (match && match[1]) {
+		if (match?.[1]) {
 			return match[1].trim();
 		}
 		// Fallback for responses that might not have the markdown block
@@ -564,17 +601,17 @@ ${textContent}`;
 			.replace(/}"\s*"/g, '}, "')
 			// Attempt to escape unescaped quotes (simple version)
 			.replace(/\\"/g, '"') // First, un-escape correctly escaped ones to avoid double-escaping
-			.replace(/([:\[,]\s*)"([^"\\]*)"([^"\\]*)"/g, '$1"$2\\"$3"'); // A common error pattern
+			.replace(/([:[,]\s*)"([^"\\]*)"([^"\\]*)"/g, '$1"$2\\"$3"'); // A common error pattern
 
 		// Balance braces and brackets
-		let openBraces = (repaired.match(/{/g) || []).length;
+		const openBraces = (repaired.match(/{/g) || []).length;
 		let closeBraces = (repaired.match(/}/g) || []).length;
 		while (openBraces > closeBraces) {
 			repaired += "}";
 			closeBraces++;
 		}
 
-		let openBrackets = (repaired.match(/\[/g) || []).length;
+		const openBrackets = (repaired.match(/\[/g) || []).length;
 		let closeBrackets = (repaired.match(/]/g) || []).length;
 		while (openBrackets > closeBrackets) {
 			repaired += "]";
@@ -593,9 +630,15 @@ ${textContent}`;
 			const hasQuestion = q.question && typeof q.question === "string";
 			const hasOptions = Array.isArray(q.options) && q.options.length > 1;
 			const hasCorrectAnswer = typeof q.correctAnswer === "number";
-			const hasExplanation = q.explanation && typeof q.explanation === "string";
+			const hasExplanation =
+				q.explanation && typeof q.explanation === "string";
 
-			if (!hasQuestion || !hasOptions || !hasCorrectAnswer || !hasExplanation) {
+			if (
+				!hasQuestion ||
+				!hasOptions ||
+				!hasCorrectAnswer ||
+				!hasExplanation
+			) {
 				console.warn(`Skipping invalid question at index ${index}:`, q);
 				return false;
 			}
@@ -622,7 +665,9 @@ ${textContent}`;
 			) {
 				// Only log once if we're doing conversions
 				if (index === 0) {
-					console.log(`ℹ️ Normalizing question format (answer → correctAnswer)`);
+					console.log(
+						`ℹ️ Normalizing question format (answer → correctAnswer)`,
+					);
 				}
 
 				// If answer is a string (like "A" or "Option A"), convert to index
@@ -645,8 +690,8 @@ ${textContent}`;
 					}
 					// Try to find the answer text in the options
 					else if (Array.isArray(normalized.options)) {
-						const optionIndex = normalized.options.findIndex((opt) =>
-							opt.toLowerCase().includes(answerStr),
+						const optionIndex = normalized.options.findIndex(
+							(opt) => opt.toLowerCase().includes(answerStr),
 						);
 						if (optionIndex >= 0) {
 							normalized.correctAnswer = optionIndex;
@@ -682,18 +727,18 @@ ${textContent}`;
 		const questions = [];
 		// Regex to find question blocks, more tolerant of formatting
 		const questionBlockRegex =
-			/(\d+[\.\)]\s*|Question\s*\d+:?\s*)([\s\S]+?)(Answer:|Correct Answer:|Explanation:)/gi;
+			/(\d+[.)]\s*|Question\s*\d+:?\s*)([\s\S]+?)(Answer:|Correct Answer:|Explanation:)/gi;
 
-		let match;
 		let idCounter = 1;
-		while ((match = questionBlockRegex.exec(text)) !== null) {
+		const match = questionBlockRegex.exec(text);
+		while (match !== null) {
 			const questionText = match[2].trim();
 			const optionsRegex =
-				/([A-Ea-e][\.\)]\s*)([\s\S]+?)(?=[A-Ea-e][\.\)]\s*|$)/g;
+				/([A-Ea-e][.)]\s*)([\s\S]+?)(?=[A-Ea-e][.)]\s*|$)/g;
 
-			let optionsMatch;
 			const options = [];
-			while ((optionsMatch = optionsRegex.exec(questionText)) !== null) {
+			const optionsMatch = optionsRegex.exec(questionText);
+			while (optionsMatch !== null) {
 				options.push(optionsMatch[2].trim());
 			}
 
@@ -749,12 +794,14 @@ ${textContent}`;
 					correctAnswer: correctAnswer.correctAnswer,
 					isCorrect,
 					userAnswerText: question.options[userAnswer] || "No answer",
-					correctAnswerText: question.options[correctAnswer.correctAnswer],
+					correctAnswerText:
+						question.options[correctAnswer.correctAnswer],
 					explanation: correctAnswer.explanation,
 				});
 			});
 
-			results.incorrectCount = results.totalQuestions - results.correctCount;
+			results.incorrectCount =
+				results.totalQuestions - results.correctCount;
 			results.score = `${results.correctCount}/${results.totalQuestions}`;
 			results.percentage = Math.round(
 				(results.correctCount / results.totalQuestions) * 100,
@@ -799,14 +846,16 @@ ${textContent}`;
 			const genAI = new GoogleGenerativeAI(testKey);
 
 			// Try to initialize with the simplest model
-			const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+			const model = genAI.getGenerativeModel({
+				model: "gemini-1.5-flash",
+			});
 
 			// Test with a simple prompt
 			const result = await model.generateContent(
 				"Say 'test' if you can read this.",
 			);
 			const response = await result.response;
-			const text = response.text();
+			const _text = response.text();
 
 			return { success: true, message: "API key is valid and working" };
 		} catch (error) {
@@ -852,7 +901,10 @@ ${textContent}`;
 			const parts = [];
 
 			// If imageData is a data URL string (what our PDF renderer produces)
-			if (typeof imageData === "string" && imageData.startsWith("data:image")) {
+			if (
+				typeof imageData === "string" &&
+				imageData.startsWith("data:image")
+			) {
 				// Extract base64 data and create a Blob
 				const mimeType = imageData.split(";")[0].split(":")[1];
 				const base64Data = imageData.split(",")[1];
@@ -861,7 +913,7 @@ ${textContent}`;
 				for (let i = 0; i < binaryData.length; i++) {
 					byteArray[i] = binaryData.charCodeAt(i);
 				}
-				const blob = new Blob([byteArray], { type: mimeType });
+				const _blob = new Blob([byteArray], { type: mimeType });
 
 				// Add image part
 				parts.push({
@@ -874,7 +926,8 @@ ${textContent}`;
 				// Convert Blob to base64
 				const base64Data = await new Promise((resolve) => {
 					const reader = new FileReader();
-					reader.onloadend = () => resolve(reader.result.split(",")[1]);
+					reader.onloadend = () =>
+						resolve(reader.result.split(",")[1]);
 					reader.readAsDataURL(imageData);
 				});
 
@@ -908,7 +961,9 @@ ${textContent}`;
 			const result = await this.model.generateContent({ contents });
 			const response = await result.response;
 			const text = response.text();
-			console.log(`✅ Received image analysis response (${text.length} chars)`);
+			console.log(
+				`✅ Received image analysis response (${text.length} chars)`,
+			);
 			const questions = this.parseChunkResponse(text);
 			return questions;
 		} catch (error) {

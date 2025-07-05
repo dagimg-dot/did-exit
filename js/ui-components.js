@@ -87,7 +87,7 @@ class UIComponents {
 
 		// Auto-hide after 7 seconds
 		setTimeout(() => {
-			if (errorElement && errorElement.parentNode) {
+			if (errorElement?.parentNode) {
 				errorElement.remove();
 			}
 		}, 7000);
@@ -174,25 +174,25 @@ class UIComponents {
                             <div>${this.escapeHTML(detail.userAnswerText)}</div>
                         </div>
                         ${
-													!detail.isCorrect
-														? `
+							!detail.isCorrect
+								? `
                             <div class="result-answer correct-answer">
                                 <div class="result-answer-label">Correct Answer</div>
                                 <div>${this.escapeHTML(detail.correctAnswerText)}</div>
                             </div>
                         `
-														: ""
-												}
+								: ""
+						}
                         ${
-													detail.explanation
-														? `
+							detail.explanation
+								? `
                             <div class="result-explanation">
                                 <div class="result-answer-label">Explanation</div>
                                 <div>${this.escapeHTML(detail.explanation)}</div>
                             </div>
                         `
-														: ""
-												}
+								: ""
+						}
                     </div>
                 </div>
             `;
@@ -201,7 +201,7 @@ class UIComponents {
 		return html;
 	}
 
-	addResultsSummary(results) {
+	addResultsSummary(_results) {
 		// Add CSS for summary stats if not already present
 		if (!document.getElementById("results-summary-styles")) {
 			const style = document.createElement("style");
@@ -512,6 +512,275 @@ class UIComponents {
 			totalBatches,
 			`${questionsReady} questions ready...`,
 		);
+	}
+
+	// ───────────────────────────────── Sync Modal ─────────────────────────────────
+	createSyncModal() {
+		// Use the same structure as the generic modal for consistent styling
+		const modalContent = `
+			<style>
+				/* Default active state (light mode) */
+				.sync-tabs .tab-btn.active {
+					border-bottom: 2px solid #4f46e5; /* Indigo 600 */
+					font-weight: 600;
+					color: #111827; /* Gray 900 */
+				}
+				/* Dark mode inactive tab text */
+				.dark-theme .sync-tabs .tab-btn {
+					color: #d1d5db; /* Gray 300 */
+				}
+				/* Dark mode ACTIVE tab text */
+				.dark-theme .sync-tabs .tab-btn.active {
+					color: #818cf8; /* Indigo 400 */
+					border-bottom-color: #818cf8;
+				}
+				/* Dark mode input fields */
+				.dark-theme .sync-modal-input {
+					background-color: #374151; /* Gray 700 */
+					border-color: #4b5563;   /* Gray 600 */
+					color: #f9fafb;         /* Gray 50 */
+				}
+				.sync-spinner {
+					border: 4px solid #f3f4f6;
+					border-top: 4px solid #4f46e5;
+					border-radius: 50%;
+					width: 50px;
+					height: 50px;
+					animation: spin 1s linear infinite;
+					margin: 0 auto;
+				}
+				.dark-theme .sync-spinner {
+					border-color: #4b5563;
+					border-top-color: #818cf8;
+				}
+				@keyframes spin {
+					0% { transform: rotate(0deg); }
+					100% { transform: rotate(360deg); }
+				}
+			</style>
+			<div class="sync-tabs" style="display:flex; gap:0.5rem; margin-bottom:1rem; border-bottom: 1px solid #e5e7eb;">
+				<button class="tab-btn" data-tab="share" style="padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent;">Share</button>
+				<button class="tab-btn" data-tab="receive" style="padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent;">Receive</button>
+			</div>
+
+			<!-- Share Tab -->
+			<div class="tab-content" id="share-tab">
+				<p>Share this exam by having another device scan the QR code below.</p>
+				<div id="qrcode-container" style="display:flex; justify-content:center; margin: 1.5rem 0;"></div>
+				<p style="text-align:center; font-size:0.9rem; color:#6b7280;">Or copy the code:</p>
+				<div class="connection-code" style="display:flex; gap:0.5rem; align-items:center;">
+					<input type="text" id="connection-code" readonly class="sync-modal-input" style="flex:1; min-width:0; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.5rem;">
+					<button id="copy-code-btn" class="btn btn-secondary btn-sm">Copy</button>
+				</div>
+			</div>
+
+			<!-- Receive Tab -->
+			<div class="tab-content" id="receive-tab" style="display:none">
+				<div id="qr-reader" style="width: 100%; margin-bottom: 1rem;"></div>
+				<p>Paste the connection code from the other device below, or scan the QR code.</p>
+				<div class="connection-input" style="display:flex; flex-direction:column; gap:0.5rem; margin-top: 1rem;">
+					<div style="display: flex; gap: 0.5rem;">
+						<input type="text" id="peer-connection-input" placeholder="Paste connection code" class="sync-modal-input" style="flex:1; min-width:0; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.5rem;">
+						<button id="connect-btn" class="btn btn-primary">Connect</button>
+					</div>
+					<button id="scan-qr-btn" class="btn btn-secondary" style="align-self: center; margin-top: 0.5rem;">Scan QR Code</button>
+				</div>
+			</div>
+
+			<div id="sync-status" style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280; text-align: center; min-height: 20px;"></div>
+		`;
+		return modalContent;
+	}
+
+	showSyncModal(pdfId, p2pSyncManager) {
+		const isReceiveOnly = pdfId === null;
+		const modalContent = this.createSyncModal();
+		this.showModal(
+			isReceiveOnly ? "Receive Exam" : "Sync Exam",
+			modalContent,
+			[
+				{
+					text: "Close",
+					className: "btn-secondary",
+					onClick: () => this.hideModal(),
+				},
+			],
+		);
+
+		// The generic showModal call creates this.modalElement
+		const modal = this.modalElement;
+
+		// Tab switching logic
+		const shareTabBtn = modal.querySelector('.tab-btn[data-tab="share"]');
+		const receiveTabBtn = modal.querySelector(
+			'.tab-btn[data-tab="receive"]',
+		);
+		const shareTab = modal.querySelector("#share-tab");
+		const receiveTab = modal.querySelector("#receive-tab");
+
+		if (isReceiveOnly) {
+			// Default to Receive tab and hide the Share tab
+			shareTab.style.display = "none";
+			shareTabBtn.style.display = "none";
+			receiveTab.style.display = "block";
+			receiveTabBtn.classList.add("active");
+		} else {
+			// Default to Share tab
+			shareTabBtn.classList.add("active");
+		}
+
+		shareTabBtn.addEventListener("click", () => {
+			shareTabBtn.classList.add("active");
+			receiveTabBtn.classList.remove("active");
+			shareTab.style.display = "block";
+			receiveTab.style.display = "none";
+		});
+		receiveTabBtn.addEventListener("click", () => {
+			receiveTabBtn.classList.add("active");
+			shareTabBtn.classList.remove("active");
+			shareTab.style.display = "none";
+			receiveTab.style.display = "block";
+		});
+
+		const statusEl = modal.querySelector("#sync-status");
+
+		// --- Share logic (only if a pdfId is provided) ---
+		if (!isReceiveOnly) {
+			const qrContainer = modal.querySelector("#qrcode-container");
+			const connectionCodeInput = modal.querySelector("#connection-code");
+
+			// Set initial loading state
+			qrContainer.innerHTML = `<div class="sync-spinner"></div>`;
+			connectionCodeInput.value = "Generating...";
+			statusEl.textContent = "Creating secure session...";
+
+			(async () => {
+				try {
+					const { roomId } =
+						await p2pSyncManager.createShareSession(pdfId);
+
+					// Clear loading state and show the data
+					qrContainer.innerHTML = "";
+					const canvas = document.createElement("canvas");
+					qrContainer.appendChild(canvas);
+
+					const connectionInfo = { roomId };
+					const connectionString = JSON.stringify(connectionInfo);
+					// eslint-disable-next-line no-undef
+					QRCode.toCanvas(canvas, connectionString, {
+						width: 220,
+						margin: 1,
+					});
+
+					connectionCodeInput.value = roomId;
+					statusEl.textContent = "Ready to connect.";
+				} catch (err) {
+					console.error("Failed to create share session", err);
+					qrContainer.innerHTML = `<p style="color: #ef4444; text-align: center;">Failed to create session.</p>`;
+					statusEl.textContent = `Error: ${err.message}`;
+					this.showError(
+						`Failed to create share session: ${err.message}`,
+					);
+				}
+			})();
+
+			// Copy code
+			modal
+				.querySelector("#copy-code-btn")
+				.addEventListener("click", () => {
+					const input = modal.querySelector("#connection-code");
+					input.select();
+					document.execCommand("copy");
+					statusEl.textContent = "Copied to clipboard!";
+				});
+		}
+
+		// --- QR Code Scanner Logic ---
+		const qrReaderElement = modal.querySelector("#qr-reader");
+		const scanButton = modal.querySelector("#scan-qr-btn");
+		const peerInput = modal.querySelector("#peer-connection-input");
+		const connectButton = modal.querySelector("#connect-btn");
+
+		let html5QrCode = null;
+
+		scanButton.addEventListener("click", () => {
+			if (!html5QrCode || !html5QrCode.isScanning) {
+				html5QrCode = new Html5Qrcode("qr-reader");
+				scanButton.textContent = "Stop Scanning";
+				statusEl.textContent = "Starting camera...";
+				qrReaderElement.style.display = "block";
+
+				const qrCodeSuccessCallback = (decodedText, _decodedResult) => {
+					try {
+						const info = JSON.parse(decodedText);
+						if (info.roomId) {
+							peerInput.value = info.roomId;
+							statusEl.textContent = `Scanned successfully! Connecting...`;
+							html5QrCode.stop().then(() => {
+								scanButton.textContent = "Scan QR Code";
+								qrReaderElement.style.display = "none";
+								connectButton.click();
+							});
+						} else {
+							throw new Error("Invalid QR code.");
+						}
+					} catch (e) {
+						statusEl.textContent = "Error: Invalid QR code format.";
+						console.error(e);
+					}
+				};
+
+				const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+				html5QrCode
+					.start(
+						{ facingMode: "environment" },
+						config,
+						qrCodeSuccessCallback,
+					)
+					.then(() => {
+						statusEl.textContent = "Point camera at the QR code.";
+					})
+					.catch((err) => {
+						statusEl.textContent = `Camera Error: ${err}`;
+						scanButton.textContent = "Scan QR Code";
+					});
+			} else {
+				html5QrCode
+					.stop()
+					.then(() => {
+						scanButton.textContent = "Scan QR Code";
+						statusEl.textContent = "Scanner stopped.";
+						qrReaderElement.style.display = "none";
+					})
+					.catch((err) =>
+						console.error("Failed to stop scanner:", err),
+					);
+			}
+		});
+
+		// --- Receive logic ---
+		connectButton.addEventListener("click", async () => {
+			let _decoded;
+			try {
+				const roomId = modal
+					.querySelector("#peer-connection-input")
+					.value.trim();
+				if (!roomId) {
+					statusEl.textContent = "Please paste a connection code.";
+					return;
+				}
+				statusEl.textContent = "Connecting…";
+				await p2pSyncManager.joinShareSession(roomId);
+				statusEl.textContent = "Connected! Receiving data...";
+				// The dataReceived event in main.js will handle the rest.
+				// We can close the modal after a short delay.
+				setTimeout(() => this.hideModal(), 2000);
+			} catch (err) {
+				console.error("Failed to join session", err);
+				statusEl.textContent = `Connection error: ${err.message}`;
+				this.showError(`Could not connect: ${err.message}`);
+			}
+		});
 	}
 }
 

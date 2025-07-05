@@ -1,0 +1,68 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "off"
+			},
+			"style": {
+				"useConst": "warn",
+				"useTemplate": "warn"
+			},
+			"correctness": {
+				"noUnusedVariables": "warn"
+			},
+			"complexity": {
+				"noForEach": "off"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"indentWidth": 4,
+		"lineEnding": "lf",
+		"lineWidth": 80,
+		"attributePosition": "auto"
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double",
+			"jsxQuoteStyle": "double",
+			"quoteProperties": "asNeeded",
+			"trailingCommas": "all",
+			"semicolons": "always",
+			"arrowParentheses": "always",
+			"bracketSpacing": true,
+			"bracketSameLine": false
+		}
+	},
+	"css": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"json": {
+		"formatter": {
+			"trailingCommas": "none"
+		}
+	},
+	"html": {
+		"formatter": {
+			"enabled": true,
+			"indentScriptAndStyle": false,
+			"whitespaceSensitivity": "css",
+			"selfCloseVoidElements": "never"
+		}
+	},
+	"files": {
+		"includes": ["**/*.js", "**/*.css", "**/*.json", "**/*.html"]
+	},
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	}
+}

@@ -53,7 +53,8 @@ class PDFProcessor {
 			const arrayBuffer = await this.fileToArrayBuffer(file);
 
 			// Load PDF document
-			const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+			const pdf = await pdfjsLib.getDocument({ data: arrayBuffer })
+				.promise;
 			this.currentPdf = pdf;
 			console.log("PDF loaded:", pdf.numPages, "pages");
 
@@ -77,7 +78,7 @@ class PDFProcessor {
 			// Extract text from all pages, tracking per-page length
 			const { text: extractedText, pageLengths } =
 				await this.extractTextFromPDF(pdf);
-			const trimmedText = extractedText.trim();
+			const _trimmedText = extractedText.trim();
 			// Log pages with significant text
 			const pagesWithText = pageLengths.filter((len) => len > 50).length;
 			console.log(
@@ -128,7 +129,7 @@ class PDFProcessor {
 				const pageText = this.processPageText(textContent);
 				const len = pageText.trim().length;
 				pageLengths.push(len);
-				fullText += pageText + "\n\n";
+				fullText += `${pageText}\n\n`;
 				console.log(`Page ${pageNum} processed: ${len} characters`);
 			} catch (error) {
 				console.warn(`Error processing page ${pageNum}:`, error);
@@ -152,7 +153,7 @@ class PDFProcessor {
 				pageText += "\n";
 			}
 
-			pageText += item.str + " ";
+			pageText += `${item.str} `;
 			lastY = currentY;
 		}
 

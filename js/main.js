@@ -1,13 +1,15 @@
 // Main application controller
-import { FileUploader } from "./file-uploader.js";
-import { PDFProcessor } from "./pdf-processor.js";
+
 import { AIIntegration } from "./ai-integration.js";
-import { QuizManager } from "./quiz-manager.js";
-import { UIComponents } from "./ui-components.js";
-import { DatabaseManager } from "./database-manager.js";
+import { CURRENT_APP_VERSION, content } from "./app-info.js";
 import { BatchProcessor } from "./batch-processor.js";
-import { content, CURRENT_APP_VERSION } from "./app-info.js";
+import { DatabaseManager } from "./database-manager.js";
+import { FileUploader } from "./file-uploader.js";
+import { P2PSyncManager } from "./p2p-sync-manager.js";
+import { PDFProcessor } from "./pdf-processor.js";
+import { QuizManager } from "./quiz-manager.js";
 import { initializeTheme } from "./theme-manager.js";
+import { UIComponents } from "./ui-components.js";
 
 class App {
 	constructor() {
@@ -46,11 +48,42 @@ class App {
 			this.aiIntegration,
 			this.databaseManager,
 		);
+
+		// Initialize P2P sync engine
+		this.p2pSyncManager = new P2PSyncManager(this.databaseManager);
+		this.p2pSyncManager.on(
+			"dataReceived",
+			this.handleSyncedData.bind(this),
+		);
+		this.p2pSyncManager.on("syncStart", () =>
+			this.ui.showProgressIndicator(0, 1, "Starting sync..."),
+		);
+		this.p2pSyncManager.on("sendingProgress", ({ current, total }) =>
+			this.ui.updateProgressIndicator(
+				current,
+				total,
+				"Sending questions...",
+			),
+		);
+		this.p2pSyncManager.on("receivingProgress", ({ current, total }) =>
+			this.ui.updateProgressIndicator(
+				current,
+				total,
+				"Receiving questions...",
+			),
+		);
+		this.p2pSyncManager.on("syncComplete", () =>
+			this.ui.hideProgressIndicator(),
+		);
+		this.p2pSyncManager.on("error", () => this.ui.hideProgressIndicator());
 	}
 
 	setupEventListeners() {
 		// File upload events
-		this.fileUploader.on("fileSelected", this.handleFileSelected.bind(this));
+		this.fileUploader.on(
+			"fileSelected",
+			this.handleFileSelected.bind(this),
+		);
 		this.fileUploader.on(
 			"processingStart",
 			this.handleProcessingStart.bind(this),
@@ -84,7 +117,10 @@ class App {
 		this.loadRecentExams();
 
 		// PDF processing events - simplified
-		this.pdfProcessor.on("textExtracted", this.handleTextExtracted.bind(this));
+		this.pdfProcessor.on(
+			"textExtracted",
+			this.handleTextExtracted.bind(this),
+		);
 		this.pdfProcessor.on("error", this.handleProcessingError.bind(this));
 		this.pdfProcessor.on(
 			"imagesExtracted",
@@ -115,8 +151,14 @@ class App {
 		);
 
 		// Quiz events
-		this.quizManager.on("answerSelected", this.handleAnswerSelected.bind(this));
-		this.quizManager.on("quizCompleted", this.handleQuizCompleted.bind(this));
+		this.quizManager.on(
+			"answerSelected",
+			this.handleAnswerSelected.bind(this),
+		);
+		this.quizManager.on(
+			"quizCompleted",
+			this.handleQuizCompleted.bind(this),
+		);
 		this.quizManager.on("modeChanged", this.handleModeChanged.bind(this));
 
 		// Navigation events
@@ -131,6 +173,12 @@ class App {
 		document
 			.getElementById("cancel-processing-btn")
 			.addEventListener("click", this.cancelProcessing.bind(this));
+
+		// Global receive button
+		document.getElementById("receive-btn").addEventListener("click", () => {
+			console.log("[UI] Global 'Receive an Exam' button clicked.");
+			this.ui.showSyncModal(null, this.p2pSyncManager);
+		});
 	}
 
 	async handleFileSelected(file) {
@@ -195,7 +243,11 @@ class App {
 	}
 
 	handleFirstBatchReady(data) {
-		console.log("⚡ First batch ready:", data.questions.length, "questions");
+		console.log(
+			"⚡ First batch ready:",
+			data.questions.length,
+			"questions",
+		);
 		this.currentPdfId = data.pdfId;
 		this.quizData = data.questions;
 
@@ -229,7 +281,9 @@ class App {
 					}
 				} else {
 					// No saved answers, create empty array
-					this.userAnswers = new Array(data.questions.length).fill(null);
+					this.userAnswers = new Array(data.questions.length).fill(
+						null,
+					);
 				}
 			})
 			.catch((error) => {
@@ -239,13 +293,19 @@ class App {
 			.finally(() => {
 				// Immediately show the questions
 				if (data.questions.length > 0) {
-					console.log("📚 Starting quiz with first batch immediately");
-					this.startQuizWithProgress(data.totalBatches, data.completedBatches);
+					console.log(
+						"📚 Starting quiz with first batch immediately",
+					);
+					this.startQuizWithProgress(
+						data.totalBatches,
+						data.completedBatches,
+					);
 
 					// Set correct answers for immediate feedback to work properly
 					this.correctAnswers = data.questions.map((q) => ({
 						correctAnswer: q.correctAnswer,
-						explanation: q.explanation || "No explanation available.",
+						explanation:
+							q.explanation || "No explanation available.",
 					}));
 				} else {
 					console.warn(
@@ -275,7 +335,9 @@ class App {
 
 			// Extend userAnswers array with nulls for new questions
 			// This preserves existing answers while adding space for new ones
-			const additionalAnswers = new Array(data.questions.length).fill(null);
+			const additionalAnswers = new Array(data.questions.length).fill(
+				null,
+			);
 			this.userAnswers = [...this.userAnswers, ...additionalAnswers];
 
 			// Update the quiz manager
@@ -294,7 +356,10 @@ class App {
 			if (!this.correctAnswers) {
 				this.correctAnswers = newCorrectAnswers;
 			} else {
-				this.correctAnswers = [...this.correctAnswers, ...newCorrectAnswers];
+				this.correctAnswers = [
+					...this.correctAnswers,
+					...newCorrectAnswers,
+				];
 			}
 
 			// Pass updated correctAnswers to quiz manager for instant feedback
@@ -306,7 +371,10 @@ class App {
 			);
 
 			// Update progress indicator
-			this.ui.updateProgressIndicator(data.completedBatches, data.totalBatches);
+			this.ui.updateProgressIndicator(
+				data.completedBatches,
+				data.totalBatches,
+			);
 
 			// Refresh feedback if user has already answered current question
 			// This fixes the issue with instant feedback during background processing
@@ -324,6 +392,15 @@ class App {
 				"success",
 			);
 			this.ui.hideProgressIndicator();
+
+			// 📊 Analytics: track successful PDF processing
+			if (window.plausible) {
+				window.plausible("pdf_processed", {
+					props: {
+						questions: data.totalQuestions,
+					},
+				});
+			}
 		}
 	}
 
@@ -461,9 +538,8 @@ class App {
 				this.correctAnswers.length !== this.quizData.length
 			) {
 				console.log("Getting correct answers from AI...");
-				this.correctAnswers = await this.aiIntegration.getCorrectAnswers(
-					this.quizData,
-				);
+				this.correctAnswers =
+					await this.aiIntegration.getCorrectAnswers(this.quizData);
 			}
 
 			// Use the updated userAnswers for analysis
@@ -481,6 +557,17 @@ class App {
 					.catch((error) =>
 						console.error("Error saving final answers:", error),
 					);
+			}
+
+			// 📊 Analytics: track quiz completion event with score
+			if (window.plausible) {
+				const correctCount = results.correct;
+				window.plausible("quiz_completed", {
+					props: {
+						total: results.total,
+						correct: correctCount,
+					},
+				});
 			}
 		} catch (error) {
 			this.handleAIError(error);
@@ -528,18 +615,18 @@ class App {
 	handleProcessingError(error) {
 		console.error("Processing error:", error);
 		this.ui.hideLoading();
-		this.ui.showError("Error processing PDF: " + error.message);
+		this.ui.showError(`Error processing PDF: ${error.message}`);
 	}
 
 	handleAIError(error) {
 		console.error("AI error:", error);
 		this.ui.hideLoading();
-		this.ui.showError("AI service error: " + error.message);
+		this.ui.showError(`AI service error: ${error.message}`);
 	}
 
 	async handleSaveAPIKey() {
 		const apiKeyInput = document.getElementById("api-key-input");
-		const statusElement = document.getElementById("api-key-status");
+		const _statusElement = document.getElementById("api-key-status");
 		const saveButton = document.getElementById("save-api-key-btn");
 		const apiKey = apiKeyInput.value.trim();
 
@@ -560,7 +647,10 @@ class App {
 			if (testResult.success) {
 				// Save the API key
 				this.aiIntegration.setAPIKey(apiKey);
-				this.showAPIKeyStatus("✅ API key saved and verified!", "success");
+				this.showAPIKeyStatus(
+					"✅ API key saved and verified!",
+					"success",
+				);
 
 				// Clear the input for security
 				apiKeyInput.value = "";
@@ -571,7 +661,7 @@ class App {
 					this.hideAPIKeyConfig();
 				}, 1500);
 			} else {
-				this.showAPIKeyStatus("❌ " + testResult.message, "error");
+				this.showAPIKeyStatus(`❌ ${testResult.message}`, "error");
 			}
 		} catch (error) {
 			console.error("API key test error:", error);
@@ -649,7 +739,8 @@ class App {
 
 	async loadRecentExams() {
 		try {
-			const recentExamsList = document.getElementById("recent-exams-list");
+			const recentExamsList =
+				document.getElementById("recent-exams-list");
 			const noRecentExams = document.getElementById("no-recent-exams");
 
 			// Add CSS for the reset answers button if it doesn't exist
@@ -693,7 +784,9 @@ class App {
 			}
 
 			// Sort PDFs by last accessed date (most recent first)
-			pdfs.sort((a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed));
+			pdfs.sort(
+				(a, b) => new Date(b.lastAccessed) - new Date(a.lastAccessed),
+			);
 
 			// Generate HTML for each PDF
 			const examsHTML = pdfs
@@ -727,7 +820,8 @@ class App {
 		const lastAccessed = new Date(pdf.lastAccessed).toLocaleDateString();
 		const questionCount = pdf.totalQuestions || 0;
 		const hasUserAnswers =
-			pdf.userAnswers && pdf.userAnswers.filter((a) => a !== null).length > 0;
+			pdf.userAnswers &&
+			pdf.userAnswers.filter((a) => a !== null).length > 0;
 		const answeredCount = hasUserAnswers
 			? pdf.userAnswers.filter((a) => a !== null).length
 			: 0;
@@ -752,6 +846,7 @@ class App {
 							? `<button class="reset-answers-btn" data-pdf-id="${pdf.id}" title="Reset answers">↺</button>`
 							: ""
 					}
+					<button class="sync-exam-btn" data-pdf-id="${pdf.id}" title="Sync exam">🔄</button>
 					<button class="delete-exam-btn" data-pdf-id="${
 						pdf.id
 					}" title="Delete exam">×</button>
@@ -791,6 +886,16 @@ class App {
 				e.stopPropagation(); // Prevent exam item click
 				const pdfId = btn.dataset.pdfId;
 				this.resetExamAnswers(pdfId);
+			});
+		});
+
+		// Handle sync button clicks
+		document.querySelectorAll(".sync-exam-btn").forEach((btn) => {
+			btn.addEventListener("click", (e) => {
+				e.stopPropagation();
+				const pdfId = btn.dataset.pdfId;
+				console.log(`[UI] Sync button clicked for PDF:`, pdfId);
+				this.ui.showSyncModal(pdfId, this.p2pSyncManager);
 			});
 		});
 	}
@@ -867,7 +972,8 @@ class App {
 	}
 
 	showNewFeaturesPrompt() {
-		const lastSeenVersion = localStorage.getItem("did-exit-version") || "0.0";
+		const lastSeenVersion =
+			localStorage.getItem("did-exit-version") || "0.0";
 
 		if (CURRENT_APP_VERSION > lastSeenVersion) {
 			// Generate version history HTML
@@ -920,8 +1026,11 @@ class App {
 					className: "btn-primary",
 					onClick: (() => {
 						const self = this;
-						return function () {
-							localStorage.setItem("did-exit-version", CURRENT_APP_VERSION);
+						return () => {
+							localStorage.setItem(
+								"did-exit-version",
+								CURRENT_APP_VERSION,
+							);
 							self.ui.hideModal();
 						};
 					})(),
@@ -947,8 +1056,11 @@ class App {
 				this.currentFile,
 				images,
 			);
-			console.log("handleImagesExtracted: batchProcessor result:", result);
-			if (result && result.fromCache) {
+			console.log(
+				"handleImagesExtracted: batchProcessor result:",
+				result,
+			);
+			if (result?.fromCache) {
 				this.handleCacheHit(result);
 			}
 		} catch (error) {
@@ -1019,6 +1131,21 @@ class App {
 				// We already have correct answers, just refresh the feedback
 				this.quizManager.refreshFeedbackIfNeeded();
 			}
+		}
+	}
+
+	async handleSyncedData(data) {
+		try {
+			console.log("[App] Received synced data, refreshing UI.", data);
+			this.ui.showNotification(
+				"Questions synchronized successfully!",
+				"success",
+			);
+			// Refresh recent exams list so the newly imported PDF appears
+			await this.loadRecentExams();
+		} catch (err) {
+			console.error("Failed handling synced data", err);
+			this.ui.showError(`Sync failed: ${err.message}`);
 		}
 	}
 
