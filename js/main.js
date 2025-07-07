@@ -334,6 +334,7 @@ class App {
       this.ui.updateProgressIndicator(data.completedBatches, data.totalBatches);
 
       this.quizManager.displayQuestionNavigation();
+      this.quizManager.displayCondensedQuestionNavigation();
 
       // Refresh feedback if user has already answered current question
       // This fixes the issue with instant feedback during background processing
