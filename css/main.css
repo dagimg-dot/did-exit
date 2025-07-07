@@ -18,6 +18,7 @@
 	--text-secondary: #6b7280;
 	--border-color: #e5e7eb;
 	--border-radius: 12px;
+	--pagination-border-radius: 50%;
 	--shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
