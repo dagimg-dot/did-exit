@@ -545,7 +545,11 @@
 	height: 14px;
 }
 
-@media screen and (max-width: 900px) {
+.condensed-nav .condensed-nav-list {
+	display: none;
+}
+
+@media screen and (max-width: 1023px) {
 	.quiz-layout {
 		flex-direction: column;
 	}
@@ -559,15 +563,14 @@
 		font-weight: 500;
 		color: white;
 	}
-}
-
-.condensed-nav .condensed-nav-list {
-	list-style: none;
-	display: flex;
-	align-items: flex-end;
-	justify-content: flex-end;
-	gap: 0.25rem;
-	margin-bottom: 1.25rem;
+	.condensed-nav .condensed-nav-list {
+		list-style: none;
+		display: flex;
+		align-items: flex-end;
+		justify-content: flex-end;
+		gap: 0.25rem;
+		margin-bottom: 1.25rem;
+	}
 }
 
 .pagination-dots {
