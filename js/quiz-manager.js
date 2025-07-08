@@ -388,6 +388,7 @@ class QuizManager {
 
 			btn.addEventListener("click", () => {
 				this.currentQuestionIndex = index;
+				window.location.hash = `#question-${index + 1}`;
 				this.displayCurrentQuestion();
 				this.updateNavigation();
 				this.updateProgress();
@@ -481,6 +482,7 @@ class QuizManager {
 
 				btn.addEventListener("click", () => {
 					this.currentQuestionIndex = page - 1;
+					window.location.hash = `#question-${page}`;
 					this.displayCurrentQuestion();
 					this.updateNavigation();
 					this.updateProgress();
