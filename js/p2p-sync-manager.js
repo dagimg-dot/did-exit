@@ -211,7 +211,7 @@ export class P2PSyncManager {
 
 		// Incoming data buffering
 		let incomingMetadata = null;
-		let questionAccumulator = [];
+		const questionAccumulator = [];
 		let incomingUserAnswers = [];
 
 		peer.on("data", async (raw) => {

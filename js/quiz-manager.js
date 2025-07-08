@@ -109,6 +109,17 @@ class QuizManager {
 					event.key === "ArrowRight" &&
 					!this.nextBtn.disabled
 				) {
+					this.nextQuestion();
+				}
+			}
+		});
+	}
+	setupKeydownListener() {
+		document.addEventListener("keydown", (event) => {
+			const quizSection = document.getElementById("quiz-section");
+			if (quizSection.classList.contains("active")) {
+				if (event.key === "ArrowLeft" && !this.prevBtn.disabled) {
+					this.previousQuestion();
 				} else if (
 					event.key === "ArrowRight" &&
 					!this.nextBtn.disabled
@@ -119,13 +130,19 @@ class QuizManager {
 		});
 	}
 
-	initialize(questions, existingAnswers = null, pdfName) {
+	initialize(
+		questions,
+		existingAnswers = null,
+		pdfName,
+		flaggedQuestions = null,
+	) {
 		this.questions = questions;
 		this.userAnswers =
 			existingAnswers || new Array(questions.length).fill(null);
 		this.currentQuestionIndex = 0;
 		this.isReviewMode = false;
-		this.flaggedQuestions = new Array(questions.length).fill(false);
+		this.flaggedQuestions =
+			flaggedQuestions || new Array(questions.length).fill(false);
 
 		// Extract correct answers for normal mode
 		this.correctAnswers = questions.map((q, index) => {
@@ -160,6 +177,7 @@ class QuizManager {
 
 		this.renderOptions(question);
 		this.displayQuestionNavigation();
+		this.displayCondensedQuestionNavigation();
 
 		// If in normal mode and already answered, show the feedback again
 		const currentAnswer = this.userAnswers[this.currentQuestionIndex];
@@ -258,6 +276,7 @@ class QuizManager {
 
 		// Update navigation
 		this.displayQuestionNavigation();
+		this.displayCondensedQuestionNavigation();
 		this.updateNavigation();
 		this.updateResumeButton();
 
@@ -348,6 +367,7 @@ class QuizManager {
 			} else {
 				btn.classList.add("unanswered");
 				btn.title = "Unanswered";
+				btn.title = "Unanswered";
 			}
 			if (index === this.currentQuestionIndex) {
 				btn.classList.add("active");
@@ -362,6 +382,7 @@ class QuizManager {
 				flagImg.height = "16";
 				flagImg.style.position = "absolute";
 				flagImg.style.top = "-10px";
+				flagImg.style.left = "16px";
 				navItem.appendChild(flagImg);
 			}
 
@@ -380,6 +401,14 @@ class QuizManager {
 					this.flaggedQuestions[index] =
 						!this.flaggedQuestions[index];
 					this.displayQuestionNavigation();
+
+					if (window.app && window.app.currentPdfId) {
+						window.app.databaseManager.storeUserAnswers(
+							window.app.currentPdfId,
+							this.userAnswers,
+							this.flaggedQuestions,
+						);
+					}
 				}, 600);
 			});
 
@@ -391,6 +420,14 @@ class QuizManager {
 					this.flaggedQuestions[index] =
 						!this.flaggedQuestions[index];
 					this.displayQuestionNavigation();
+
+					if (window.app && window.app.currentPdfId) {
+						window.app.databaseManager.storeUserAnswers(
+							window.app.currentPdfId,
+							this.userAnswers,
+							this.flaggedQuestions,
+						);
+					}
 				}, 600);
 			});
 
@@ -398,6 +435,139 @@ class QuizManager {
 			btn.addEventListener("touchcancel", () => clearTimeout(pressTimer));
 
 			navItem.appendChild(btn);
+			navList.appendChild(navItem);
+		});
+	}
+
+	displayCondensedQuestionNavigation() {
+		const navList = document.getElementById("condensed-nav-list");
+		if (!navList) return;
+		navList.innerHTML = "";
+		const totalQuestions = this.questions.length;
+		const pages = this.generatePagination(
+			this.currentQuestionIndex + 1,
+			totalQuestions,
+		);
+		pages.forEach((page) => {
+			const navItem = document.createElement("li");
+
+			if (typeof page === "number") {
+				const btn = document.createElement("button");
+				btn.className = "question-nav-btn";
+				btn.textContent = page;
+				if (page - 1 === this.currentQuestionIndex) {
+					btn.classList.add("active");
+				}
+				if (this.userAnswers[page - 1] !== null) {
+					btn.classList.add("answered");
+					btn.title = "Answered";
+				} else {
+					btn.classList.add("unanswered");
+					btn.title = "Unanswered";
+				}
+
+				if (this.flaggedQuestions[page - 1]) {
+					navItem.style.position = "relative";
+					const flagImg = document.createElement("img");
+					flagImg.src = "./assets/red-flag.png";
+					flagImg.alt = "Flagged";
+					flagImg.width = "16";
+					flagImg.height = "16";
+					flagImg.style.position = "absolute";
+					flagImg.style.top = "-10px";
+					flagImg.style.left = "16px";
+					navItem.appendChild(flagImg);
+				}
+
+				btn.addEventListener("click", () => {
+					this.currentQuestionIndex = page - 1;
+					this.displayCurrentQuestion();
+					this.updateNavigation();
+					this.updateProgress();
+					this.updateResumeButton();
+				});
+
+				let pressTimer = null;
+
+				btn.addEventListener("mousedown", (e) => {
+					pressTimer = setTimeout(() => {
+						const questionIndex = page - 1; // page is the 1-based question number
+						alert(questionIndex);
+						this.flaggedQuestions[questionIndex] =
+							!this.flaggedQuestions[questionIndex];
+						alert(this.flaggedQuestions[questionIndex], "ermi");
+						this.displayQuestionNavigation();
+						this.displayCondensedQuestionNavigation();
+						if (window.app && window.app.currentPdfId) {
+							window.app.databaseManager.storeUserAnswers(
+								window.app.currentPdfId,
+								this.userAnswers,
+								this.flaggedQuestions,
+							);
+						}
+					}, 600);
+				});
+
+				btn.addEventListener("mouseleave", () =>
+					clearTimeout(pressTimer),
+				);
+				btn.addEventListener("mouseup", () => clearTimeout(pressTimer));
+
+				btn.addEventListener("touchstart", (e) => {
+					pressTimer = setTimeout(() => {
+						const questionIndex = page - 1; // page is the 1-based question number
+
+						this.flaggedQuestions[questionIndex] =
+							!this.flaggedQuestions[questionIndex];
+						alert(this.flaggedQuestions[questionIndex], "ermi");
+						this.displayQuestionNavigation();
+						this.displayCondensedQuestionNavigation();
+						if (window.app && window.app.currentPdfId) {
+							window.app.databaseManager.storeUserAnswers(
+								window.app.currentPdfId,
+								this.userAnswers,
+								this.flaggedQuestions,
+							);
+						}
+					}, 600);
+				});
+
+				btn.addEventListener("touchend", () =>
+					clearTimeout(pressTimer),
+				);
+				btn.addEventListener("touchcancel", () =>
+					clearTimeout(pressTimer),
+				);
+
+				navItem.appendChild(btn);
+			} else if (
+				typeof page === "string" &&
+				(page === "<" || page === ">")
+			) {
+				const arrowBtn = document.createElement("button");
+				arrowBtn.className = "question-nav-btn";
+				arrowBtn.classList.add("arrow-btn");
+				arrowBtn.textContent = page;
+				arrowBtn.disabled =
+					(page === "<" && this.currentQuestionIndex === 0) ||
+					(page === ">" &&
+						this.currentQuestionIndex === totalQuestions - 1);
+
+				arrowBtn.addEventListener("click", () => {
+					if (page === "<") {
+						this.previousQuestion();
+					} else {
+						this.nextQuestion();
+					}
+				});
+				navItem.appendChild(arrowBtn);
+			} else {
+				const dots = document.createElement("span");
+				const className = "pagination-dots";
+				dots.textContent = "...";
+				navItem.appendChild(dots);
+			}
+
 			navList.appendChild(navItem);
 		});
 	}
@@ -428,6 +598,36 @@ class QuizManager {
 		const progress =
 			((this.currentQuestionIndex + 1) / this.questions.length) * 100;
 		this.progressFill.style.width = `${progress}%`;
+	}
+
+	generatePagination(current, total) {
+		const pages = [];
+
+		pages.push("<");
+		pages.push(1);
+
+		let start = Math.max(2, current - 2);
+		let end = Math.min(total - 1, current + 2);
+
+		if (start > 2) {
+			pages.push("...");
+		}
+
+		for (let i = start; i <= end; i++) {
+			pages.push(i);
+		}
+
+		if (end < total - 1) {
+			pages.push("...");
+		}
+
+		if (total > 1) {
+			pages.push(total);
+		}
+
+		pages.push(">");
+
+		return pages;
 	}
 
 	submitQuiz() {

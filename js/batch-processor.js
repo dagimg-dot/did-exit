@@ -12,7 +12,7 @@ class BatchProcessor {
 	}
 
 	// Simplified chunking for AI processing
-	createTextChunks(textContent, questionsPerBatch = 15) {
+	createTextChunks(textContent, _questionsPerBatch = 15) {
 		console.log(`📝 Creating chunks for ${textContent.length} characters`);
 
 		// Estimate question count based on content patterns
@@ -46,7 +46,7 @@ class BatchProcessor {
 	// Estimate question count using multiple heuristics
 	estimateQuestionCount(textContent) {
 		const questionPatterns = [
-			/\d+[\.\)]\s+[A-Z]/g, // 1. Question or 1) Question
+			/\d+[.)]\s+[A-Z]/g, // 1. Question or 1) Question
 			/Question\s+\d+/gi, // "Question 1", "Question 2"
 			/^\s*\d+\.\s+/gm, // Numbered items starting lines
 			/\?\s*$/gm, // Lines ending with ?
@@ -60,7 +60,7 @@ class BatchProcessor {
 
 		// Use multiple choice indicators as confirmation
 		const mcMarkers = [
-			/^\s*[A-Ea-e][\.\)]/gm, // A. B. C. D. E. options
+			/^\s*[A-Ea-e][.)]/gm, // A. B. C. D. E. options
 			/^\s*\([A-Ea-e]\)/gm, // (A) (B) (C) (D) (E) options
 		];
 
@@ -145,7 +145,7 @@ class BatchProcessor {
 				if (i + wordsPerChunk < words.length) {
 					const remainingWords = words.slice(i + wordsPerChunk);
 					chunks[chunks.length - 1].content +=
-						" " + remainingWords.join(" ");
+						` ${remainingWords.join(" ")}`;
 					chunks[chunks.length - 1].wordsCount +=
 						remainingWords.length;
 					chunks[chunks.length - 1].hasAppendedContent = true;
@@ -193,7 +193,7 @@ class BatchProcessor {
 				existingPDF,
 			);
 
-			if (existingPDF && existingPDF.isComplete) {
+			if (existingPDF?.isComplete) {
 				console.log(`✅ PDF already processed: ${pdfFile.name}`);
 				const questions = await this.db.getQuestions(pdfId);
 				console.log(
@@ -313,7 +313,7 @@ class BatchProcessor {
 	}
 
 	// Process a single chunk with AI
-	async processChunkWithAI(chunk, pdfId) {
+	async processChunkWithAI(chunk, _pdfId) {
 		try {
 			// Check for cancellation
 			if (this.abortController?.signal.aborted) {

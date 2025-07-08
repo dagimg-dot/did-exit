@@ -65,7 +65,6 @@ class AIIntegration {
 						`❌ Failed to initialize model ${modelName}:`,
 						modelError,
 					);
-					continue;
 				}
 			}
 
@@ -136,7 +135,7 @@ class AIIntegration {
 			console.error("Question generation error:", error);
 
 			// If rate limited, provide helpful message
-			if (error.message && error.message.includes("rate")) {
+			if (error.message?.includes("rate")) {
 				console.log("📝 Rate limit hit - trying again in a moment...");
 				await new Promise((resolve) => setTimeout(resolve, 5000));
 				return this.generateMockQuestions(extractedText);
@@ -258,9 +257,9 @@ class AIIntegration {
 					.replace(/,\s*$/, "");
 
 				// If it ends abruptly, try to close it properly
-				let openBraces = (fixedJson.match(/{/g) || []).length;
+				const openBraces = (fixedJson.match(/{/g) || []).length;
 				let closeBraces = (fixedJson.match(/}/g) || []).length;
-				let openBrackets = (fixedJson.match(/\[/g) || []).length;
+				const openBrackets = (fixedJson.match(/\[/g) || []).length;
 				let closeBrackets = (fixedJson.match(/]/g) || []).length;
 
 				// Add missing closing brackets/braces
@@ -516,7 +515,7 @@ ${textContent}`;
 				);
 				return this.validateQuestions(parsed.questions);
 			}
-		} catch (e) {
+		} catch (_e) {
 			console.warn("⚠️ Direct JSON.parse failed. Attempting to repair...");
 		}
 
@@ -581,7 +580,7 @@ ${textContent}`;
 	// Utility to extract JSON from markdown or plain text
 	extractJsonFromText(text) {
 		const match = text.match(/```json\s*([\s\S]*?)\s*```/);
-		if (match && match[1]) {
+		if (match?.[1]) {
 			return match[1].trim();
 		}
 		// Fallback for responses that might not have the markdown block
@@ -602,17 +601,17 @@ ${textContent}`;
 			.replace(/}"\s*"/g, '}, "')
 			// Attempt to escape unescaped quotes (simple version)
 			.replace(/\\"/g, '"') // First, un-escape correctly escaped ones to avoid double-escaping
-			.replace(/([:\[,]\s*)"([^"\\]*)"([^"\\]*)"/g, '$1"$2\\"$3"'); // A common error pattern
+			.replace(/([:[,]\s*)"([^"\\]*)"([^"\\]*)"/g, '$1"$2\\"$3"'); // A common error pattern
 
 		// Balance braces and brackets
-		let openBraces = (repaired.match(/{/g) || []).length;
+		const openBraces = (repaired.match(/{/g) || []).length;
 		let closeBraces = (repaired.match(/}/g) || []).length;
 		while (openBraces > closeBraces) {
 			repaired += "}";
 			closeBraces++;
 		}
 
-		let openBrackets = (repaired.match(/\[/g) || []).length;
+		const openBrackets = (repaired.match(/\[/g) || []).length;
 		let closeBrackets = (repaired.match(/]/g) || []).length;
 		while (openBrackets > closeBrackets) {
 			repaired += "]";
@@ -728,18 +727,18 @@ ${textContent}`;
 		const questions = [];
 		// Regex to find question blocks, more tolerant of formatting
 		const questionBlockRegex =
-			/(\d+[\.\)]\s*|Question\s*\d+:?\s*)([\s\S]+?)(Answer:|Correct Answer:|Explanation:)/gi;
+			/(\d+[.)]\s*|Question\s*\d+:?\s*)([\s\S]+?)(Answer:|Correct Answer:|Explanation:)/gi;
 
-		let match;
 		let idCounter = 1;
-		while ((match = questionBlockRegex.exec(text)) !== null) {
+		const match = questionBlockRegex.exec(text);
+		while (match !== null) {
 			const questionText = match[2].trim();
 			const optionsRegex =
-				/([A-Ea-e][\.\)]\s*)([\s\S]+?)(?=[A-Ea-e][\.\)]\s*|$)/g;
+				/([A-Ea-e][.)]\s*)([\s\S]+?)(?=[A-Ea-e][.)]\s*|$)/g;
 
-			let optionsMatch;
 			const options = [];
-			while ((optionsMatch = optionsRegex.exec(questionText)) !== null) {
+			const optionsMatch = optionsRegex.exec(questionText);
+			while (optionsMatch !== null) {
 				options.push(optionsMatch[2].trim());
 			}
 
@@ -856,7 +855,7 @@ ${textContent}`;
 				"Say 'test' if you can read this.",
 			);
 			const response = await result.response;
-			const text = response.text();
+			const _text = response.text();
 
 			return { success: true, message: "API key is valid and working" };
 		} catch (error) {
@@ -914,7 +913,7 @@ ${textContent}`;
 				for (let i = 0; i < binaryData.length; i++) {
 					byteArray[i] = binaryData.charCodeAt(i);
 				}
-				const blob = new Blob([byteArray], { type: mimeType });
+				const _blob = new Blob([byteArray], { type: mimeType });
 
 				// Add image part
 				parts.push({

@@ -87,7 +87,7 @@ class UIComponents {
 
 		// Auto-hide after 7 seconds
 		setTimeout(() => {
-			if (errorElement && errorElement.parentNode) {
+			if (errorElement?.parentNode) {
 				errorElement.remove();
 			}
 		}, 7000);
@@ -201,7 +201,7 @@ class UIComponents {
 		return html;
 	}
 
-	addResultsSummary(results) {
+	addResultsSummary(_results) {
 		// Add CSS for summary stats if not already present
 		if (!document.getElementById("results-summary-styles")) {
 			const style = document.createElement("style");
@@ -677,9 +677,9 @@ class UIComponents {
 				} catch (err) {
 					console.error("Failed to create share session", err);
 					qrContainer.innerHTML = `<p style="color: #ef4444; text-align: center;">Failed to create session.</p>`;
-					statusEl.textContent = "Error: " + err.message;
+					statusEl.textContent = `Error: ${err.message}`;
 					this.showError(
-						"Failed to create share session: " + err.message,
+						`Failed to create share session: ${err.message}`,
 					);
 				}
 			})();
@@ -710,7 +710,7 @@ class UIComponents {
 				statusEl.textContent = "Starting camera...";
 				qrReaderElement.style.display = "block";
 
-				const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+				const qrCodeSuccessCallback = (decodedText, _decodedResult) => {
 					try {
 						const info = JSON.parse(decodedText);
 						if (info.roomId) {
@@ -760,7 +760,7 @@ class UIComponents {
 
 		// --- Receive logic ---
 		connectButton.addEventListener("click", async () => {
-			let decoded;
+			let _decoded;
 			try {
 				const roomId = modal
 					.querySelector("#peer-connection-input")
@@ -777,8 +777,8 @@ class UIComponents {
 				setTimeout(() => this.hideModal(), 2000);
 			} catch (err) {
 				console.error("Failed to join session", err);
-				statusEl.textContent = "Connection error: " + err.message;
-				this.showError("Could not connect: " + err.message);
+				statusEl.textContent = `Connection error: ${err.message}`;
+				this.showError(`Could not connect: ${err.message}`);
 			}
 		});
 	}

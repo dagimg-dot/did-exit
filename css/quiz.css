@@ -4,7 +4,7 @@
 	border-radius: var(--border-radius);
 	padding: 1.5rem;
 	box-shadow: var(--shadow);
-	max-width: 800px;
+	max-width: 1000px;
 	margin: 0 auto 1rem;
 }
 
@@ -34,10 +34,10 @@
 }
 
 .question-nav-btn {
-	width: 100%;
-	height: 100%;
+	width: 32px;
+	height: 32px;
 	border: 2px solid var(--border-color);
-	border-radius: var(--border-radius);
+	border-radius: var(--pagination-border-radius);
 	background: transparent;
 	color: var(--text-secondary);
 	padding: 0.25rem;
@@ -65,6 +65,15 @@
 	border-color: var(--primary-color);
 }
 
+.question-nav-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: #f3f4f6;
+  color: #444444;        
+  border-color: #e0e0e0; 
+}
+
 .question-card {
 	background: var(--card-background);
 	border-radius: var(--border-radius);
@@ -83,7 +92,7 @@
 
 /* Multiple Choice Options */
 .options-container {
-	margin-bottom: 2.5rem;
+	/* margin-bottom: 2.5rem; */
 }
 
 .option {
@@ -134,7 +143,7 @@
 	width: 20px;
 	height: 20px;
 	border: 2px solid var(--border-color);
-	border-radius: 50%;
+	border-radius: var(--pagination-border-radius);
 	margin-right: 1rem;
 	position: relative;
 	flex-shrink: 0;
@@ -155,7 +164,7 @@
 	width: 8px;
 	height: 8px;
 	background: white;
-	border-radius: 50%;
+	border-radius: var(--pagination-border-radius);
 }
 
 .option.correct .option-radio {
@@ -323,7 +332,7 @@
 }
 
 .quiz-mode-selector .slider.round:before {
-	border-radius: 50%;
+	border-radius: var(--pagination-border-radius);
 }
 
 .quiz-mode-selector .slider:before {
@@ -502,7 +511,7 @@
 .dot {
 	width: 14px;
 	height: 14px;
-	border-radius: 50%;
+	border-radius: var(--pagination-border-radius);
 	display: inline-block;
 	margin-right: 8px;
 }
@@ -534,4 +543,42 @@
 	left: 5px;
 	width: 14px;
 	height: 14px;
+}
+
+.condensed-nav .condensed-nav-list {
+	display: none;
+}
+
+@media screen and (max-width: 1023px) {
+	.quiz-layout {
+		flex-direction: column;
+	}
+	.question-nav {
+		display: none;
+	}
+	.question-nav-btn {
+		width: 28px;
+		height: 28px;
+		font-size: 0.5rem;
+		font-weight: 500;
+		color: white;
+	}
+	.condensed-nav .condensed-nav-list {
+		list-style: none;
+		display: flex;
+		align-items: flex-end;
+		justify-content: flex-end;
+		gap: 0.25rem;
+		margin-bottom: 1.25rem;
+	}
+}
+
+.pagination-dots {
+	display: inline-block;
+	width: 32px;
+	text-align: center;
+	color: #888;
+	font-size: 1.2rem;
+	pointer-events: none;
+	user-select: none;
 }
