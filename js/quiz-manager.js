@@ -174,6 +174,7 @@ class QuizManager {
 
 		this.renderOptions(question);
 		this.displayQuestionNavigation();
+		this.displayCondensedQuestionNavigation();
 
 		// If in normal mode and already answered, show the feedback again
 		const currentAnswer = this.userAnswers[this.currentQuestionIndex];
@@ -272,6 +273,7 @@ class QuizManager {
 
 		// Update navigation
 		this.displayQuestionNavigation();
+		this.displayCondensedQuestionNavigation();
 		this.updateNavigation();
 		this.updateResumeButton();
 
@@ -431,6 +433,65 @@ class QuizManager {
 		});
 	}
 
+	displayCondensedQuestionNavigation() {
+		const navList = document.getElementById("condensed-nav-list");
+		if (!navList) return;
+		navList.innerHTML = "";
+		const totalQuestions = this.questions.length;
+		const pages = this.generatePagination(
+			this.currentQuestionIndex + 1,
+			totalQuestions
+		);
+		pages.forEach((page) => {
+			const navItem = document.createElement("li");
+
+			if (typeof page === "number") {
+				const btn = document.createElement("button");
+				btn.className = "question-nav-btn";
+				btn.textContent = page;
+				if (page - 1 === this.currentQuestionIndex) {
+					btn.classList.add("active");
+				}
+				btn.addEventListener("click", () => {
+					this.currentQuestionIndex = page - 1;
+					this.displayCurrentQuestion();
+					this.updateNavigation();
+					this.updateProgress();
+					this.updateResumeButton();
+				});
+				navItem.appendChild(btn);
+			} else if (
+				typeof page === "string" &&
+				(page === "<" || page === ">")
+			) {
+				const arrowBtn = document.createElement("button");
+				arrowBtn.className = "question-nav-btn";
+				arrowBtn.classList.add("arrow-btn");
+				arrowBtn.textContent = page;
+				arrowBtn.disabled =
+					(page === "<" && this.currentQuestionIndex === 0) ||
+					(page === ">" &&
+						this.currentQuestionIndex === totalQuestions - 1);
+
+				arrowBtn.addEventListener("click", () => {
+					if (page === "<") {
+						this.previousQuestion();
+					} else {
+						this.nextQuestion();
+					}
+				});
+				navItem.appendChild(arrowBtn);
+			} else {
+				const dots = document.createElement("span");
+				const className = "pagination-dots";
+				dots.textContent = "...";
+				navItem.appendChild(dots);
+			}
+
+			navList.appendChild(navItem);
+		});
+	}
+
 	updateNavigation() {
 		// Previous button
 		this.prevBtn.disabled = this.currentQuestionIndex === 0;
@@ -457,6 +518,42 @@ class QuizManager {
 		const progress =
 			((this.currentQuestionIndex + 1) / this.questions.length) * 100;
 		this.progressFill.style.width = `${progress}%`;
+	}
+
+	generatePagination(current, total) {
+		const pages = [];
+
+		// Always show first page
+		pages.push("<");
+		pages.push(1);
+
+		// Calculate range around current (2 before & after)
+		let start = Math.max(2, current - 2);
+		let end = Math.min(total - 1, current + 2);
+
+		// Add "..." after 1 if needed
+		if (start > 2) {
+			pages.push("...");
+		}
+
+		// Add middle pages
+		for (let i = start; i <= end; i++) {
+			pages.push(i);
+		}
+
+		// Add "..." before last page if needed
+		if (end < total - 1) {
+			pages.push("...");
+		}
+
+		// Always show last page if more than 1
+		if (total > 1) {
+			pages.push(total);
+		}
+
+		pages.push(">");
+
+		return pages;
 	}
 
 	submitQuiz() {
