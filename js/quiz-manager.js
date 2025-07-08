@@ -120,7 +120,10 @@ class QuizManager {
 			if (quizSection.classList.contains("active")) {
 				if (event.key === "ArrowLeft" && !this.prevBtn.disabled) {
 					this.previousQuestion();
-				} else if (event.key === "ArrowRight" && !this.nextBtn.disabled) {
+				} else if (
+					event.key === "ArrowRight" &&
+					!this.nextBtn.disabled
+				) {
 					this.nextQuestion();
 				}
 			}
@@ -364,6 +367,7 @@ class QuizManager {
 			} else {
 				btn.classList.add("unanswered");
 				btn.title = "Unanswered";
+				btn.title = "Unanswered";
 			}
 			if (index === this.currentQuestionIndex) {
 				btn.classList.add("active");
@@ -394,7 +398,8 @@ class QuizManager {
 
 			btn.addEventListener("mousedown", (e) => {
 				pressTimer = setTimeout(() => {
-					this.flaggedQuestions[index] = !this.flaggedQuestions[index];
+					this.flaggedQuestions[index] =
+						!this.flaggedQuestions[index];
 					this.displayQuestionNavigation();
 
 					if (window.app && window.app.currentPdfId) {
@@ -412,7 +417,8 @@ class QuizManager {
 
 			btn.addEventListener("touchstart", (e) => {
 				pressTimer = setTimeout(() => {
-					this.flaggedQuestions[index] = !this.flaggedQuestions[index];
+					this.flaggedQuestions[index] =
+						!this.flaggedQuestions[index];
 					this.displayQuestionNavigation();
 
 					if (window.app && window.app.currentPdfId) {
@@ -440,7 +446,7 @@ class QuizManager {
 		const totalQuestions = this.questions.length;
 		const pages = this.generatePagination(
 			this.currentQuestionIndex + 1,
-			totalQuestions
+			totalQuestions,
 		);
 		pages.forEach((page) => {
 			const navItem = document.createElement("li");
@@ -452,6 +458,27 @@ class QuizManager {
 				if (page - 1 === this.currentQuestionIndex) {
 					btn.classList.add("active");
 				}
+				if (this.userAnswers[page - 1] !== null) {
+					btn.classList.add("answered");
+					btn.title = "Answered";
+				} else {
+					btn.classList.add("unanswered");
+					btn.title = "Unanswered";
+				}
+
+				if (this.flaggedQuestions[page - 1]) {
+					navItem.style.position = "relative";
+					const flagImg = document.createElement("img");
+					flagImg.src = "./assets/red-flag.png";
+					flagImg.alt = "Flagged";
+					flagImg.width = "16";
+					flagImg.height = "16";
+					flagImg.style.position = "absolute";
+					flagImg.style.top = "-10px";
+					flagImg.style.left = "16px";
+					navItem.appendChild(flagImg);
+				}
+
 				btn.addEventListener("click", () => {
 					this.currentQuestionIndex = page - 1;
 					this.displayCurrentQuestion();
@@ -459,6 +486,59 @@ class QuizManager {
 					this.updateProgress();
 					this.updateResumeButton();
 				});
+
+				let pressTimer = null;
+
+				btn.addEventListener("mousedown", (e) => {
+					pressTimer = setTimeout(() => {
+						const questionIndex = page - 1; // page is the 1-based question number
+						alert(questionIndex);
+						this.flaggedQuestions[questionIndex] =
+							!this.flaggedQuestions[questionIndex];
+						alert(this.flaggedQuestions[questionIndex], "ermi");
+						this.displayQuestionNavigation();
+						this.displayCondensedQuestionNavigation();
+						if (window.app && window.app.currentPdfId) {
+							window.app.databaseManager.storeUserAnswers(
+								window.app.currentPdfId,
+								this.userAnswers,
+								this.flaggedQuestions,
+							);
+						}
+					}, 600);
+				});
+
+				btn.addEventListener("mouseleave", () =>
+					clearTimeout(pressTimer),
+				);
+				btn.addEventListener("mouseup", () => clearTimeout(pressTimer));
+
+				btn.addEventListener("touchstart", (e) => {
+					pressTimer = setTimeout(() => {
+						const questionIndex = page - 1; // page is the 1-based question number
+
+						this.flaggedQuestions[questionIndex] =
+							!this.flaggedQuestions[questionIndex];
+						alert(this.flaggedQuestions[questionIndex], "ermi");
+						this.displayQuestionNavigation();
+						this.displayCondensedQuestionNavigation();
+						if (window.app && window.app.currentPdfId) {
+							window.app.databaseManager.storeUserAnswers(
+								window.app.currentPdfId,
+								this.userAnswers,
+								this.flaggedQuestions,
+							);
+						}
+					}, 600);
+				});
+
+				btn.addEventListener("touchend", () =>
+					clearTimeout(pressTimer),
+				);
+				btn.addEventListener("touchcancel", () =>
+					clearTimeout(pressTimer),
+				);
+
 				navItem.appendChild(btn);
 			} else if (
 				typeof page === "string" &&
