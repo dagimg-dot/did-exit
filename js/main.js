@@ -30,6 +30,25 @@ class App {
     this.setupEventListeners();
     this.showNewFeaturesPrompt();
     initializeTheme();
+
+    const hash = window.location.hash.replace("#question-", "");
+    const questionNum = parseInt(hash, 10);
+
+
+    if (!isNaN(questionNum) && questionNum > 0) {
+      const pdfs = await this.getAllPDFs();
+      if (pdfs.length > 0) {
+        pdfs.sort(
+          (a, b) =>
+            new Date(b.lastAccessed) - new Date(a.lastAccessed),
+        );
+        const mostRecent = pdfs[0];
+        await this.startQuizFromRecent(mostRecent.id);
+
+        return;
+      }
+    }
+    this.showSection("upload-section");
   }
 
   async initializeComponents() {
@@ -155,6 +174,22 @@ class App {
     document.getElementById("receive-btn").addEventListener("click", () => {
       console.log("[UI] Global 'Receive an Exam' button clicked.");
       this.ui.showSyncModal(null, this.p2pSyncManager);
+    });
+
+    window.addEventListener("hashchange", () => {
+      const hash = window.location.hash.replace("#question-", "");
+      const questionNum = parseInt(hash, 10);
+      if (
+        !isNaN(questionNum) &&
+        questionNum >= 1 &&
+        questionNum <= this.quizManager.questions.length
+      ) {
+        this.quizManager.currentQuestionIndex = questionNum - 1;
+        this.quizManager.displayCurrentQuestion();
+        this.quizManager.updateNavigation();
+        this.quizManager.updateProgress();
+        this.quizManager.updateResumeButton();
+      }
     });
   }
 
@@ -397,6 +432,22 @@ class App {
       this.flaggedQuestions
     );
     this.quizManager.correctAnswers = this.correctAnswers;
+
+    const hash = window.location.hash.replace("#question-", "");
+    const questionNum = parseInt(hash, 10) || 1;
+    window.location.hash = `#question-${questionNum}`;
+
+    if (
+      !isNaN(questionNum) &&
+      questionNum >= 1 &&
+      questionNum <= this.quizManager.questions.length
+    ) {
+      this.quizManager.currentQuestionIndex = questionNum - 1;
+      this.quizManager.displayCurrentQuestion();
+      this.quizManager.updateNavigation();
+      this.quizManager.updateProgress();
+      this.quizManager.updateResumeButton();
+    }
   }
 
   async startQuizFromCache() {
@@ -451,6 +502,21 @@ class App {
       this.flaggedQuestions
     );
     this.quizManager.correctAnswers = this.correctAnswers;
+
+    const hash = window.location.hash.replace("#question-", "");
+    const questionNum = parseInt(hash, 10) || 1;
+    window.location.hash = `#question-${questionNum}`;
+    if (
+      !isNaN(questionNum) &&
+      questionNum >= 1 &&
+      questionNum <= this.quizManager.questions.length
+    ) {
+      this.quizManager.currentQuestionIndex = questionNum - 1;
+      this.quizManager.displayCurrentQuestion();
+      this.quizManager.updateNavigation();
+      this.quizManager.updateProgress();
+      this.quizManager.updateResumeButton();
+    }
 
     // Show background processing progress
     if (completedBatches < totalBatches) {
@@ -891,6 +957,22 @@ class App {
 
       // Pass the correctAnswers to quiz manager for instant feedback
       this.quizManager.correctAnswers = this.correctAnswers;
+
+      const hash = window.location.hash.replace("#question-", "");
+      const questionNum = parseInt(hash, 10) || 1;
+      window.location.hash = `#question-${questionNum}`;
+
+      if (
+        !isNaN(questionNum) &&
+        questionNum >= 1 &&
+        questionNum <= this.quizManager.questions.length
+      ) {
+        this.quizManager.currentQuestionIndex = questionNum - 1;
+        this.quizManager.displayCurrentQuestion();
+        this.quizManager.updateNavigation();
+        this.quizManager.updateProgress();
+        this.quizManager.updateResumeButton();
+      }
 
       this.ui.showNotification(
         `Loaded ${questions.length} questions from "${pdf.filename}"`,
