@@ -603,30 +603,24 @@ class QuizManager {
 	generatePagination(current, total) {
 		const pages = [];
 
-		// Always show first page
 		pages.push("<");
 		pages.push(1);
 
-		// Calculate range around current (2 before & after)
 		let start = Math.max(2, current - 2);
 		let end = Math.min(total - 1, current + 2);
 
-		// Add "..." after 1 if needed
 		if (start > 2) {
 			pages.push("...");
 		}
 
-		// Add middle pages
 		for (let i = start; i <= end; i++) {
 			pages.push(i);
 		}
 
-		// Add "..." before last page if needed
 		if (end < total - 1) {
 			pages.push("...");
 		}
 
-		// Always show last page if more than 1
 		if (total > 1) {
 			pages.push(total);
 		}
