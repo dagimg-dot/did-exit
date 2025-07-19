@@ -31,11 +31,15 @@ class App {
     this.showNewFeaturesPrompt();
     initializeTheme();
 
-    const hash = window.location.hash.replace("#question-", "");
-    const questionNum = parseInt(hash, 10);
-
+    // Use query parameter for question routing
+    const params = new URLSearchParams(window.location.search);
+    const questionNum = parseInt(params.get("question"), 10);
 
     if (!isNaN(questionNum) && questionNum > 0) {
+      // Only set the parameter if it exists
+      params.set("question", questionNum);
+      window.history.replaceState({}, "", `?${params.toString()}`);
+
       const pdfs = await this.getAllPDFs();
       if (pdfs.length > 0) {
         pdfs.sort(
@@ -176,9 +180,10 @@ class App {
       this.ui.showSyncModal(null, this.p2pSyncManager);
     });
 
-    window.addEventListener("hashchange", () => {
-      const hash = window.location.hash.replace("#question-", "");
-      const questionNum = parseInt(hash, 10);
+    // Remove hashchange listener, use popstate for query param navigation
+    window.addEventListener("popstate", () => {
+      const params = new URLSearchParams(window.location.search);
+      const questionNum = parseInt(params.get("question"), 10);
       if (
         !isNaN(questionNum) &&
         questionNum >= 1 &&
@@ -433,9 +438,11 @@ class App {
     );
     this.quizManager.correctAnswers = this.correctAnswers;
 
-    const hash = window.location.hash.replace("#question-", "");
-    const questionNum = parseInt(hash, 10) || 1;
-    window.location.hash = `#question-${questionNum}`;
+    // Use query parameter for question routing
+    const params = new URLSearchParams(window.location.search);
+    const questionNum = parseInt(params.get("question"), 10) || 1;
+    params.set("question", questionNum);
+    window.history.replaceState({}, "", `?${params.toString()}`);
 
     if (
       !isNaN(questionNum) &&
@@ -503,9 +510,12 @@ class App {
     );
     this.quizManager.correctAnswers = this.correctAnswers;
 
-    const hash = window.location.hash.replace("#question-", "");
-    const questionNum = parseInt(hash, 10) || 1;
-    window.location.hash = `#question-${questionNum}`;
+    // Use query parameter for question routing
+    const params = new URLSearchParams(window.location.search);
+    const questionNum = parseInt(params.get("question"), 10) || 1;
+    params.set("question", questionNum);
+    window.history.replaceState({}, "", `?${params.toString()}`);
+
     if (
       !isNaN(questionNum) &&
       questionNum >= 1 &&
@@ -958,9 +968,11 @@ class App {
       // Pass the correctAnswers to quiz manager for instant feedback
       this.quizManager.correctAnswers = this.correctAnswers;
 
-      const hash = window.location.hash.replace("#question-", "");
-      const questionNum = parseInt(hash, 10) || 1;
-      window.location.hash = `#question-${questionNum}`;
+      // Use query parameter for question routing
+      const params = new URLSearchParams(window.location.search);
+      const questionNum = parseInt(params.get("question"), 10) || 1;
+      params.set("question", questionNum);
+      window.history.replaceState({}, "", `?${params.toString()}`);
 
       if (
         !isNaN(questionNum) &&
