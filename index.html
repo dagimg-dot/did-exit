@@ -23,7 +23,13 @@
 		></script>
 	</head>
 	<body>
-		<div class="container">
+		<div id="app-loader" style="display: flex; align-items: center; justify-content: center; height: 100vh;">
+			<div>
+				<div class="spinner"></div>
+				<p>Loading...</p>
+			</div>
+		</div>
+		<div class="container" style="display:none;">
 			<header class="app-header">
 				<h1>Did Exit</h1>
 				<p>Upload your exam PDF and make it interactive</p>
@@ -45,7 +51,7 @@
 
 			<main class="app-main">
 				<!-- File Upload Section -->
-				<section id="upload-section" class="section active">
+				<section id="upload-section" class="section ">
 					<!-- API Key Configuration -->
 					<div class="api-key-container">
 						<!-- Collapsed State - shown when API key is configured -->
