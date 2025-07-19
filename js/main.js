@@ -1248,6 +1248,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     window.app = new App();
     console.log("🚀 PDF Quiz App initialized successfully");
+    document.getElementById("app-loader").style.display = "none";
+    document.querySelector(".container").style.display = "block";
   } catch (error) {
     console.error("❌ Failed to initialize app:", error);
 
