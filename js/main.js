@@ -479,7 +479,7 @@ class App {
       this.quizData,
       this.userAnswers,
       this.currentPdfId,
-      this.flaggedQuestions
+      this.flaggedQuestions,
     );
     this.quizManager.correctAnswers = this.correctAnswers;
 
@@ -551,7 +551,7 @@ class App {
       this.quizData,
       this.userAnswers,
       this.currentFile.name,
-      this.flaggedQuestions
+      this.flaggedQuestions,
     );
     this.quizManager.correctAnswers = this.correctAnswers;
 
