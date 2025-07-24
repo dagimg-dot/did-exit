@@ -25,35 +25,55 @@ class App {
 		this.initializeApp();
 	}
 
-  async initializeApp() {
-    await this.initializeComponents();
-    this.setupEventListeners();
-    this.showNewFeaturesPrompt();
-    initializeTheme();
+	parseHashRoute() {
+		const hash = window.location.hash; // e.g. "#/Exit%20model%20exam%20II/?question=33"
+		let pdfFileName = null;
+		let questionNum = null;
+		let params = null;
 
-    // Use query parameter for question routing
-    const params = new URLSearchParams(window.location.search);
-    const questionNum = parseInt(params.get("question"), 10);
+		if (hash.startsWith("#/")) {
+			const hashContent = hash.slice(2); // Remove "#/"
+			const [path, queryString] = hashContent.split("/?");
+			pdfFileName = decodeURIComponent(path);
+			if (queryString) {
+				params = new URLSearchParams(queryString);
+				questionNum = parseInt(params.get("question"), 10);
+			}
+		}
+		return { pdfFileName, questionNum, params };
+	}
+	async initializeApp() {
+		await this.initializeComponents();
+		this.setupEventListeners();
+		this.showNewFeaturesPrompt();
+		initializeTheme();
 
-    if (!isNaN(questionNum) && questionNum > 0) {
-      // Only set the parameter if it exists
-      params.set("question", questionNum);
-      window.history.replaceState({}, "", `?${params.toString()}`);
+		const { pdfFileName, questionNum, params } = this.parseHashRoute();
+		params.set("question", questionNum);
+		if (pdfFileName && !isNaN(questionNum) && questionNum > 0) {
+			// Only set the parameter if it exists
+			params.set("question", questionNum);
+			alert(pdfFileName);
+			window.history.replaceState(
+				{},
+				"",
+				`/#/${pdfFileName}/?${params.toString()}`,
+			);
 
-      const pdfs = await this.getAllPDFs();
-      if (pdfs.length > 0) {
-        pdfs.sort(
-          (a, b) =>
-            new Date(b.lastAccessed) - new Date(a.lastAccessed),
-        );
-        const mostRecent = pdfs[0];
-        await this.startQuizFromRecent(mostRecent.id);
+			const pdfs = await this.getAllPDFs();
+			if (pdfs.length > 0) {
+				pdfs.sort(
+					(a, b) =>
+						new Date(b.lastAccessed) - new Date(a.lastAccessed),
+				);
+				const mostRecent = pdfs[0];
+				await this.startQuizFromRecent(mostRecent.id);
 
-        return;
-      }
-    }
-    this.showSection("upload-section");
-  }
+				return;
+			}
+		}
+		this.showSection("upload-section");
+	}
 
 	async initializeComponents() {
 		this.fileUploader = new FileUploader();
@@ -197,29 +217,28 @@ class App {
 			.getElementById("cancel-processing-btn")
 			.addEventListener("click", this.cancelProcessing.bind(this));
 
-    // Global receive button
-    document.getElementById("receive-btn").addEventListener("click", () => {
-      console.log("[UI] Global 'Receive an Exam' button clicked.");
-      this.ui.showSyncModal(null, this.p2pSyncManager);
-    });
+		// Global receive button
+		document.getElementById("receive-btn").addEventListener("click", () => {
+			console.log("[UI] Global 'Receive an Exam' button clicked.");
+			this.ui.showSyncModal(null, this.p2pSyncManager);
+		});
 
-    // Remove hashchange listener, use popstate for query param navigation
-    window.addEventListener("popstate", () => {
-      const params = new URLSearchParams(window.location.search);
-      const questionNum = parseInt(params.get("question"), 10);
-      if (
-        !isNaN(questionNum) &&
-        questionNum >= 1 &&
-        questionNum <= this.quizManager.questions.length
-      ) {
-        this.quizManager.currentQuestionIndex = questionNum - 1;
-        this.quizManager.displayCurrentQuestion();
-        this.quizManager.updateNavigation();
-        this.quizManager.updateProgress();
-        this.quizManager.updateResumeButton();
-      }
-    });
-  }
+		// Remove hashchange listener, use popstate for query param navigation
+		window.addEventListener("hashchange", () => {
+			const { pdfFileName, questionNum, params } = this.parseHashRoute();
+			if (
+				!isNaN(questionNum) &&
+				questionNum >= 1 &&
+				questionNum <= this.quizManager.questions.length
+			) {
+				this.quizManager.currentQuestionIndex = questionNum - 1;
+				this.quizManager.displayCurrentQuestion();
+				this.quizManager.updateNavigation();
+				this.quizManager.updateProgress();
+				this.quizManager.updateResumeButton();
+			}
+		});
+	}
 
 	async handleFileSelected(file) {
 		console.log("File selected:", file.name);
@@ -475,32 +494,39 @@ class App {
 
 		await this.loadSavedQuizState(this.quizData.length);
 
-    this.quizManager.initialize(
-      this.quizData,
-      this.userAnswers,
-      this.currentPdfId,
-      this.flaggedQuestions,
-    );
-    this.quizManager.correctAnswers = this.correctAnswers;
+		this.quizManager.initialize(
+			this.quizData,
+			this.userAnswers,
+			this.currentPdfId,
+			this.flaggedQuestions,
+		);
+		this.quizManager.correctAnswers = this.correctAnswers;
 
-    // Use query parameter for question routing
-    const params = new URLSearchParams(window.location.search);
-    const questionNum = parseInt(params.get("question"), 10) || 1;
-    params.set("question", questionNum);
-    window.history.replaceState({}, "", `?${params.toString()}`);
+		// Use query parameter for question routing
+		// const params = new URLSearchParams(window.location.search);
+		// const questionNum = parseInt(params.get("question"), 10) || 1;
+		// params.set("question", questionNum);
 
-    if (
-      !isNaN(questionNum) &&
-      questionNum >= 1 &&
-      questionNum <= this.quizManager.questions.length
-    ) {
-      this.quizManager.currentQuestionIndex = questionNum - 1;
-      this.quizManager.displayCurrentQuestion();
-      this.quizManager.updateNavigation();
-      this.quizManager.updateProgress();
-      this.quizManager.updateResumeButton();
-    }
-  }
+		const { questionNum, params } = this.parseHashRoute();
+		params.set("question", questionNum || 1);
+		window.history.replaceState(
+			{},
+			"",
+			`/#/${this.currentFile.name.split(".pdf")[0]}/?${params.toString()}`,
+		);
+
+		if (
+			!isNaN(questionNum) &&
+			questionNum >= 1 &&
+			questionNum <= this.quizManager.questions.length
+		) {
+			this.quizManager.currentQuestionIndex = questionNum - 1;
+			this.quizManager.displayCurrentQuestion();
+			this.quizManager.updateNavigation();
+			this.quizManager.updateProgress();
+			this.quizManager.updateResumeButton();
+		}
+	}
 
 	async startQuizFromCache() {
 		this.ui.hideLoading();
@@ -546,32 +572,34 @@ class App {
 
 		await this.loadSavedQuizState(this.quizData.length);
 
-    // Initialize quiz manager and pass correctAnswers
-    this.quizManager.initialize(
-      this.quizData,
-      this.userAnswers,
-      this.currentFile.name,
-      this.flaggedQuestions,
-    );
-    this.quizManager.correctAnswers = this.correctAnswers;
+		// Initialize quiz manager and pass correctAnswers
+		this.quizManager.initialize(
+			this.quizData,
+			this.userAnswers,
+			this.currentFile.name,
+			this.flaggedQuestions,
+		);
+		this.quizManager.correctAnswers = this.correctAnswers;
 
-    // Use query parameter for question routing
-    const params = new URLSearchParams(window.location.search);
-    const questionNum = parseInt(params.get("question"), 10) || 1;
-    params.set("question", questionNum);
-    window.history.replaceState({}, "", `?${params.toString()}`);
+		const { questionNum, params } = this.parseHashRoute();
+		params.set("question", questionNum);
+		window.history.replaceState(
+			{},
+			"",
+			`/#/${this.currentFile.name.split(".pdf")[0]}/?${params.toString()}`,
+		);
 
-    if (
-      !isNaN(questionNum) &&
-      questionNum >= 1 &&
-      questionNum <= this.quizManager.questions.length
-    ) {
-      this.quizManager.currentQuestionIndex = questionNum - 1;
-      this.quizManager.displayCurrentQuestion();
-      this.quizManager.updateNavigation();
-      this.quizManager.updateProgress();
-      this.quizManager.updateResumeButton();
-    }
+		if (
+			!isNaN(questionNum) &&
+			questionNum >= 1 &&
+			questionNum <= this.quizManager.questions.length
+		) {
+			this.quizManager.currentQuestionIndex = questionNum - 1;
+			this.quizManager.displayCurrentQuestion();
+			this.quizManager.updateNavigation();
+			this.quizManager.updateProgress();
+			this.quizManager.updateResumeButton();
+		}
 
 		// Show background processing progress
 		if (completedBatches < totalBatches) {
@@ -1018,26 +1046,29 @@ class App {
 				this.flaggedQuestions,
 			);
 
-      // Pass the correctAnswers to quiz manager for instant feedback
-      this.quizManager.correctAnswers = this.correctAnswers;
+			// Pass the correctAnswers to quiz manager for instant feedback
+			this.quizManager.correctAnswers = this.correctAnswers;
 
-      // Use query parameter for question routing
-      const params = new URLSearchParams(window.location.search);
-      const questionNum = parseInt(params.get("question"), 10) || 1;
-      params.set("question", questionNum);
-      window.history.replaceState({}, "", `?${params.toString()}`);
+			// Use query parameter for question routing
+			const { pdfFileName, questionNum, params } = this.parseHashRoute();
+			params.set("question", questionNum);
+			window.history.replaceState(
+				{},
+				"",
+				`/#/${pdfFileName}/?${params.toString()}`,
+			);
 
-      if (
-        !isNaN(questionNum) &&
-        questionNum >= 1 &&
-        questionNum <= this.quizManager.questions.length
-      ) {
-        this.quizManager.currentQuestionIndex = questionNum - 1;
-        this.quizManager.displayCurrentQuestion();
-        this.quizManager.updateNavigation();
-        this.quizManager.updateProgress();
-        this.quizManager.updateResumeButton();
-      }
+			if (
+				!isNaN(questionNum) &&
+				questionNum >= 1 &&
+				questionNum <= this.quizManager.questions.length
+			) {
+				this.quizManager.currentQuestionIndex = questionNum - 1;
+				this.quizManager.displayCurrentQuestion();
+				this.quizManager.updateNavigation();
+				this.quizManager.updateProgress();
+				this.quizManager.updateResumeButton();
+			}
 
 			this.ui.showNotification(
 				`Loaded ${questions.length} questions from "${pdf.filename}"`,
@@ -1309,13 +1340,13 @@ class App {
 
 // Initialize app when DOM is loaded
 document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    window.app = new App();
-    console.log("🚀 PDF Quiz App initialized successfully");
-    document.getElementById("app-loader").style.display = "none";
-    document.querySelector(".container").style.display = "block";
-  } catch (error) {
-    console.error("❌ Failed to initialize app:", error);
+	try {
+		window.app = new App();
+		console.log("🚀 PDF Quiz App initialized successfully");
+		document.getElementById("app-loader").style.display = "none";
+		document.querySelector(".container").style.display = "block";
+	} catch (error) {
+		console.error("❌ Failed to initialize app:", error);
 
 		// Show basic error message to user
 		document.body.innerHTML = `
