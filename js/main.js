@@ -26,13 +26,13 @@ class App {
 	}
 
 	parseHashRoute() {
-		const hash = window.location.hash; // e.g. "#/Exit%20model%20exam%20II/?question=33"
+		const hash = window.location.hash; 
 		let pdfFileName = null;
 		let questionNum = null;
 		let params = null;
 
 		if (hash.startsWith("#/")) {
-			const hashContent = hash.slice(2); // Remove "#/"
+			const hashContent = hash.slice(2); 
 			const [path, queryString] = hashContent.split("/?");
 			pdfFileName = decodeURIComponent(path);
 			if (queryString) {
@@ -51,9 +51,7 @@ class App {
 		const { pdfFileName, questionNum, params } = this.parseHashRoute();
 		params.set("question", questionNum);
 		if (pdfFileName && !isNaN(questionNum) && questionNum > 0) {
-			// Only set the parameter if it exists
 			params.set("question", questionNum);
-			alert(pdfFileName);
 			window.history.replaceState(
 				{},
 				"",
@@ -223,7 +221,7 @@ class App {
 			this.ui.showSyncModal(null, this.p2pSyncManager);
 		});
 
-		// Remove hashchange listener, use popstate for query param navigation
+	
 		window.addEventListener("hashchange", () => {
 			const { pdfFileName, questionNum, params } = this.parseHashRoute();
 			if (
@@ -502,12 +500,8 @@ class App {
 		);
 		this.quizManager.correctAnswers = this.correctAnswers;
 
-		// Use query parameter for question routing
-		// const params = new URLSearchParams(window.location.search);
-		// const questionNum = parseInt(params.get("question"), 10) || 1;
-		// params.set("question", questionNum);
-
 		const { questionNum, params } = this.parseHashRoute();
+
 		params.set("question", questionNum || 1);
 		window.history.replaceState(
 			{},
