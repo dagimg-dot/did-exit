@@ -389,9 +389,13 @@ class QuizManager {
 			btn.addEventListener("click", () => {
 				this.currentQuestionIndex = index;
 				const params = new URLSearchParams(window.location.search);
-				const pdfName = this.pdfFileName.split('.pdf')[0];
+				const pdfName = this.pdfFileName.split(".pdf")[0];
 				params.set("question", index + 1);
-				window.history.replaceState({}, "", `/#/${encodeURIComponent(pdfName)}/?${params.toString()}`);
+				window.history.replaceState(
+					{},
+					"",
+					`/#/${encodeURIComponent(pdfName)}/?${params.toString()}`,
+				);
 				this.displayCurrentQuestion();
 				this.updateNavigation();
 				this.updateProgress();
@@ -486,7 +490,7 @@ class QuizManager {
 				btn.addEventListener("click", () => {
 					this.currentQuestionIndex = page - 1;
 					const params = new URLSearchParams(window.location.search);
-					const pdfName = this.pdfFileName.split('.pdf')[0];
+					const pdfName = this.pdfFileName.split(".pdf")[0];
 					params.set("question", page);
 					window.history.replaceState(
 						{},
