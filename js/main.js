@@ -221,6 +221,15 @@ class App {
 			this.ui.showSyncModal(null, this.p2pSyncManager);
 		});
 
+		document.getElementById("Home").addEventListener("click", () => {	
+			window.location="/"
+			console.log("[UI] Home button clicked, going to upload section.");
+			this.showSection("upload-section");
+			this.ui.clearNotifications();
+			this.quizManager.reset();
+			this.fileUploader.reset();
+		});
+
 	
 		window.addEventListener("hashchange", () => {
 			const { pdfFileName, questionNum, params } = this.parseHashRoute();
@@ -714,6 +723,10 @@ class App {
 		if (targetSection) {
 			targetSection.classList.add("active");
 			this.currentSection = sectionId;
+		}
+		const homeBtn = document.getElementById("Home");
+		if (sectionId === "quiz-section") {
+			homeBtn.style.display = "inline-flex";
 		}
 	}
 
