@@ -47,9 +47,8 @@ class App {
 		this.setupEventListeners();
 		this.showNewFeaturesPrompt();
 		initializeTheme();
-
+		
 		const { pdfFileName, questionNum, params } = this.parseHashRoute();
-		params.set("question", questionNum);
 		if (pdfFileName && !isNaN(questionNum) && questionNum > 0) {
 			params.set("question", questionNum);
 			window.history.replaceState(
