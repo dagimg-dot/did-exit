@@ -222,7 +222,7 @@ class App {
 
 		document.getElementById("Home").addEventListener("click", () => {
 			console.log("[UI] Home button clicked, going to upload section.");
-			window.history.replaceState({},"","/")
+			window.history.replaceState({}, "", "/");
 			this.showSection("upload-section");
 			this.ui.clearNotifications();
 			this.quizManager.reset();
