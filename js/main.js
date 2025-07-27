@@ -26,13 +26,13 @@ class App {
 	}
 
 	parseHashRoute() {
-		const hash = window.location.hash; 
+		const hash = window.location.hash;
 		let pdfFileName = null;
 		let questionNum = null;
 		let params = null;
 
 		if (hash.startsWith("#/")) {
-			const hashContent = hash.slice(2); 
+			const hashContent = hash.slice(2);
 			const [path, queryString] = hashContent.split("/?");
 			pdfFileName = decodeURIComponent(path);
 			if (queryString) {
@@ -47,7 +47,7 @@ class App {
 		this.setupEventListeners();
 		this.showNewFeaturesPrompt();
 		initializeTheme();
-		
+
 		const { pdfFileName, questionNum, params } = this.parseHashRoute();
 		if (pdfFileName && !isNaN(questionNum) && questionNum > 0) {
 			params.set("question", questionNum);
@@ -220,16 +220,14 @@ class App {
 			this.ui.showSyncModal(null, this.p2pSyncManager);
 		});
 
-		document.getElementById("Home").addEventListener("click", () => {	
-			window.location="/"
+		document.getElementById("Home").addEventListener("click", () => {
 			console.log("[UI] Home button clicked, going to upload section.");
-			this.showSection("upload-section");
+			window.location = "/";
 			this.ui.clearNotifications();
 			this.quizManager.reset();
 			this.fileUploader.reset();
 		});
 
-	
 		window.addEventListener("hashchange", () => {
 			const { pdfFileName, questionNum, params } = this.parseHashRoute();
 			if (
@@ -1056,12 +1054,21 @@ class App {
 			this.quizManager.correctAnswers = this.correctAnswers;
 
 			// Use query parameter for question routing
-			const { pdfFileName, questionNum, params } = this.parseHashRoute();
+			let questionNum = 1;
+			if (pdf.userAnswers && pdf.userAnswers.length > 0) {
+				const lastAnsweredIndex = this.userAnswers.findLastIndex(
+					(a) => a !== null,
+				);
+				questionNum =
+					lastAnsweredIndex >= 0 ? lastAnsweredIndex + 1 : 1;
+			}
+			const params = new URLSearchParams();
+			// const { pdfFileName, questionNum, params } = this.parseHashRoute();
 			params.set("question", questionNum);
 			window.history.replaceState(
 				{},
 				"",
-				`/#/${pdfFileName}/?${params.toString()}`,
+				`/#/${pdf.filename}/?${params.toString()}`,
 			);
 
 			if (
