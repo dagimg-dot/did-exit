@@ -222,7 +222,8 @@ class App {
 
 		document.getElementById("Home").addEventListener("click", () => {
 			console.log("[UI] Home button clicked, going to upload section.");
-			window.location = "/";
+			window.history.replaceState({},"","/")
+			this.showSection("upload-section");
 			this.ui.clearNotifications();
 			this.quizManager.reset();
 			this.fileUploader.reset();
@@ -1063,19 +1064,18 @@ class App {
 					lastAnsweredIndex >= 0 ? lastAnsweredIndex + 1 : 1;
 			}
 			const params = new URLSearchParams();
-			// const { pdfFileName, questionNum, params } = this.parseHashRoute();
-			params.set("question", questionNum);
-			window.history.replaceState(
-				{},
-				"",
-				`/#/${pdf.filename}/?${params.toString()}`,
-			);
 
 			if (
 				!isNaN(questionNum) &&
 				questionNum >= 1 &&
 				questionNum <= this.quizManager.questions.length
 			) {
+				params.set("question", questionNum);
+				window.history.replaceState(
+					{},
+					"",
+					`/#/${pdf.filename}/?${params.toString()}`,
+				);
 				this.quizManager.currentQuestionIndex = questionNum - 1;
 				this.quizManager.displayCurrentQuestion();
 				this.quizManager.updateNavigation();
