@@ -226,7 +226,8 @@ class App {
 			this.showSection("upload-section");
 			this.ui.clearNotifications();
 			this.quizManager.reset();
-			this.fileUploader.reset();
+			this.fileUploader.reset();		
+			this.loadRecentExams()
 		});
 
 		window.addEventListener("hashchange", () => {
