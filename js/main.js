@@ -729,7 +729,7 @@ class App {
 			receiveBtn.style.display = "none";
 		} else {
 			homeBtn.style.display = "none";
-			recieveBtn.style.display = "inline-flex";
+			receiveBtn.style.display = "inline-flex";
 		}
 	}
 
