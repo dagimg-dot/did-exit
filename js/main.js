@@ -723,10 +723,13 @@ class App {
 			this.currentSection = sectionId;
 		}
 		const homeBtn = document.getElementById("Home");
+		const receiveBtn = document.getElementById("receive-btn");
 		if (sectionId === "quiz-section") {
 			homeBtn.style.display = "inline-flex";
+			receiveBtn.style.display = "none";
 		} else {
 			homeBtn.style.display = "none";
+			recieveBtn.style.display = "inline-flex";
 		}
 	}
 
