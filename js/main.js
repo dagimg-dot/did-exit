@@ -725,6 +725,8 @@ class App {
 		const homeBtn = document.getElementById("Home");
 		if (sectionId === "quiz-section") {
 			homeBtn.style.display = "inline-flex";
+		} else {
+			homeBtn.style.display = "none";
 		}
 	}
 
