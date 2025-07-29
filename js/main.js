@@ -583,8 +583,8 @@ class App {
 		);
 		this.quizManager.correctAnswers = this.correctAnswers;
 
-		const { questionNum, params } = this.parseHashRoute();
-		params.set("question", questionNum);
+		const params = new URLSearchParams();
+		params.set("question", 1);
 		window.history.replaceState(
 			{},
 			"",
