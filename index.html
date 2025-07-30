@@ -23,6 +23,15 @@
 		></script>
 	</head>
 	<body>
+		<div
+			id="app-loader"
+			style="display: flex; align-items: center; justify-content: center; height: 100vh;"
+		>
+			<div>
+				<div class="spinner"></div>
+				<p>Loading...</p>
+			</div>
+		</div>
 		<div class="container">
 			<header class="app-header">
 				<h1>Did Exit</h1>
@@ -33,6 +42,9 @@
 				class="global-actions"
 				style="text-align: center; margin-bottom: 1rem;"
 			>
+				<button id="Home" class="btn btn-primary" style="display:none;">
+					Go Home
+				</button>
 				<button id="receive-btn" class="btn btn-secondary">
 					Receive an Exam
 				</button>
@@ -45,7 +57,7 @@
 
 			<main class="app-main">
 				<!-- File Upload Section -->
-				<section id="upload-section" class="section active">
+				<section id="upload-section" class="section ">
 					<!-- API Key Configuration -->
 					<div class="api-key-container">
 						<!-- Collapsed State - shown when API key is configured -->
@@ -224,7 +236,9 @@
 								<input type="checkbox" id="quiz-mode-toggle" >
 								<span class="slider round"></span>
 							</label>
-							<span id="instant-feedback-label">Instant Feedback</span>
+							<span id="instant-feedback-label"
+								>Instant Feedback</span
+							>
 						</div>
 						<div class="quiz-layout">
 							<div class="question-nav" id="question-nav">
@@ -261,9 +275,14 @@
 							</div>
 
 							<div class="question-card" id="question-card">
-								<h2 id="question-text">Question will appear here...</h2>
-								<div class="options-container" id="options-container">
-						<!-- Options will be dynamically added -->
+								<h2 id="question-text">
+									Question will appear here...
+								</h2>
+								<div
+									class="options-container"
+									id="options-container"
+								>
+									<!-- Options will be dynamically added -->
 								</div>
 								<div
 									class="explanation-container"
@@ -274,10 +293,13 @@
 									<p id="explanation-text"></p>
 								</div>
 								<div class="condensed-nav">
-									<ul class="condensed-nav-list" id="condensed-nav-list">
+									<ul
+										class="condensed-nav-list"
+										id="condensed-nav-list"
+									>
 										<!-- Question navigation items will be dynamically added -->
 									</ul>
-                				</div>
+								</div>
 								<div class="quiz-controls">
 									<button
 										id="prev-btn"
