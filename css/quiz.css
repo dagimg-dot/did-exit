@@ -1,10 +1,14 @@
 /* Quiz Specific Styles */
 .quiz-header {
 	background: var(--card-background);
+	border: 1px solid var(--border-color);
 	border-radius: var(--border-radius);
 	padding: 1rem;
 	box-shadow: var(--shadow);
 	margin: 0 auto 2rem;
+	transition:
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
 }
 
 .quiz-header__top {
@@ -230,6 +234,7 @@
 
 .question-card {
 	background: var(--card-background);
+	border: 1px solid var(--border-color);
 	border-radius: var(--border-radius);
 	padding: 1rem;
 	box-shadow: var(--shadow);
@@ -238,6 +243,9 @@
 	flex: 1 1 0%;
 	flex-direction: column;
 	min-width: 0;
+	transition:
+		border-color 0.2s ease,
+		box-shadow 0.2s ease;
 	/* Stable frame: short questions don’t collapse the card */
 	min-height: clamp(22rem, 52vh, 42rem);
 }
