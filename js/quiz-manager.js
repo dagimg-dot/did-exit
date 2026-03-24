@@ -138,7 +138,7 @@ class QuizManager {
 		});
 
 		this.totalQuestionsSpan.textContent = questions.length;
-		this.pdfFileSpan.textContent = pdfName ? `- ${pdfName}` : "";
+		this.pdfFileSpan.textContent = pdfName ? pdfName : "";
 		this.displayCurrentQuestion();
 		this.updateNavigation();
 		this.updateProgress();

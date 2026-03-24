@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en" class="dark-theme">
 	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<meta charset="UTF-8" >
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" >
 		<title>Did Exit - Exam Generator from PDF</title>
 
-		<link rel="icon" type="image/png" href="assets/favicon-exit.png">
-		<link rel="shortcut icon" href="assets/favicon-exit.png">
-		<link rel="apple-touch-icon" href="assets/favicon-exit.png">
+		<link rel="icon" type="image/png" href="assets/favicon-exit.png" >
+		<link rel="shortcut icon" href="assets/favicon-exit.png" >
+		<link rel="apple-touch-icon" href="assets/favicon-exit.png" >
 
-		<link rel="stylesheet" href="css/main.css">
-		<link rel="stylesheet" href="css/components.css">
-		<link rel="stylesheet" href="css/quiz.css">
-		<link rel="stylesheet" href="css/theme-toggle.css">
+		<link rel="stylesheet" href="css/main.css" >
+		<link rel="stylesheet" href="css/components.css" >
+		<link rel="stylesheet" href="css/quiz.css" >
+		<link rel="stylesheet" href="css/theme-toggle.css" >
 
 		<script
 			defer
@@ -292,13 +292,19 @@
 
 				<section id="quiz-section" class="section">
 					<div class="quiz-header">
+						<div class="quiz-header__top">
+							<div class="quiz-header__title" id="pdf-file-name">
+								Unnamed
+							</div>
+							<div class="question-counter">
+								<span id="current-question">1</span>/<span
+									id="total-questions"
+									>10</span
+								>
+							</div>
+						</div>
 						<div class="progress-bar">
 							<div class="progress-fill" id="progress-fill"></div>
-						</div>
-						<div class="question-counter">
-							<span id="current-question">1</span>/
-							<span id="total-questions">10</span>
-							<span id="pdf-file-name">Unnamed</span>
 						</div>
 					</div>
 
@@ -306,7 +312,7 @@
 						<div class="quiz-mode-selector">
 							<span id="exam-mode-label">Exam Mode</span>
 							<label class="switch">
-								<input type="checkbox" id="quiz-mode-toggle">
+								<input type="checkbox" id="quiz-mode-toggle" >
 								<span class="slider round"></span>
 							</label>
 							<span id="instant-feedback-label"

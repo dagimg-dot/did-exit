@@ -17,9 +17,14 @@
 }
 
 .dark-theme {
-	--color-canvas: var(--tb-950);
-	--color-surface: #2a1814;
-	--color-surface-2: #3d2420;
+	/*
+	 * Page = deep void; cards = designer panel #352724; raised UI = thunderbird 900.
+	 */
+	--color-canvas: color-mix(in srgb, var(--tb-950) 34%, black);
+	--color-surface: #352724;
+	/* Inset rows / drop zone (designer) — not the same as interactive surface-2 */
+	--color-surface-inset: #473f3c;
+	--color-surface-2: var(--tb-900);
 	--color-border: var(--tb-800);
 	--color-border-strong: var(--tb-700);
 	--color-text: var(--tb-50);
@@ -42,14 +47,15 @@
 	--secondary-hover: var(--tb-800);
 
 	--border-radius: 14px;
-	--shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
-	--shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+	--shadow: 0 4px 28px rgba(0, 0, 0, 0.5);
+	--shadow-lg: 0 14px 48px rgba(0, 0, 0, 0.58);
 	--pagination-border-radius: 50%;
 }
 
 .light-theme {
 	--color-canvas: var(--tb-50);
 	--color-surface: #ffffff;
+	--color-surface-inset: var(--tb-100);
 	--color-surface-2: var(--tb-100);
 	--color-border: var(--tb-200);
 	--color-border-strong: var(--tb-300);

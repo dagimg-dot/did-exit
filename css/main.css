@@ -367,7 +367,7 @@ body {
 	min-height: 8.5rem;
 	border: 2px dashed var(--border-color);
 	border-radius: var(--border-radius);
-	background: var(--color-surface-2);
+	background: var(--color-surface-inset);
 	cursor: pointer;
 	transition:
 		border-color 0.2s ease,
@@ -377,7 +377,7 @@ body {
 
 .landing-upload-inner .upload-area:hover {
 	border-color: var(--color-accent);
-	background: var(--color-surface-2);
+	background: var(--color-surface-inset);
 	box-shadow: 0 0 0 1px var(--color-accent-glow);
 }
 

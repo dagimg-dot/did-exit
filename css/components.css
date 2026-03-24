@@ -1309,16 +1309,20 @@
 
 .dark-theme .upload-area:hover {
 	border-color: var(--primary-color);
-	background-color: var(--color-surface-2);
+	background-color: var(--color-surface-inset);
 }
 
 .dark-theme .upload-area.dragover {
-	background-color: var(--color-surface-2);
+	background-color: var(--color-surface-inset);
 }
 
 .dark-theme .recent-exam-item {
-	background-color: var(--color-surface-2);
+	background-color: var(--color-surface-inset);
 	border-color: var(--border-color);
+}
+
+.light-theme .recent-exam-item {
+	background-color: var(--color-surface-inset);
 }
 
 .dark-theme .recent-exam-item:hover {
