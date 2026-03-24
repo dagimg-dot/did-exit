@@ -128,13 +128,18 @@
 	display: flex;
 	gap: 2rem;
 	align-items: stretch;
+	min-width: 0;
 }
 
 .nav-list {
-	display: grid;
+	display: flex;
+	flex-wrap: wrap;
 	margin-top: 20px;
-	grid-template-columns: repeat(10, 0.5fr);
 	gap: 0.5rem;
+	justify-content: flex-start;
+	align-content: flex-start;
+	min-width: 0;
+	width: 100%;
 }
 
 .nav-list li {
@@ -143,6 +148,7 @@
 	justify-content: center;
 	align-items: center;
 	cursor: pointer;
+	flex: 0 0 auto;
 }
 
 .question-nav-btn {
@@ -218,7 +224,7 @@
 	box-shadow: var(--shadow);
 	margin-bottom: 2rem;
 	display: flex;
-	flex: 1 1 auto;
+	flex: 1 1 0%;
 	flex-direction: column;
 	min-width: 0;
 	/* Stable frame: short questions don’t collapse the card */
@@ -423,6 +429,21 @@
 .question-card > .quiz-controls {
 	margin-top: auto;
 	padding-top: 1.5rem;
+}
+
+/* Wide screens: sidebar width is capped; nav list wraps inside it; card takes the rest */
+@media (min-width: 1024px) {
+	.quiz-layout > .question-nav {
+		flex: 0 0 auto;
+		width: min(22rem, max(15rem, 34vw));
+		max-width: 100%;
+		min-width: 0;
+	}
+
+	.quiz-layout > .question-card {
+		flex: 1 1 0%;
+		min-width: 0;
+	}
 }
 
 /* Results Styles */
@@ -928,14 +949,16 @@
 		pointer-events: auto;
 	}
 
-	/* Left drawer: same #question-nav, 80vw wide */
-	.question-nav {
+	/* Left drawer: width cap; nav wraps inside panel */
+	.quiz-layout > .question-nav {
 		display: flex;
 		flex-direction: column;
 		position: fixed;
 		left: 0;
 		top: 0;
-		width: 80vw;
+		width: min(88vw, 22rem);
+		max-width: 100%;
+		box-sizing: border-box;
 		min-height: 100vh;
 		height: 100dvh;
 		max-height: 100dvh;
@@ -954,17 +977,13 @@
 		transition: transform 0.25s ease;
 	}
 
-	.quiz-section--nav-drawer-open .question-nav {
+	.quiz-section--nav-drawer-open .quiz-layout > .question-nav {
 		transform: translateX(0);
 	}
 
 	.question-nav__drawer-top {
 		display: flex;
 		flex-shrink: 0;
-	}
-
-	.question-nav .nav-list {
-		display: grid;
 	}
 
 	.question-nav .nav-legend {
@@ -993,7 +1012,7 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.question-nav {
+		.quiz-layout > .question-nav {
 			transition: none;
 		}
 
