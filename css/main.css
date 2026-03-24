@@ -43,11 +43,27 @@ body {
 }
 
 .site-logo {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+	max-width: 100%;
 	font-size: 1.35rem;
 	font-weight: 700;
 	color: var(--color-text);
 	letter-spacing: -0.02em;
 	text-decoration: none;
+}
+
+.site-logo__mark {
+	flex-shrink: 0;
+	width: 2.75rem;
+	height: 2.75rem;
+	object-fit: contain;
+}
+
+.site-logo__text {
+	min-width: 0;
 }
 
 .site-logo:hover {
@@ -615,6 +631,9 @@ body.view-quiz .site-header {
 
 	.site-logo {
 		font-size: 1.1rem;
+	}
+
+	.site-logo__text {
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -653,6 +672,11 @@ body.view-quiz .site-header {
 
 	.site-logo {
 		font-size: 1rem;
+	}
+
+	.site-logo__mark {
+		width: 1.65rem;
+		height: 1.65rem;
 	}
 
 	.site-header__actions {
