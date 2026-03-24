@@ -1,8 +1,12 @@
 // Google Generative AI Integration
+const LIST_MODELS_BASE =
+	"https://generativelanguage.googleapis.com/v1beta/models";
+
 class AIIntegration {
 	constructor() {
 		this.events = {};
 		this.apiKey = null;
+		this.modelId = null;
 		this.model = null;
 		this.lastRequestTime = 0;
 		this.requestCount = 0;
@@ -12,8 +16,8 @@ class AIIntegration {
 	}
 
 	loadAPIKeyFromStorage() {
-		// Load API key from localStorage
 		this.apiKey = localStorage.getItem("google-ai-api-key");
+		this.modelId = localStorage.getItem("google-ai-model-id");
 		if (!this.apiKey) {
 			console.warn(
 				"⚠️ No API key found in storage. Please configure your Google AI API key.",
@@ -21,8 +25,76 @@ class AIIntegration {
 		}
 	}
 
+	/** Prefer Gemini Flash-style models for default ordering (dropdown + auto-pick). */
+	sortModelsForDefault(models) {
+		const score = (id) => {
+			const lower = id.toLowerCase();
+			let s = 0;
+			if (lower.includes("gemini")) s += 10;
+			if (lower.includes("flash")) s += 5;
+			if (lower.includes("preview")) s -= 1;
+			return s;
+		};
+		return [...models].sort((a, b) => score(b.id) - score(a.id));
+	}
+
+	/**
+	 * List models that support generateContent for this API key.
+	 * @returns {Promise<Array<{ id: string, displayName: string }>>}
+	 */
+	async listModels(apiKey) {
+		const collected = [];
+		let pageToken = null;
+		do {
+			const url = new URL(LIST_MODELS_BASE);
+			url.searchParams.set("key", apiKey);
+			url.searchParams.set("pageSize", "100");
+			if (pageToken) {
+				url.searchParams.set("pageToken", pageToken);
+			}
+			const res = await fetch(url.toString());
+			if (!res.ok) {
+				const body = await res.text();
+				throw new Error(
+					`List models failed (${res.status}): ${body || res.statusText}`,
+				);
+			}
+			const data = await res.json();
+			const raw = data.models || [];
+			for (const m of raw) {
+				if (
+					!m.supportedGenerationMethods?.includes("generateContent")
+				) {
+					continue;
+				}
+				const id = (m.name || "").replace(/^models\//, "");
+				if (!id) {
+					continue;
+				}
+				collected.push({
+					id,
+					displayName: m.displayName || id,
+				});
+			}
+			pageToken = data.nextPageToken || null;
+		} while (pageToken);
+		return this.sortModelsForDefault(collected);
+	}
+
+	setSelectedModel(modelId) {
+		if (modelId) {
+			localStorage.setItem("google-ai-model-id", modelId);
+			this.modelId = modelId;
+		} else {
+			localStorage.removeItem("google-ai-model-id");
+			this.modelId = null;
+		}
+		this.model = null;
+		return this.initializeAPI();
+	}
+
 	async initializeAPI() {
-		// Check if we have an API key
+		this.model = null;
 		if (!this.apiKey || this.apiKey === "YOUR_GOOGLE_AI_API_KEY_HERE") {
 			console.warn(
 				"⚠️ Please set your Google AI API key using the configuration panel",
@@ -31,46 +103,35 @@ class AIIntegration {
 		}
 
 		try {
-			// Load Google Generative AI SDK
 			await this.loadGoogleAI();
 
-			// Initialize the model
 			const { GoogleGenerativeAI } = await import(
 				"https://esm.run/@google/generative-ai"
 			);
 			const genAI = new GoogleGenerativeAI(this.apiKey);
 
-			// Optimized model selection based on free tier research
-			// Priority: Best free tier models with highest rate limits and capabilities
-			const modelNames = [
-				"gemini-2.0-flash", // Best: 15 RPM, 1M TPM, 1.5K RPD, 1M context
-				"gemini-1.5-flash", // Good: 15 RPM, 250K TPM, 500 RPD, 1M context
-				"gemini-2.5-flash-preview", // Latest: 10 RPM, 250K TPM, 500 RPD, 1M context
-				"gemini-1.5-flash-8b", // Fast: 15 RPM, 250K TPM, 500 RPD, 1M context
-				"gemini-1.5-flash-latest", // Fallback
-			];
+			const list = await this.listModels(this.apiKey);
+			if (list.length === 0) {
+				throw new Error(
+					"No models with generateContent are available for this API key.",
+				);
+			}
 
-			for (const modelName of modelNames) {
-				try {
-					this.model = genAI.getGenerativeModel({ model: modelName });
-					console.log(
-						`✅ Google AI initialized successfully with model: ${modelName}`,
-					);
-					console.log(
-						`📊 Free tier limits: RPM varies by model, 1M token context window`,
-					);
-					break;
-				} catch (modelError) {
+			let resolvedId = this.modelId;
+			const known = list.some((m) => m.id === resolvedId);
+			if (!resolvedId || !known) {
+				if (resolvedId && !known) {
 					console.warn(
-						`❌ Failed to initialize model ${modelName}:`,
-						modelError,
+						`Stored model "${resolvedId}" is not available; using ${list[0].id}.`,
 					);
 				}
+				resolvedId = list[0].id;
+				localStorage.setItem("google-ai-model-id", resolvedId);
+				this.modelId = resolvedId;
 			}
 
-			if (!this.model) {
-				throw new Error("No compatible AI model found");
-			}
+			this.model = genAI.getGenerativeModel({ model: resolvedId });
+			console.log(`✅ Google AI initialized with model: ${resolvedId}`);
 		} catch (error) {
 			console.error("Failed to initialize Google AI:", error);
 			console.log("App will use mock questions instead");
@@ -821,36 +882,50 @@ ${textContent}`;
 		return this.apiKey && this.apiKey !== "YOUR_GOOGLE_AI_API_KEY_HERE";
 	}
 
-	// Method to set API key programmatically
-	setAPIKey(apiKey) {
+	// Method to set API key programmatically (optional modelId saves both before init)
+	setAPIKey(apiKey, modelId = undefined) {
 		this.apiKey = apiKey;
 		if (apiKey) {
 			localStorage.setItem("google-ai-api-key", apiKey);
 		} else {
 			localStorage.removeItem("google-ai-api-key");
+			localStorage.removeItem("google-ai-model-id");
+			this.modelId = null;
 		}
+		if (modelId !== undefined) {
+			if (modelId) {
+				localStorage.setItem("google-ai-model-id", modelId);
+				this.modelId = modelId;
+			} else {
+				localStorage.removeItem("google-ai-model-id");
+				this.modelId = null;
+			}
+		}
+		this.model = null;
 		this.initializeAPI();
 	}
 
-	async testAPIKey(apiKey = null) {
+	async testAPIKey(apiKey = null, modelId = null) {
 		const testKey = apiKey || this.apiKey;
 		if (!testKey) {
 			throw new Error("No API key provided");
 		}
+		if (!modelId?.trim()) {
+			return {
+				success: false,
+				message: "Select a model from the list before saving.",
+			};
+		}
 
 		try {
-			// Load Google Generative AI SDK
 			const { GoogleGenerativeAI } = await import(
 				"https://esm.run/@google/generative-ai"
 			);
 			const genAI = new GoogleGenerativeAI(testKey);
-
-			// Try to initialize with the simplest model
 			const model = genAI.getGenerativeModel({
-				model: "gemini-1.5-flash",
+				model: modelId.trim(),
 			});
 
-			// Test with a simple prompt
 			const result = await model.generateContent(
 				"Say 'test' if you can read this.",
 			);
@@ -877,7 +952,9 @@ ${textContent}`;
 
 	emit(event, data) {
 		if (this.events[event]) {
-			this.events[event].forEach((callback) => callback(data));
+			this.events[event].forEach((callback) => {
+				callback(data);
+			});
 		}
 	}
 

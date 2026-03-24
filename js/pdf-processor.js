@@ -186,7 +186,9 @@ class PDFProcessor {
 
 	emit(event, data) {
 		if (this.events[event]) {
-			this.events[event].forEach((callback) => callback(data));
+			this.events[event].forEach((callback) => {
+				callback(data);
+			});
 		}
 	}
 

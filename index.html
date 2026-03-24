@@ -42,17 +42,26 @@
 				class="global-actions"
 				style="text-align: center; margin-bottom: 1rem;"
 			>
-				<button id="Home" class="btn btn-primary" style="display:none;">
+				<button
+					id="Home"
+					class="btn btn-primary"
+					style="display:none;"
+					type="button"
+				>
 					Go Home
 				</button>
-				<button id="receive-btn" class="btn btn-secondary">
+				<button
+					id="receive-btn"
+					class="btn btn-secondary"
+					type="button"
+				>
 					Receive an Exam
 				</button>
 			</div>
 
 			<div class="theme-switcher">
-				<button id="theme-light">Light</button>
-				<button id="theme-dark">Dark</button>
+				<button id="theme-light" type="button">Light</button>
+				<button id="theme-dark" type="button">Dark</button>
 			</div>
 
 			<main class="app-main">
@@ -74,8 +83,9 @@
 								<button
 									id="change-api-key-btn"
 									class="btn btn-secondary btn-sm"
+									type="button"
 								>
-									Change API Key
+									Configure
 								</button>
 							</div>
 						</div>
@@ -98,9 +108,28 @@
 								<button
 									id="save-api-key-btn"
 									class="btn btn-primary"
+									type="button"
 								>
 									Save Key
 								</button>
+							</div>
+							<div class="api-key-model-row">
+								<label
+									class="api-key-model-label"
+									for="google-ai-model-select"
+								>
+									Model
+								</label>
+								<select
+									id="google-ai-model-select"
+									class="api-key-model-select"
+									disabled
+									aria-label="Google AI model"
+								>
+									<option value="">
+										Models load when you save the API key
+									</option>
+								</select>
 							</div>
 							<div class="api-key-status" id="api-key-status">
 								<!-- Status will be shown here -->
@@ -120,8 +149,9 @@
 									id="cancel-api-key-btn"
 									class="btn btn-secondary"
 									style="display: none;"
+									type="button"
 								>
-									Cancel
+									Finish
 								</button>
 							</div>
 						</div>
@@ -141,7 +171,11 @@
 								accept=".pdf"
 								hidden
 							>
-							<button id="browse-btn" class="btn btn-primary">
+							<button
+								id="browse-btn"
+								class="btn btn-primary"
+								type="button"
+							>
 								Browse Files
 							</button>
 						</div>
@@ -158,12 +192,14 @@
 								<button
 									id="process-btn"
 									class="btn btn-success"
+									type="button"
 								>
 									Process PDF
 								</button>
 								<button
 									id="change-file-btn"
 									class="btn btn-secondary"
+									type="button"
 								>
 									Change File
 								</button>
@@ -180,6 +216,7 @@
 								<button
 									id="cancel-processing-btn"
 									class="btn btn-secondary"
+									type="button"
 								>
 									Cancel Processing
 								</button>
@@ -305,6 +342,7 @@
 										id="prev-btn"
 										class="btn btn-secondary"
 										disabled
+										type="button"
 									>
 										Previous
 									</button>
@@ -312,6 +350,7 @@
 										id="resume-btn"
 										class="btn btn-primary"
 										style="display: none;"
+										type="button"
 									>
 										Resume
 									</button>
@@ -319,6 +358,7 @@
 										id="next-btn"
 										class="btn btn-primary"
 										disabled
+										type="button"
 									>
 										Next
 									</button>
@@ -326,6 +366,7 @@
 										id="submit-quiz-btn"
 										class="btn btn-success"
 										style="display: none;"
+										type="button"
 									>
 										Submit Quiz
 									</button>
@@ -351,10 +392,18 @@
 							<!-- Results will be populated here -->
 						</div>
 						<div class="results-actions">
-							<button id="restart-btn" class="btn btn-primary">
+							<button
+								id="restart-btn"
+								class="btn btn-primary"
+								type="button"
+							>
 								Take Another Quiz
 							</button>
-							<button id="review-btn" class="btn btn-secondary">
+							<button
+								id="review-btn"
+								class="btn btn-secondary"
+								type="button"
+							>
 								Review Answers
 							</button>
 						</div>

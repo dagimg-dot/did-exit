@@ -102,11 +102,49 @@
 .api-key-input-group {
 	display: flex;
 	gap: 0.75rem;
-	margin-bottom: 1.5rem;
+	margin-bottom: 1rem;
 	align-items: stretch;
 	max-width: 500px;
 	margin-left: auto;
 	margin-right: auto;
+}
+
+.api-key-model-row {
+	max-width: 500px;
+	margin: 0 auto 1.5rem auto;
+	text-align: left;
+}
+
+.api-key-model-label {
+	display: block;
+	font-size: 0.9rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 0.5rem;
+}
+
+.api-key-model-select {
+	width: 100%;
+	padding: 0.75rem 1rem;
+	border: 2px solid var(--border-color);
+	border-radius: var(--border-radius);
+	font-size: 0.95rem;
+	background: var(--card-background);
+	color: var(--text-primary);
+	min-height: 44px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.api-key-model-select:focus {
+	outline: none;
+	border-color: var(--primary-color);
+	box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.api-key-model-select:disabled {
+	opacity: 0.65;
+	cursor: not-allowed;
 }
 
 .api-key-input-group .btn {
@@ -870,6 +908,12 @@
 /* Dark Mode Overrides */
 .dark-theme .api-key-section:hover {
 	background-color: #2c3a4b;
+}
+
+.dark-theme .api-key-model-select {
+	background-color: var(--card-background);
+	border-color: var(--border-color);
+	color: var(--text-primary);
 }
 
 .dark-theme .upload-area:hover {

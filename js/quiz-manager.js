@@ -114,21 +114,6 @@ class QuizManager {
 			}
 		});
 	}
-	setupKeydownListener() {
-		document.addEventListener("keydown", (event) => {
-			const quizSection = document.getElementById("quiz-section");
-			if (quizSection.classList.contains("active")) {
-				if (event.key === "ArrowLeft" && !this.prevBtn.disabled) {
-					this.previousQuestion();
-				} else if (
-					event.key === "ArrowRight" &&
-					!this.nextBtn.disabled
-				) {
-					this.nextQuestion();
-				}
-			}
-		});
-	}
 
 	initialize(
 		questions,
@@ -145,7 +130,7 @@ class QuizManager {
 			flaggedQuestions || new Array(questions.length).fill(false);
 		this.pdfFileName = pdfName;
 		// Extract correct answers for normal mode
-		this.correctAnswers = questions.map((q, index) => {
+		this.correctAnswers = questions.map((q, _index) => {
 			return {
 				correctAnswer: q.correctAnswer,
 				explanation: q.explanation || "No explanation provided.",
@@ -306,7 +291,7 @@ class QuizManager {
 
 		// Then mark options as correct/incorrect
 		this.optionsContainer.querySelectorAll(".option").forEach((opt) => {
-			const optIndex = parseInt(opt.dataset.optionIndex);
+			const optIndex = Number.parseInt(opt.dataset.optionIndex, 10);
 
 			if (optIndex === correctAnswer) {
 				opt.classList.add("correct");
@@ -356,7 +341,7 @@ class QuizManager {
 		const navList = document.getElementById("nav-list");
 		if (!navList) return;
 		navList.innerHTML = "";
-		this.questions.forEach((question, index) => {
+		this.questions.forEach((_question, index) => {
 			const navItem = document.createElement("li");
 			const btn = document.createElement("button");
 			btn.className = "question-nav-btn";
@@ -366,7 +351,6 @@ class QuizManager {
 				btn.title = "Answered";
 			} else {
 				btn.classList.add("unanswered");
-				btn.title = "Unanswered";
 				btn.title = "Unanswered";
 			}
 			if (index === this.currentQuestionIndex) {
@@ -404,13 +388,13 @@ class QuizManager {
 
 			let pressTimer = null;
 
-			btn.addEventListener("mousedown", (e) => {
+			btn.addEventListener("mousedown", () => {
 				pressTimer = setTimeout(() => {
 					this.flaggedQuestions[index] =
 						!this.flaggedQuestions[index];
 					this.displayQuestionNavigation();
 
-					if (window.app && window.app.currentPdfId) {
+					if (window.app?.currentPdfId) {
 						window.app.databaseManager.storeUserAnswers(
 							window.app.currentPdfId,
 							this.userAnswers,
@@ -423,13 +407,13 @@ class QuizManager {
 			btn.addEventListener("mouseleave", () => clearTimeout(pressTimer));
 			btn.addEventListener("mouseup", () => clearTimeout(pressTimer));
 
-			btn.addEventListener("touchstart", (e) => {
+			btn.addEventListener("touchstart", () => {
 				pressTimer = setTimeout(() => {
 					this.flaggedQuestions[index] =
 						!this.flaggedQuestions[index];
 					this.displayQuestionNavigation();
 
-					if (window.app && window.app.currentPdfId) {
+					if (window.app?.currentPdfId) {
 						window.app.databaseManager.storeUserAnswers(
 							window.app.currentPdfId,
 							this.userAnswers,
@@ -505,16 +489,14 @@ class QuizManager {
 
 				let pressTimer = null;
 
-				btn.addEventListener("mousedown", (e) => {
+				btn.addEventListener("mousedown", () => {
 					pressTimer = setTimeout(() => {
 						const questionIndex = page - 1; // page is the 1-based question number
-						alert(questionIndex);
 						this.flaggedQuestions[questionIndex] =
 							!this.flaggedQuestions[questionIndex];
-						alert(this.flaggedQuestions[questionIndex], "ermi");
 						this.displayQuestionNavigation();
 						this.displayCondensedQuestionNavigation();
-						if (window.app && window.app.currentPdfId) {
+						if (window.app?.currentPdfId) {
 							window.app.databaseManager.storeUserAnswers(
 								window.app.currentPdfId,
 								this.userAnswers,
@@ -529,16 +511,15 @@ class QuizManager {
 				);
 				btn.addEventListener("mouseup", () => clearTimeout(pressTimer));
 
-				btn.addEventListener("touchstart", (e) => {
+				btn.addEventListener("touchstart", () => {
 					pressTimer = setTimeout(() => {
 						const questionIndex = page - 1; // page is the 1-based question number
 
 						this.flaggedQuestions[questionIndex] =
 							!this.flaggedQuestions[questionIndex];
-						alert(this.flaggedQuestions[questionIndex], "ermi");
 						this.displayQuestionNavigation();
 						this.displayCondensedQuestionNavigation();
-						if (window.app && window.app.currentPdfId) {
+						if (window.app?.currentPdfId) {
 							window.app.databaseManager.storeUserAnswers(
 								window.app.currentPdfId,
 								this.userAnswers,
@@ -579,7 +560,6 @@ class QuizManager {
 				navItem.appendChild(arrowBtn);
 			} else {
 				const dots = document.createElement("span");
-				const className = "pagination-dots";
 				dots.textContent = "...";
 				navItem.appendChild(dots);
 			}
@@ -622,8 +602,8 @@ class QuizManager {
 		pages.push("<");
 		pages.push(1);
 
-		let start = Math.max(2, current - 2);
-		let end = Math.min(total - 1, current + 2);
+		const start = Math.max(2, current - 2);
+		const end = Math.min(total - 1, current + 2);
 
 		if (start > 2) {
 			pages.push("...");
@@ -897,7 +877,9 @@ class QuizManager {
 
 	emit(event, ...args) {
 		if (this.events[event]) {
-			this.events[event].forEach((callback) => callback(...args));
+			this.events[event].forEach((callback) => {
+				callback(...args);
+			});
 		}
 	}
 

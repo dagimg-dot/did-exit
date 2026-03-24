@@ -49,7 +49,7 @@ class App {
 		initializeTheme();
 
 		const { pdfFileName, questionNum, params } = this.parseHashRoute();
-		if (pdfFileName && !isNaN(questionNum) && questionNum > 0) {
+		if (pdfFileName && !Number.isNaN(questionNum) && questionNum > 0) {
 			params.set("question", questionNum);
 			window.history.replaceState(
 				{},
@@ -226,14 +226,15 @@ class App {
 			this.showSection("upload-section");
 			this.ui.clearNotifications();
 			this.quizManager.reset();
-			this.fileUploader.reset();		
-			this.loadRecentExams()
+			this.fileUploader.reset();
+			this.loadRecentExams();
 		});
 
 		window.addEventListener("hashchange", () => {
-			const { pdfFileName, questionNum, params } = this.parseHashRoute();
+			const { _pdfFileName, questionNum, _params } =
+				this.parseHashRoute();
 			if (
-				!isNaN(questionNum) &&
+				!Number.isNaN(questionNum) &&
 				questionNum >= 1 &&
 				questionNum <= this.quizManager.questions.length
 			) {
@@ -518,7 +519,7 @@ class App {
 		);
 
 		if (
-			!isNaN(questionNum) &&
+			!Number.isNaN(questionNum) &&
 			questionNum >= 1 &&
 			questionNum <= this.quizManager.questions.length
 		) {
@@ -592,7 +593,7 @@ class App {
 		);
 
 		if (
-			!isNaN(questionNum) &&
+			!Number.isNaN(questionNum) &&
 			questionNum >= 1 &&
 			questionNum <= this.quizManager.questions.length
 		) {
@@ -715,7 +716,9 @@ class App {
 	showSection(sectionId) {
 		// Hide all sections
 		const sections = document.querySelectorAll(".section");
-		sections.forEach((section) => section.classList.remove("active"));
+		sections.forEach((section) => {
+			section.classList.remove("active");
+		});
 
 		// Show target section
 		const targetSection = document.getElementById(sectionId);
@@ -746,39 +749,107 @@ class App {
 		this.ui.showError(`AI service error: ${error.message}`);
 	}
 
+	/**
+	 * Fetch models for the key and fill #google-ai-model-select.
+	 * @returns {Promise<boolean>} true if the dropdown has usable options
+	 */
+	async refreshModelDropdown(apiKey) {
+		const select = document.getElementById("google-ai-model-select");
+		if (!select || !apiKey) {
+			return false;
+		}
+		select.disabled = true;
+		select.innerHTML = '<option value="">Loading models…</option>';
+		try {
+			const models = await this.aiIntegration.listModels(apiKey);
+			if (models.length === 0) {
+				select.innerHTML =
+					'<option value="">No models available for this key</option>';
+				select.disabled = true;
+				return false;
+			}
+			select.innerHTML = "";
+			for (const m of models) {
+				const opt = document.createElement("option");
+				opt.value = m.id;
+				opt.textContent =
+					m.displayName && m.displayName !== m.id
+						? `${m.displayName} (${m.id})`
+						: m.id;
+				select.appendChild(opt);
+			}
+			const saved = localStorage.getItem("google-ai-model-id");
+			if (saved && models.some((x) => x.id === saved)) {
+				select.value = saved;
+			} else {
+				select.selectedIndex = 0;
+			}
+			select.disabled = false;
+			return true;
+		} catch (error) {
+			console.error("Failed to list models:", error);
+			select.innerHTML =
+				'<option value="">Could not load models</option>';
+			select.disabled = true;
+			return false;
+		}
+	}
+
 	async handleSaveAPIKey() {
 		const apiKeyInput = document.getElementById("api-key-input");
-		const _statusElement = document.getElementById("api-key-status");
 		const saveButton = document.getElementById("save-api-key-btn");
-		const apiKey = apiKeyInput.value.trim();
+		const inputKey = apiKeyInput.value.trim();
+		const storedKey = localStorage.getItem("google-ai-api-key");
+		const apiKey = inputKey || storedKey;
 
 		if (!apiKey) {
 			this.showAPIKeyStatus("Please enter an API key", "error");
 			return;
 		}
 
-		// Show loading state
+		const prevLabel = saveButton.textContent;
 		saveButton.disabled = true;
-		saveButton.textContent = "Testing...";
-		this.showAPIKeyStatus("Testing API key...", "");
+		saveButton.textContent = "Loading…";
+		this.showAPIKeyStatus("Loading models…", "");
 
 		try {
-			// Test the API key
-			const testResult = await this.aiIntegration.testAPIKey(apiKey);
+			const listed = await this.refreshModelDropdown(apiKey);
+			if (!listed) {
+				this.showAPIKeyStatus(
+					"Could not load models. Check the API key and network.",
+					"error",
+				);
+				return;
+			}
+
+			const select = document.getElementById("google-ai-model-select");
+			const modelId = select?.value?.trim();
+			if (!modelId) {
+				this.showAPIKeyStatus(
+					"No model selected. Try again or use another key.",
+					"error",
+				);
+				return;
+			}
+
+			saveButton.textContent = "Testing…";
+			this.showAPIKeyStatus("Testing API key…", "");
+
+			const testResult = await this.aiIntegration.testAPIKey(
+				apiKey,
+				modelId,
+			);
 
 			if (testResult.success) {
-				// Save the API key
-				this.aiIntegration.setAPIKey(apiKey);
+				this.aiIntegration.setAPIKey(apiKey, modelId);
 				this.showAPIKeyStatus(
 					"✅ API key saved and verified!",
 					"success",
 				);
 
-				// Clear the input for security
 				apiKeyInput.value = "";
 				apiKeyInput.placeholder = "API key configured ✓";
 
-				// Hide the config and show collapsed state after a short delay
 				setTimeout(() => {
 					this.hideAPIKeyConfig();
 				}, 1500);
@@ -789,9 +860,8 @@ class App {
 			console.error("API key test error:", error);
 			this.showAPIKeyStatus("❌ Failed to verify API key", "error");
 		} finally {
-			// Reset button state
 			saveButton.disabled = false;
-			saveButton.textContent = "Save Key";
+			saveButton.textContent = prevLabel;
 		}
 	}
 
@@ -825,21 +895,31 @@ class App {
 			expandedSection.style.display = "block";
 			collapsedSection.style.display = "none";
 
-			// Show cancel button if there's an existing API key
 			const existingKey = localStorage.getItem("google-ai-api-key");
 			if (existingKey && cancelButton) {
 				cancelButton.style.display = "inline-flex";
 			}
 
-			// Clear and focus input
 			if (apiKeyInput) {
 				apiKeyInput.value = "";
 				apiKeyInput.placeholder = "Enter your Google AI API key";
 				apiKeyInput.focus();
 			}
 
-			// Clear status
 			this.showAPIKeyStatus("", "");
+
+			if (existingKey) {
+				void this.refreshModelDropdown(existingKey);
+			} else {
+				const select = document.getElementById(
+					"google-ai-model-select",
+				);
+				if (select) {
+					select.innerHTML =
+						'<option value="">Models load when you save the API key</option>';
+					select.disabled = true;
+				}
+			}
 		}
 	}
 
@@ -1072,7 +1152,7 @@ class App {
 			const params = new URLSearchParams();
 
 			if (
-				!isNaN(questionNum) &&
+				!Number.isNaN(questionNum) &&
 				questionNum >= 1 &&
 				questionNum <= this.quizManager.questions.length
 			) {
