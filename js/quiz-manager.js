@@ -29,6 +29,7 @@ class QuizManager {
 		this.nextBtn = document.getElementById("next-btn");
 		this.submitBtn = document.getElementById("submit-quiz-btn");
 		this.resumeBtn = document.getElementById("resume-btn");
+		this.flagQuestionBtn = document.getElementById("flag-question-btn");
 		this.explanationContainer = document.getElementById(
 			"explanation-container",
 		);
@@ -94,6 +95,11 @@ class QuizManager {
 		if (this.resumeBtn) {
 			this.resumeBtn.addEventListener("click", () =>
 				this.navigateToLastAnswered(),
+			);
+		}
+		if (this.flagQuestionBtn) {
+			this.flagQuestionBtn.addEventListener("click", () =>
+				this.toggleFlagCurrentQuestion(),
 			);
 		}
 		this.setupKeydownListener();
@@ -163,6 +169,7 @@ class QuizManager {
 		this.renderOptions(question);
 		this.displayQuestionNavigation();
 		this.displayCondensedQuestionNavigation();
+		this.syncFlagButtonUIFromIndex();
 
 		// If in normal mode and already answered, show the feedback again
 		const currentAnswer = this.userAnswers[this.currentQuestionIndex];
@@ -620,6 +627,10 @@ class QuizManager {
 
 			this.submitBtn.style.display = "none";
 		}
+
+		if (!this.isReviewMode) {
+			this.applyNextNavButtonNormalState();
+		}
 	}
 
 	updateProgress() {
@@ -752,23 +763,32 @@ class QuizManager {
 
 	updateReviewNavigation() {
 		this.prevBtn.disabled = this.currentQuestionIndex === 0;
-		this.nextBtn.disabled =
-			this.currentQuestionIndex === this.questions.length - 1;
 		this.nextBtn.style.display = "inline-flex";
 		this.submitBtn.style.display = "none";
 
-		// Update button text for review mode
 		if (this.currentQuestionIndex === this.questions.length - 1) {
-			this.nextBtn.textContent = "Finish Review";
+			this.nextBtn.innerHTML =
+				'<i data-lucide="circle-check" aria-hidden="true"></i>';
+			this.nextBtn.setAttribute(
+				"aria-label",
+				"Finish review and return to results",
+			);
+			this.nextBtn.setAttribute("data-tip", "Finish review");
 			this.nextBtn.disabled = false;
 			this.nextBtn.onclick = () => {
-				// Return to results
 				window.app.showSection("results-section");
 			};
 		} else {
-			this.nextBtn.textContent = "Next";
+			this.nextBtn.innerHTML =
+				'<i data-lucide="chevron-right" aria-hidden="true"></i>';
+			this.nextBtn.setAttribute("aria-label", "Next question");
+			this.nextBtn.setAttribute("data-tip", "Next question");
+			this.nextBtn.disabled = false;
 			this.nextBtn.onclick = () => this.nextQuestion();
 		}
+
+		this.refreshQuizControlIcons();
+		this.syncFlagButtonUIFromIndex();
 	}
 
 	reset() {
@@ -803,8 +823,14 @@ class QuizManager {
 		this.prevBtn.disabled = true;
 		this.nextBtn.disabled = true;
 		this.nextBtn.style.display = "inline-flex";
-		this.nextBtn.textContent = "Next";
+		this.nextBtn.innerHTML =
+			'<i data-lucide="chevron-right" aria-hidden="true"></i>';
+		this.nextBtn.setAttribute("aria-label", "Next question");
+		this.nextBtn.setAttribute("data-tip", "Next question");
+		this.nextBtn.onclick = null;
 		this.submitBtn.style.display = "none";
+		this.syncFlagButtonUIFromIndex();
+		this.refreshQuizControlIcons();
 	}
 
 	// Add questions dynamically (for batch processing)
@@ -976,6 +1002,61 @@ class QuizManager {
 			this.currentQuestionIndex !== lastAnsweredIndex;
 
 		this.resumeBtn.style.display = shouldShow ? "inline-flex" : "none";
+	}
+
+	refreshQuizControlIcons() {
+		if (typeof lucide === "undefined") return;
+		const root = document.querySelector(".quiz-controls");
+		if (root && typeof lucide.createIcons === "function") {
+			try {
+				lucide.createIcons({ root });
+			} catch {
+				lucide.createIcons();
+			}
+		} else {
+			lucide.createIcons();
+		}
+	}
+
+	syncFlagButtonUIFromIndex() {
+		if (!this.flagQuestionBtn) return;
+		if (!this.questions.length) {
+			this.flagQuestionBtn.classList.remove("is-flagged");
+			this.flagQuestionBtn.setAttribute("aria-pressed", "false");
+			return;
+		}
+		const flagged = !!this.flaggedQuestions[this.currentQuestionIndex];
+		this.flagQuestionBtn.classList.toggle("is-flagged", flagged);
+		this.flagQuestionBtn.setAttribute(
+			"aria-pressed",
+			flagged ? "true" : "false",
+		);
+	}
+
+	toggleFlagCurrentQuestion() {
+		if (!this.questions.length) return;
+		this.flaggedQuestions[this.currentQuestionIndex] =
+			!this.flaggedQuestions[this.currentQuestionIndex];
+		this.syncFlagButtonUIFromIndex();
+		this.displayQuestionNavigation();
+		this.displayCondensedQuestionNavigation();
+		if (window.app?.currentPdfId) {
+			window.app.databaseManager.storeUserAnswers(
+				window.app.currentPdfId,
+				this.userAnswers,
+				this.flaggedQuestions,
+			);
+		}
+	}
+
+	applyNextNavButtonNormalState() {
+		if (this.isReviewMode) return;
+		this.nextBtn.innerHTML =
+			'<i data-lucide="chevron-right" aria-hidden="true"></i>';
+		this.nextBtn.setAttribute("aria-label", "Next question");
+		this.nextBtn.setAttribute("data-tip", "Next question");
+		this.nextBtn.onclick = null;
+		this.refreshQuizControlIcons();
 	}
 }
 

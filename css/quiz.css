@@ -47,6 +47,7 @@
 .quiz-layout {
 	display: flex;
 	gap: 2rem;
+	align-items: stretch;
 }
 
 .nav-list {
@@ -136,6 +137,12 @@
 	padding: 2.5rem;
 	box-shadow: var(--shadow);
 	margin-bottom: 2rem;
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	min-width: 0;
+	/* Stable frame: short questions don’t collapse the card */
+	min-height: clamp(22rem, 52vh, 42rem);
 }
 
 #question-text {
@@ -244,11 +251,98 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	gap: 1rem;
+	gap: 0.75rem;
+	flex-wrap: wrap;
 }
 
-.quiz-controls .btn {
-	min-width: 120px;
+.quiz-controls__start,
+.quiz-controls__end {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-shrink: 0;
+}
+
+.quiz-controls__center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.quiz-controls .btn-icon {
+	min-width: 2.5rem;
+	width: 2.5rem;
+	height: 2.5rem;
+	padding: 0;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.quiz-controls .btn-icon .lucide {
+	width: 1.25rem;
+	height: 1.25rem;
+	stroke-width: 2;
+}
+
+.quiz-controls .btn-icon--submit {
+	min-width: 2.75rem;
+	width: 2.75rem;
+}
+
+.quiz-controls .btn-icon--submit .lucide {
+	width: 1.35rem;
+	height: 1.35rem;
+}
+
+.quiz-controls .btn-icon.is-flagged {
+	background: var(--color-accent-glow);
+	border-color: var(--primary-color);
+	color: var(--primary-color);
+}
+
+.quiz-controls button[data-tip] {
+	position: relative;
+	z-index: 0;
+	overflow: visible;
+}
+
+.quiz-controls button[data-tip]:hover,
+.quiz-controls button[data-tip]:focus-visible {
+	z-index: 2;
+}
+
+.quiz-controls button[data-tip]:hover::after,
+.quiz-controls button[data-tip]:focus-visible::after {
+	content: attr(data-tip);
+	position: absolute;
+	bottom: calc(100% + 8px);
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 0.4rem 0.6rem;
+	font-family: var(--font-sans);
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.25;
+	letter-spacing: 0.02em;
+	text-align: center;
+	max-width: 12rem;
+	white-space: normal;
+	-webkit-font-smoothing: antialiased;
+	color: var(--color-text);
+	background: var(--color-surface-2);
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	box-shadow: var(--shadow);
+	pointer-events: none;
+}
+
+.question-card > .quiz-controls {
+	margin-top: auto;
+	padding-top: 1.5rem;
 }
 
 /* Results Styles */
@@ -493,8 +587,9 @@
 
 /* Responsive Design for Quiz */
 @media (max-width: 768px) {
-	.question-card {
+	.quiz-layout .question-card {
 		padding: 2rem 1.5rem;
+		min-height: clamp(18rem, 48vh, 36rem);
 	}
 
 	#question-text {
@@ -510,13 +605,21 @@
 	}
 
 	.quiz-controls {
-		flex-direction: column;
-		gap: 0.75rem;
+		flex-wrap: nowrap;
+		gap: 0.35rem;
 	}
 
-	.quiz-controls .btn {
-		width: 100%;
-		min-width: auto;
+	.quiz-controls__center {
+		flex: 1 1 auto;
+		justify-content: center;
+		gap: 0.35rem;
+		min-width: 0;
+	}
+
+	.quiz-controls .btn-icon {
+		width: 2.4rem;
+		min-width: 2.4rem;
+		height: 2.4rem;
 	}
 
 	.results-actions {
@@ -541,8 +644,9 @@
 }
 
 @media (max-width: 480px) {
-	.question-card {
+	.quiz-layout .question-card {
 		padding: 1.5rem 1rem;
+		min-height: clamp(16rem, 44vh, 32rem);
 	}
 
 	.results-header {

@@ -388,38 +388,77 @@
 									></ul>
 								</div>
 								<div class="quiz-controls">
-									<button
-										id="prev-btn"
-										class="btn btn-secondary"
-										disabled
-										type="button"
-									>
-										Previous
-									</button>
-									<button
-										id="resume-btn"
-										class="btn btn-primary"
-										style="display: none;"
-										type="button"
-									>
-										Resume
-									</button>
-									<button
-										id="next-btn"
-										class="btn btn-primary"
-										disabled
-										type="button"
-									>
-										Next
-									</button>
-									<button
-										id="submit-quiz-btn"
-										class="btn btn-success"
-										style="display: none;"
-										type="button"
-									>
-										Submit Quiz
-									</button>
+									<div class="quiz-controls__start">
+										<button
+											id="prev-btn"
+											class="btn btn-secondary btn-icon"
+											type="button"
+											disabled
+											data-tip="Previous question"
+											aria-label="Previous question"
+										>
+											<i
+												data-lucide="chevron-left"
+												aria-hidden="true"
+											></i>
+										</button>
+									</div>
+									<div class="quiz-controls__center">
+										<button
+											id="resume-btn"
+											class="btn btn-primary btn-icon"
+											style="display: none;"
+											type="button"
+											data-tip="Jump to last answered question"
+											aria-label="Resume at last answered question"
+										>
+											<i
+												data-lucide="chevrons-right"
+												aria-hidden="true"
+											></i>
+										</button>
+										<button
+											id="flag-question-btn"
+											class="btn btn-secondary btn-icon"
+											type="button"
+											data-tip="Flag for review"
+											aria-label="Flag this question for review"
+											aria-pressed="false"
+										>
+											<i
+												data-lucide="flag"
+												aria-hidden="true"
+											></i>
+										</button>
+									</div>
+									<div class="quiz-controls__end">
+										<button
+											id="next-btn"
+											class="btn btn-primary btn-icon"
+											type="button"
+											disabled
+											data-tip="Next question"
+											aria-label="Next question"
+										>
+											<i
+												data-lucide="chevron-right"
+												aria-hidden="true"
+											></i>
+										</button>
+										<button
+											id="submit-quiz-btn"
+											class="btn btn-success btn-icon btn-icon--submit"
+											style="display: none;"
+											type="button"
+											data-tip="Submit quiz"
+											aria-label="Submit quiz"
+										>
+											<i
+												data-lucide="circle-check"
+												aria-hidden="true"
+											></i>
+										</button>
+									</div>
 								</div>
 							</div>
 						</div>
