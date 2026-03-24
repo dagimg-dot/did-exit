@@ -309,20 +309,34 @@
 					</div>
 
 					<div class="quiz-container">
-						<div class="quiz-mode-selector">
-							<span id="exam-mode-label">Exam Mode</span>
-							<label class="switch">
-								<input type="checkbox" id="quiz-mode-toggle" >
-								<span class="slider round"></span>
-							</label>
-							<span id="instant-feedback-label"
-								>Instant Feedback</span
-							>
-						</div>
 						<div class="quiz-layout">
 							<div class="question-nav" id="question-nav">
-								<h3>Question Navigation</h3>
-								<p>Click on a question to jump to it</p>
+								<div class="question-nav__head">
+									<div class="question-nav__intro">
+										<h3>Question Navigation</h3>
+										<p>Click on a question to jump to it</p>
+									</div>
+									<div
+										class="question-nav__mode-row"
+										data-tip="On: instant feedback after each answer.&#10;Off: exam mode — no explanations until you finish."
+									>
+										<span
+											class="question-nav__mode-label"
+											id="quiz-mode-label"
+											>Mode</span
+										>
+										<label
+											class="switch question-nav__switch"
+										>
+											<input
+												type="checkbox"
+												id="quiz-mode-toggle"
+												aria-labelledby="quiz-mode-label"
+											>
+											<span class="slider round"></span>
+										</label>
+									</div>
+								</div>
 								<ul class="nav-list" id="nav-list"></ul>
 								<div class="nav-legend">
 									<div class="legend-item">

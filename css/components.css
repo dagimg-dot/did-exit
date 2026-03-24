@@ -1364,6 +1364,6 @@
 	color: var(--text-primary);
 }
 
-.dark-theme .quiz-mode-selector .slider {
+.dark-theme .question-nav__mode-row .slider {
 	background-color: var(--tb-800);
 }
