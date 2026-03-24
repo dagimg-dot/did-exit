@@ -17,6 +17,139 @@ body {
 	-webkit-font-smoothing: antialiased;
 }
 
+/* ─── Page atmosphere: dot grid + glows + halftone (landing + quiz/results) ─── */
+html.dark-theme body.view-landing,
+html.light-theme body.view-landing,
+html.dark-theme body.view-quiz,
+html.light-theme body.view-quiz {
+	position: relative;
+	isolation: isolate;
+}
+
+html.dark-theme body.view-landing::before,
+html.dark-theme body.view-quiz::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -2;
+	pointer-events: none;
+	background-color: var(--background-color);
+	background-image: radial-gradient(
+			ellipse 130% 90% at 8% -5%,
+			rgba(232, 101, 75, 0.28),
+			transparent 52%
+		),
+		radial-gradient(
+			ellipse 100% 75% at 92% 8%,
+			rgba(242, 140, 119, 0.17),
+			transparent 48%
+		),
+		radial-gradient(
+			ellipse 110% 70% at 50% 105%,
+			rgba(212, 74, 46, 0.2),
+			transparent 55%
+		),
+		radial-gradient(
+			ellipse 55% 45% at 78% 55%,
+			rgba(232, 101, 75, 0.11),
+			transparent 42%
+		),
+		radial-gradient(
+			circle at 1px 1px,
+			rgba(253, 245, 243, 0.078) 1px,
+			transparent 0
+		);
+	background-size:
+		auto,
+		auto,
+		auto,
+		auto,
+		20px 20px;
+}
+
+html.dark-theme body.view-landing::after,
+html.dark-theme body.view-quiz::after {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	opacity: 0.54;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cdefs%3E%3Cpattern id='h' width='7' height='7' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='1.5' cy='1.5' r='1.15' fill='%23f28c77' fill-opacity='0.45'/%3E%3C/pattern%3E%3C/defs%3E%3Cellipse cx='115' cy='155' rx='125' ry='105' fill='url(%23h)'/%3E%3C/svg%3E"),
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cdefs%3E%3Cpattern id='h2' width='7' height='7' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='1.5' cy='1.5' r='1.15' fill='%23e8654b' fill-opacity='0.4'/%3E%3C/pattern%3E%3C/defs%3E%3Cellipse cx='130' cy='85' rx='118' ry='95' fill='url(%23h2)'/%3E%3C/svg%3E");
+	background-size:
+		min(52vw, 420px) auto,
+		min(48vw, 380px) auto;
+	background-position:
+		left -8% bottom -12%,
+		right -5% top -18%;
+	background-repeat: no-repeat;
+	mix-blend-mode: screen;
+	filter: saturate(1.12);
+}
+
+html.light-theme body.view-landing::before,
+html.light-theme body.view-quiz::before {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -2;
+	pointer-events: none;
+	background-color: var(--background-color);
+	background-image: radial-gradient(
+			ellipse 120% 80% at 12% 0%,
+			rgba(212, 74, 46, 0.14),
+			transparent 50%
+		),
+		radial-gradient(
+			ellipse 90% 70% at 88% 100%,
+			rgba(248, 182, 169, 0.55),
+			transparent 55%
+		),
+		radial-gradient(
+			circle at 1px 1px,
+			rgba(123, 48, 33, 0.125) 1px,
+			transparent 0
+		);
+	background-size:
+		auto,
+		auto,
+		16px 16px;
+}
+
+/* Light: soft halftone accents (multiply reads on cream) */
+html.light-theme body.view-landing::after,
+html.light-theme body.view-quiz::after {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	opacity: 0.38;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cdefs%3E%3Cpattern id='hl' width='7' height='7' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='1.5' cy='1.5' r='1.1' fill='%23d44a2e' fill-opacity='0.35'/%3E%3C/pattern%3E%3C/defs%3E%3Cellipse cx='115' cy='160' rx='120' ry='100' fill='url(%23hl)'/%3E%3C/svg%3E"),
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cdefs%3E%3Cpattern id='hl2' width='7' height='7' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='1.5' cy='1.5' r='1.1' fill='%23b93d24' fill-opacity='0.3'/%3E%3C/pattern%3E%3C/defs%3E%3Cellipse cx='125' cy='80' rx='115' ry='90' fill='url(%23hl2)'/%3E%3C/svg%3E");
+	background-size:
+		min(50vw, 400px) auto,
+		min(44vw, 340px) auto;
+	background-position:
+		left -6% bottom -10%,
+		right -4% top -15%;
+	background-repeat: no-repeat;
+	mix-blend-mode: multiply;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html.dark-theme body.view-landing::after,
+	html.dark-theme body.view-quiz::after {
+		opacity: 0.32;
+	}
+
+	html.light-theme body.view-landing::after,
+	html.light-theme body.view-quiz::after {
+		opacity: 0.22;
+	}
+}
+
 .container {
 	display: none;
 	max-width: 1120px;
