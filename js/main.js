@@ -220,14 +220,15 @@ class App {
 		});
 
 		document.getElementById("Home").addEventListener("click", () => {
-			console.log("[UI] Home button clicked, going to upload section.");
-			window.history.replaceState({}, "", "/");
-			this.showSection("upload-section");
-			this.ui.clearNotifications();
-			this.quizManager.reset();
-			this.fileUploader.reset();
-			this.loadRecentExams();
-			this.updateEngineCardStatus();
+			this.goToLanding();
+		});
+
+		document.querySelector(".site-logo")?.addEventListener("click", (e) => {
+			if (e.defaultPrevented) return;
+			if (e.button !== 0) return;
+			if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+			e.preventDefault();
+			this.goToLanding();
 		});
 
 		window.addEventListener("hashchange", () => {
@@ -711,6 +712,17 @@ class App {
 		this.ui.clearNotifications();
 		this.loadRecentExams(); // Refresh recent exams
 		this.showSection("upload-section");
+	}
+
+	/** Same navigation as the Home icon: landing + reset quiz/upload UI */
+	goToLanding() {
+		window.history.replaceState({}, "", "/");
+		this.showSection("upload-section");
+		this.ui.clearNotifications();
+		this.quizManager.reset();
+		this.fileUploader.reset();
+		this.loadRecentExams();
+		this.updateEngineCardStatus();
 	}
 
 	showSection(sectionId) {

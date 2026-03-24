@@ -62,7 +62,7 @@ body {
 	--site-header-control-h: 2.75rem;
 }
 
-/* Same visual height: Go Home, GitHub, Light/Dark */
+/* Header actions: text buttons; home is icon-only */
 .site-header__actions > .btn {
 	min-height: var(--site-header-control-h);
 	height: var(--site-header-control-h);
@@ -71,6 +71,19 @@ body {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+}
+
+.site-header__actions > .btn.site-header__home-btn {
+	width: var(--site-header-control-h);
+	min-width: var(--site-header-control-h);
+	padding: 0;
+	border-radius: var(--radius-pill);
+}
+
+.site-header__home-btn .lucide {
+	width: 1.15rem;
+	height: 1.15rem;
+	stroke-width: 2;
 }
 
 .site-header__actions .theme-switcher {
@@ -86,14 +99,12 @@ body {
 	box-sizing: border-box;
 }
 
-.site-header__actions .theme-switcher .theme-toggle-btn {
+.site-header__actions .theme-switcher .theme-toggle-single {
+	width: var(--site-header-control-h);
 	height: var(--site-header-control-h);
+	min-width: var(--site-header-control-h);
 	min-height: var(--site-header-control-h);
-	padding: 0 0.9rem;
 	box-sizing: border-box;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
 }
 
 .btn-text {
@@ -628,10 +639,10 @@ body.view-quiz .site-header {
 		gap: 0.25rem;
 	}
 
-	.site-header__actions .theme-switcher .theme-toggle-btn {
-		padding: 0 0.4rem;
-		font-size: 0.62rem;
-		letter-spacing: 0.02em;
+	.site-header__actions .theme-switcher .theme-toggle-single {
+		width: var(--site-header-control-h);
+		height: var(--site-header-control-h);
+		min-width: var(--site-header-control-h);
 	}
 }
 
@@ -654,8 +665,9 @@ body.view-quiz .site-header {
 		font-size: 0.65rem;
 	}
 
-	.site-header__actions .theme-switcher .theme-toggle-btn {
-		padding: 0 0.32rem;
-		font-size: 0.58rem;
+	.site-header__actions .theme-switcher .theme-toggle-single {
+		width: var(--site-header-control-h);
+		height: var(--site-header-control-h);
+		min-width: var(--site-header-control-h);
 	}
 }

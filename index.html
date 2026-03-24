@@ -33,16 +33,17 @@
 		<div class="container">
 			<header class="site-header">
 				<div class="site-header__brand">
-					<a href="#landing-upload" class="site-logo">Did Exit</a>
+					<a href="/" class="site-logo">Did Exit</a>
 				</div>
 				<div class="site-header__actions">
 					<button
 						id="Home"
-						class="btn btn-secondary"
+						class="btn btn-secondary site-header__home-btn"
 						style="display:none;"
 						type="button"
+						aria-label="Go home"
 					>
-						Go Home
+						<i data-lucide="home" aria-hidden="true"></i>
 					</button>
 					<div class="theme-switcher">
 						<a
@@ -66,18 +67,12 @@
 							</svg>
 						</a>
 						<button
-							id="theme-light"
-							class="theme-toggle-btn"
+							id="theme-toggle"
+							class="theme-toggle-single"
 							type="button"
+							aria-label="Switch to light mode"
 						>
-							Light
-						</button>
-						<button
-							id="theme-dark"
-							class="theme-toggle-btn"
-							type="button"
-						>
-							Dark
+							<i data-lucide="sun" aria-hidden="true"></i>
 						</button>
 					</div>
 				</div>

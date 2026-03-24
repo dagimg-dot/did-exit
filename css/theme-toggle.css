@@ -35,39 +35,33 @@
 	display: block;
 }
 
-.theme-switcher .theme-toggle-btn {
-	background: var(--color-surface-2);
+.theme-switcher .theme-toggle-single {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	min-width: 2.75rem;
+	padding: 0;
 	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	background: var(--color-surface-2);
 	color: var(--color-text-muted);
-	padding: 0.45rem 0.75rem;
 	cursor: pointer;
 	transition:
 		background-color 0.2s,
 		color 0.2s,
 		border-color 0.2s;
-	font-family: var(--font-sans);
-	font-size: 0.75rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
 }
 
-.theme-switcher .theme-toggle-btn:first-of-type {
-	border-radius: var(--radius-pill) 0 0 var(--radius-pill);
-}
-
-.theme-switcher .theme-toggle-btn:last-of-type {
-	border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
-	margin-left: -1px;
-}
-
-.theme-switcher .theme-toggle-btn:hover {
+.theme-switcher .theme-toggle-single:hover {
 	color: var(--color-text);
 	border-color: var(--color-border-strong);
+	background: var(--color-surface-2);
 }
 
-.theme-switcher .theme-toggle-btn.active {
-	background: var(--color-accent);
-	color: #fff;
-	border-color: var(--color-accent);
+.theme-switcher .theme-toggle-single .lucide {
+	width: 1.15rem;
+	height: 1.15rem;
+	stroke-width: 2;
 }

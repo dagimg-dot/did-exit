@@ -1,8 +1,4 @@
-const themeButtons = {
-	light: document.getElementById("theme-light"),
-	dark: document.getElementById("theme-dark"),
-	system: document.getElementById("theme-system"),
-};
+const themeToggleBtn = document.getElementById("theme-toggle");
 
 function applyTheme(theme) {
 	if (theme === "dark") {
@@ -16,40 +12,57 @@ function applyTheme(theme) {
 	}
 }
 
-function updateActiveButton(theme) {
-	for (const key in themeButtons) {
-		if (themeButtons[key]) {
-			themeButtons[key].classList.toggle("active", key === theme);
+/** Sun when dark (tap → light); moon when light (tap → dark). */
+function updateThemeToggleUI() {
+	if (!themeToggleBtn) return;
+
+	const isDark = document.documentElement.classList.contains("dark-theme");
+	const iconName = isDark ? "sun" : "moon";
+	const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+
+	themeToggleBtn.setAttribute("aria-label", label);
+	themeToggleBtn.setAttribute("title", label);
+
+	let icon = themeToggleBtn.querySelector("[data-lucide]");
+	if (!icon) {
+		icon = document.createElement("i");
+		icon.setAttribute("aria-hidden", "true");
+		themeToggleBtn.appendChild(icon);
+	}
+	icon.setAttribute("data-lucide", iconName);
+
+	if (typeof lucide !== "undefined") {
+		try {
+			lucide.createIcons({ root: themeToggleBtn });
+		} catch {
+			lucide.createIcons();
 		}
 	}
+}
+
+function normalizeTheme(value) {
+	if (value === "light" || value === "dark") return value;
+	return "dark";
 }
 
 function handleThemeSelection(selectedTheme) {
-	localStorage.setItem("theme", selectedTheme);
-	applyTheme(selectedTheme);
-	updateActiveButton(selectedTheme);
+	const theme = normalizeTheme(selectedTheme);
+	localStorage.setItem("theme", theme);
+	applyTheme(theme);
+	updateThemeToggleUI();
 }
 
 export function initializeTheme() {
-	const savedTheme = localStorage.getItem("theme") || "dark";
+	const savedTheme = normalizeTheme(localStorage.getItem("theme"));
 
-	for (const key in themeButtons) {
-		if (themeButtons[key]) {
-			themeButtons[key].addEventListener("click", () =>
-				handleThemeSelection(key),
-			);
-		}
+	if (themeToggleBtn) {
+		themeToggleBtn.addEventListener("click", () => {
+			const isDark =
+				document.documentElement.classList.contains("dark-theme");
+			handleThemeSelection(isDark ? "light" : "dark");
+		});
 	}
 
-	// Initial theme application
 	applyTheme(savedTheme);
-	updateActiveButton(savedTheme);
-
-	// The listener for system theme changes is not needed, as the browser
-	// now handles this automatically via the corrected CSS media queries.
-	// window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-	//     if (localStorage.getItem('theme') === 'system') {
-	//         applyTheme(e.matches ? 'dark' : 'light');
-	//     }
-	// });
+	updateThemeToggleUI();
 }
