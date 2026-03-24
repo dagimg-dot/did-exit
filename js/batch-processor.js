@@ -1,4 +1,21 @@
 // Batch Processing Manager for Progressive PDF Question Extraction with AI
+
+/** API/auth/quota failures: stop all batches and surface the real error (do not silently continue). */
+function isFatalAIError(error) {
+	const m = (error?.message || String(error)).toLowerCase();
+	return (
+		/\b429\b/.test(m) ||
+		(m.includes("quota") &&
+			(m.includes("exceed") || m.includes("exceeded"))) ||
+		/\b403\b/.test(m) ||
+		/\b401\b/.test(m) ||
+		m.includes("invalid api key") ||
+		m.includes("api_key_invalid") ||
+		m.includes("permission denied") ||
+		m.includes("billing")
+	);
+}
+
 class BatchProcessor {
 	constructor(aiIntegration, databaseManager) {
 		this.ai = aiIntegration;
@@ -9,6 +26,7 @@ class BatchProcessor {
 		this.rateLimitDelay = 5000; // 5 seconds between requests (12 RPM)
 		this.abortController = null;
 		this.currentOperation = null;
+		this._stoppedDueToFatalError = false;
 	}
 
 	// Simplified chunking for AI processing
@@ -160,8 +178,31 @@ class BatchProcessor {
 		return chunks;
 	}
 
+	/** Remove PDF row if no questions were stored (cancel / failure on first batch). */
+	async discardProvisionalPdf(pdfId) {
+		if (!pdfId) {
+			return;
+		}
+		try {
+			const questions = await this.db.getQuestions(pdfId);
+			if (questions?.length > 0) {
+				return;
+			}
+			await this.db.deletePDFAndQuestions(pdfId);
+			console.log(
+				`🧹 Discarded provisional PDF (0 questions): ${pdfId.substring(0, 10)}…`,
+			);
+			this.emit("provisionalPdfDiscarded", { pdfId });
+		} catch (err) {
+			console.error("discardProvisionalPdf:", err);
+		}
+	}
+
 	// Main Processing Method - Simplified AI-only approach
 	async processPDFInBatches(pdfFile, textContent) {
+		let pdfId = null;
+		let provisionalPdfStored = false;
+
 		try {
 			console.log(
 				`processPDFInBatches: called with pdfFile.name=${pdfFile.name}, size=${pdfFile.size}, contentType=${Array.isArray(textContent) ? "images" : "text"}`,
@@ -181,7 +222,7 @@ class BatchProcessor {
 			);
 
 			// Generate PDF ID and check cache (support text and image-based PDFs)
-			const pdfId = Array.isArray(textContent)
+			pdfId = Array.isArray(textContent)
 				? await this.db.generatePDFHash(
 						`${pdfFile.name}-${pdfFile.size}`,
 					)
@@ -247,6 +288,7 @@ class BatchProcessor {
 				batchCount: totalBatches,
 				completedBatches: 0,
 			});
+			provisionalPdfStored = true;
 
 			// Process first chunk immediately with AI
 			console.log(`⚡ Processing first batch with AI...`);
@@ -263,6 +305,7 @@ class BatchProcessor {
 
 			if (this.abortController?.signal.aborted) {
 				console.log("🛑 Processing cancelled during first batch");
+				await this.discardProvisionalPdf(pdfId);
 				return null;
 			}
 
@@ -305,14 +348,25 @@ class BatchProcessor {
 					questions: firstBatchQuestions,
 					fromCache: false,
 				};
-			} else {
-				throw new Error(
-					"First batch generated no questions. The content might not contain extractable questions.",
-				);
 			}
+
+			if (
+				this.abortController?.signal.aborted ||
+				firstBatchQuestions == null
+			) {
+				await this.discardProvisionalPdf(pdfId);
+				return null;
+			}
+
+			throw new Error(
+				"First batch generated no questions. The content might not contain extractable questions.",
+			);
 		} catch (error) {
 			console.error("Batch processing error:", error);
-			this.emit("processingError", error);
+			if (provisionalPdfStored && pdfId) {
+				await this.discardProvisionalPdf(pdfId);
+			}
+			// Caller (e.g. handleTextExtracted) handles UI; background fatals use emit only
 			throw error;
 		}
 	}
@@ -388,7 +442,13 @@ class BatchProcessor {
 				error,
 			);
 
-			// Return empty array instead of throwing to allow other batches to continue
+			if (isFatalAIError(error)) {
+				this.processingQueue = [];
+				this.isProcessing = false;
+				throw error;
+			}
+
+			// Non-fatal: return empty array so other batches can continue
 			return [];
 		}
 	}
@@ -572,6 +632,13 @@ ${chunk.content}`;
 					}
 				}
 			} catch (error) {
+				if (isFatalAIError(error)) {
+					this.processingQueue = [];
+					this._stoppedDueToFatalError = true;
+					this.emit("processingError", error);
+					break;
+				}
+
 				console.error(
 					`Error processing background batch ${item.chunk.batchNumber}:`,
 					error,
@@ -644,6 +711,12 @@ ${chunk.content}`;
 		}
 
 		this.isProcessing = false;
+
+		if (this._stoppedDueToFatalError) {
+			this._stoppedDueToFatalError = false;
+			console.log("🛑 Background processing halted after API error");
+			return;
+		}
 
 		if (this.abortController?.signal.aborted) {
 			console.log("🛑 Background processing cancelled");

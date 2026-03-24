@@ -562,14 +562,32 @@
 				id="processing-indicator"
 				class="processing-indicator"
 				style="display: none;"
+				data-state=""
 			>
 				<div class="processing-content">
-					<div class="processing-spinner"></div>
+					<div
+						id="processing-spinner"
+						class="processing-spinner"
+						aria-hidden="true"
+					></div>
 					<div class="processing-text">
-						<span id="processing-message"
-							>Processing questions in background...</span
+						<div class="processing-top-row">
+							<span id="processing-message"
+								>Processing questions in background...</span
+							>
+							<button
+								type="button"
+								id="processing-indicator-action"
+								class="processing-indicator-action"
+								aria-label="Stop extraction"
+							>
+								Stop
+							</button>
+						</div>
+						<div
+							id="processing-progress-row"
+							class="processing-progress"
 						>
-						<div class="processing-progress">
 							<div class="processing-progress-bar">
 								<div
 									id="processing-progress-fill"

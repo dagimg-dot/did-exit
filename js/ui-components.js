@@ -505,13 +505,77 @@ class UIComponents {
 		completed,
 		total,
 		message = "Processing questions in background...",
+		options = {},
 	) {
+		const showStop = options.showStop !== false;
 		const indicator = document.getElementById("processing-indicator");
 		if (!indicator) return;
 
 		indicator.style.display = "flex";
-		document.getElementById("processing-message").textContent = message;
+		indicator.classList.remove("processing-indicator--error");
+		indicator.classList.add("processing-indicator--loading");
+		indicator.dataset.state = "loading";
+
+		const spinner = document.getElementById("processing-spinner");
+		if (spinner) {
+			spinner.style.display = "";
+			spinner.setAttribute("aria-hidden", "true");
+		}
+
+		const progRow = document.getElementById("processing-progress-row");
+		if (progRow) {
+			progRow.style.display = "";
+		}
+
+		const action = document.getElementById("processing-indicator-action");
+		if (action) {
+			if (showStop) {
+				action.hidden = false;
+				action.textContent = "Stop";
+				action.setAttribute("aria-label", "Stop extraction");
+			} else {
+				action.hidden = true;
+			}
+		}
+
+		const msgEl = document.getElementById("processing-message");
+		if (msgEl) {
+			msgEl.textContent = message;
+		}
 		this.updateProgressIndicator(completed, total);
+	}
+
+	/** Show API / quota failure in the same panel (spinner off, Dismiss to close). */
+	setProgressIndicatorError(message) {
+		const indicator = document.getElementById("processing-indicator");
+		if (!indicator) return;
+
+		indicator.style.display = "flex";
+		indicator.classList.remove("processing-indicator--loading");
+		indicator.classList.add("processing-indicator--error");
+		indicator.dataset.state = "error";
+
+		const spinner = document.getElementById("processing-spinner");
+		if (spinner) {
+			spinner.style.display = "none";
+		}
+
+		const progRow = document.getElementById("processing-progress-row");
+		if (progRow) {
+			progRow.style.display = "none";
+		}
+
+		const msgEl = document.getElementById("processing-message");
+		if (msgEl) {
+			msgEl.textContent = message;
+		}
+
+		const action = document.getElementById("processing-indicator-action");
+		if (action) {
+			action.hidden = false;
+			action.textContent = "Dismiss";
+			action.setAttribute("aria-label", "Dismiss");
+		}
 	}
 
 	updateProgressIndicator(completed, total, message) {
@@ -533,8 +597,30 @@ class UIComponents {
 
 	hideProgressIndicator() {
 		const indicator = document.getElementById("processing-indicator");
-		if (indicator) {
-			indicator.style.display = "none";
+		if (!indicator) {
+			return;
+		}
+		indicator.style.display = "none";
+		indicator.classList.remove(
+			"processing-indicator--error",
+			"processing-indicator--loading",
+		);
+		indicator.dataset.state = "";
+
+		const spinner = document.getElementById("processing-spinner");
+		if (spinner) {
+			spinner.style.display = "";
+		}
+
+		const progRow = document.getElementById("processing-progress-row");
+		if (progRow) {
+			progRow.style.display = "";
+		}
+
+		const action = document.getElementById("processing-indicator-action");
+		if (action) {
+			action.textContent = "Stop";
+			action.setAttribute("aria-label", "Stop extraction");
 		}
 	}
 

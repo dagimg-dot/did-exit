@@ -96,7 +96,9 @@ class App {
 			this.handleSyncedData.bind(this),
 		);
 		this.p2pSyncManager.on("syncStart", () =>
-			this.ui.showProgressIndicator(0, 1, "Starting sync..."),
+			this.ui.showProgressIndicator(0, 1, "Starting sync...", {
+				showStop: false,
+			}),
 		);
 		this.p2pSyncManager.on("sendingProgress", ({ current, total }) =>
 			this.ui.updateProgressIndicator(
@@ -188,6 +190,10 @@ class App {
 			this.handleProcessingCancelled.bind(this),
 		);
 		this.batchProcessor.on(
+			"provisionalPdfDiscarded",
+			this.handleProvisionalPdfDiscarded.bind(this),
+		);
+		this.batchProcessor.on(
 			"processingError",
 			this.handleProcessingError.bind(this),
 		);
@@ -217,6 +223,17 @@ class App {
 		document
 			.getElementById("cancel-processing-btn")
 			.addEventListener("click", this.cancelProcessing.bind(this));
+
+		document
+			.getElementById("processing-indicator-action")
+			?.addEventListener("click", () => {
+				const ind = document.getElementById("processing-indicator");
+				if (ind?.dataset.state === "error") {
+					this.ui.hideProgressIndicator();
+				} else {
+					this.cancelProcessing();
+				}
+			});
 
 		document.getElementById("receive-btn").addEventListener("click", () => {
 			console.log("[UI] 'Receive an exam' clicked.");
@@ -502,19 +519,28 @@ class App {
 		}
 	}
 
+	handleProvisionalPdfDiscarded(_event) {
+		this.currentPdfId = null;
+		void this.loadRecentExams();
+	}
+
 	handleProcessingCancelled(event) {
 		console.log("🛑 Processing was cancelled:", event);
 		this.ui.hideLoading();
+		this.ui.hideProgressIndicator();
+		this.currentPdfId = null;
 		this.ui.showNotification(
 			"Processing cancelled. You can upload a new PDF.",
 			"info",
 		);
+		void this.loadRecentExams();
 	}
 
 	cancelProcessing() {
 		console.log("🛑 User requested to cancel processing");
-		this.batchProcessor.cancel();
+		this.batchProcessor.cancelProcessing();
 		this.ui.hideLoading();
+		this.ui.hideProgressIndicator();
 	}
 
 	async startQuiz() {
@@ -852,10 +878,33 @@ class App {
 		});
 	}
 
+	static formatProcessingErrorMessage(error) {
+		const raw = (error?.message || String(error)).trim();
+		const lower = raw.toLowerCase();
+		if (
+			/\b429\b/.test(lower) ||
+			(lower.includes("quota") && lower.includes("exceed"))
+		) {
+			return "Google AI quota or rate limit hit (429). Check billing, try another model, or wait and retry.";
+		}
+		if (
+			/\b401\b/.test(lower) ||
+			/\b403\b/.test(lower) ||
+			lower.includes("api key") ||
+			lower.includes("permission")
+		) {
+			return "API key or permission error. Check your Google AI key in settings.";
+		}
+		const line = raw.split("\n")[0].trim();
+		return line.length > 240 ? `${line.slice(0, 237)}…` : line;
+	}
+
 	handleProcessingError(error) {
 		console.error("Processing error:", error);
 		this.ui.hideLoading();
-		this.ui.showError(`Error processing PDF: ${error.message}`);
+		const summary = App.formatProcessingErrorMessage(error);
+		this.ui.setProgressIndicatorError(summary);
+		this.ui.showNotification(summary, "error", 8000);
 	}
 
 	handleAIError(error) {
