@@ -2,10 +2,9 @@
 .quiz-header {
 	background: var(--card-background);
 	border-radius: var(--border-radius);
-	padding: 1.5rem;
+	padding: 1rem;
 	box-shadow: var(--shadow);
-	max-width: 1000px;
-	margin: 0 auto 1rem;
+	margin: 0 auto 2rem;
 }
 
 .quiz-header__top {
@@ -120,7 +119,6 @@
 }
 
 .quiz-container {
-	max-width: 1000px;
 	margin: 0 auto;
 }
 
@@ -233,7 +231,7 @@
 .question-card {
 	background: var(--card-background);
 	border-radius: var(--border-radius);
-	padding: 2.5rem;
+	padding: 1rem;
 	box-shadow: var(--shadow);
 	margin-bottom: 2rem;
 	display: flex;
