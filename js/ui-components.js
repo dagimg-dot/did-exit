@@ -115,6 +115,13 @@ class UIComponents {
 		// Display detailed results
 		if (this.resultsContainer) {
 			this.resultsContainer.innerHTML = this.generateResultsHTML(results);
+			if (typeof lucide !== "undefined") {
+				try {
+					lucide.createIcons({ root: this.resultsContainer });
+				} catch {
+					lucide.createIcons();
+				}
+			}
 		}
 
 		// Add summary statistics
@@ -154,19 +161,22 @@ class UIComponents {
 
 		// Add detailed breakdown
 		results.details.forEach((detail, index) => {
-			const statusIcon = detail.isCorrect ? "✅" : "❌";
-			const statusClass = detail.isCorrect
-				? "status-correct"
-				: "status-incorrect";
+			const statusLucide = detail.isCorrect ? "circle-check" : "circle-x";
+			const badgeClass = detail.isCorrect
+				? "result-question__badge result-question__badge--correct"
+				: "result-question__badge result-question__badge--incorrect";
+			const statusLabel = detail.isCorrect ? "Correct" : "Incorrect";
 
 			html += `
                 <div class="result-item">
                     <div class="result-question">
-                        <span class="${statusClass}">
-                            <span class="status-icon">${statusIcon}</span>
-                            Question ${index + 1}
-                        </span>
-                        <p>${this.escapeHTML(detail.question)}</p>
+                        <div class="result-question__heading">
+                            <span class="${badgeClass}" role="img" aria-label="${statusLabel}">
+                                <i data-lucide="${statusLucide}" aria-hidden="true"></i>
+                            </span>
+                            <span class="result-question__number">Question ${index + 1}</span>
+                        </div>
+                        <p class="result-question__text">${this.escapeHTML(detail.question)}</p>
                     </div>
                     <div class="result-answers">
                         <div class="result-answer your-answer">
@@ -203,9 +213,9 @@ class UIComponents {
 
 	addResultsSummary(_results) {
 		// Add CSS for summary stats if not already present
-		if (!document.getElementById("results-summary-styles")) {
+		if (!document.getElementById("results-summary-styles-v2")) {
 			const style = document.createElement("style");
-			style.id = "results-summary-styles";
+			style.id = "results-summary-styles-v2";
 			style.textContent = `
                 .results-summary {
                     margin-bottom: 2rem;
@@ -237,14 +247,6 @@ class UIComponents {
                     color: var(--text-secondary);
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                }
-                
-                .result-explanation {
-                    background: var(--card-background);
-                    border-left: 4px solid var(--primary-color);
-                    padding: 0.75rem;
-                    border-radius: 4px;
-                    margin-top: 0.5rem;
                 }
                 
                 @media (max-width: 480px) {
