@@ -1,67 +1,73 @@
-/* Theme-Toggle Styles */
+/* Theme controls live in the site header */
 .theme-switcher {
-	position: absolute;
-	top: 1rem;
-	right: 1rem;
-	display: flex;
+	position: static;
+	display: inline-flex;
 	align-items: center;
-	gap: 0.5rem;
+	gap: 0.35rem;
 }
 
-.theme-github-link {
+.theme-switcher .theme-github-link {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 0.5rem;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
 	border: 1px solid var(--border-color);
-	border-radius: 6px;
-	color: var(--text-secondary);
+	border-radius: var(--radius-pill);
+	color: var(--color-text-muted);
+	background: transparent;
 	transition:
 		background-color 0.2s,
-		color 0.2s;
+		color 0.2s,
+		border-color 0.2s;
 }
 
-.theme-github-link:hover {
-	background-color: var(--primary-color);
-	color: white;
+.theme-switcher .theme-github-link:hover {
+	background: var(--color-surface-2);
+	color: var(--color-accent);
+	border-color: var(--color-accent);
 }
 
 .theme-github-icon {
-	width: 1rem;
-	height: 1rem;
+	width: 1.15rem;
+	height: 1.15rem;
 	display: block;
 }
 
-.theme-switcher button {
-	background: none;
+.theme-switcher .theme-toggle-btn {
+	background: var(--color-surface-2);
 	border: 1px solid var(--border-color);
-	color: var(--text-secondary);
-	padding: 0.5rem;
+	color: var(--color-text-muted);
+	padding: 0.45rem 0.75rem;
 	cursor: pointer;
 	transition:
 		background-color 0.2s,
-		color 0.2s;
-	border-radius: 6px;
+		color 0.2s,
+		border-color 0.2s;
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
 }
 
-.theme-switcher button:first-of-type {
-	border-top-right-radius: 0;
-	border-bottom-right-radius: 0;
+.theme-switcher .theme-toggle-btn:first-of-type {
+	border-radius: var(--radius-pill) 0 0 var(--radius-pill);
 }
 
-.theme-switcher button:last-of-type {
-	border-top-left-radius: 0;
-	border-bottom-left-radius: 0;
-	border-left: 0;
+.theme-switcher .theme-toggle-btn:last-of-type {
+	border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+	margin-left: -1px;
 }
 
-.theme-switcher button:hover {
-	background-color: var(--primary-color);
-	color: white;
+.theme-switcher .theme-toggle-btn:hover {
+	color: var(--color-text);
+	border-color: var(--color-border-strong);
 }
 
-.theme-switcher button.active {
-	background-color: var(--primary-color);
-	color: white;
-	font-weight: bold;
+.theme-switcher .theme-toggle-btn.active {
+	background: var(--color-accent);
+	color: #fff;
+	border-color: var(--color-accent);
 }

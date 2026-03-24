@@ -346,15 +346,28 @@ class QuizManager {
 			const btn = document.createElement("button");
 			btn.className = "question-nav-btn";
 			btn.textContent = index + 1;
+			btn.removeAttribute("title");
+			const qn = index + 1;
 			if (this.userAnswers[index] !== null) {
 				btn.classList.add("answered");
-				btn.title = "Answered";
 			} else {
 				btn.classList.add("unanswered");
-				btn.title = "Unanswered";
 			}
 			if (index === this.currentQuestionIndex) {
 				btn.classList.add("active");
+				btn.dataset.navTip = "Current";
+				btn.setAttribute(
+					"aria-label",
+					this.userAnswers[index] !== null
+						? `Question ${qn}, current, answered`
+						: `Question ${qn}, current, not answered`,
+				);
+			} else if (this.userAnswers[index] !== null) {
+				btn.dataset.navTip = "Answered";
+				btn.setAttribute("aria-label", `Question ${qn}, answered`);
+			} else {
+				btn.dataset.navTip = "Unanswered";
+				btn.setAttribute("aria-label", `Question ${qn}, not answered`);
 			}
 
 			if (this.flaggedQuestions[index]) {
@@ -447,15 +460,34 @@ class QuizManager {
 				const btn = document.createElement("button");
 				btn.className = "question-nav-btn";
 				btn.textContent = page;
-				if (page - 1 === this.currentQuestionIndex) {
-					btn.classList.add("active");
-				}
-				if (this.userAnswers[page - 1] !== null) {
+				btn.removeAttribute("title");
+				const idx = page - 1;
+				if (this.userAnswers[idx] !== null) {
 					btn.classList.add("answered");
-					btn.title = "Answered";
 				} else {
 					btn.classList.add("unanswered");
-					btn.title = "Unanswered";
+				}
+				if (idx === this.currentQuestionIndex) {
+					btn.classList.add("active");
+					btn.dataset.navTip = "Current";
+					btn.setAttribute(
+						"aria-label",
+						this.userAnswers[idx] !== null
+							? `Question ${page}, current, answered`
+							: `Question ${page}, current, not answered`,
+					);
+				} else if (this.userAnswers[idx] !== null) {
+					btn.dataset.navTip = "Answered";
+					btn.setAttribute(
+						"aria-label",
+						`Question ${page}, answered`,
+					);
+				} else {
+					btn.dataset.navTip = "Unanswered";
+					btn.setAttribute(
+						"aria-label",
+						`Question ${page}, not answered`,
+					);
 				}
 
 				if (this.flaggedQuestions[page - 1]) {

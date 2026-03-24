@@ -1,28 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark-theme">
 	<head>
-		<meta charset="UTF-8" >
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" >
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<title>Did Exit - Exam Generator from PDF</title>
 
-		<!-- Favicon -->
-		<link rel="icon" type="image/png" href="assets/favicon-exit.png" >
-		<link rel="shortcut icon" href="assets/favicon-exit.png" >
-		<link rel="apple-touch-icon" href="assets/favicon-exit.png" >
+		<link rel="icon" type="image/png" href="assets/favicon-exit.png">
+		<link rel="shortcut icon" href="assets/favicon-exit.png">
+		<link rel="apple-touch-icon" href="assets/favicon-exit.png">
 
-		<link rel="stylesheet" href="css/main.css" >
-		<link rel="stylesheet" href="css/components.css" >
-		<link rel="stylesheet" href="css/quiz.css" >
-		<link rel="stylesheet" href="css/theme-toggle.css" >
+		<link rel="stylesheet" href="css/main.css">
+		<link rel="stylesheet" href="css/components.css">
+		<link rel="stylesheet" href="css/quiz.css">
+		<link rel="stylesheet" href="css/theme-toggle.css">
 
-		<!-- Plausible Analytics - privacy-focused, single script integration -->
 		<script
 			defer
 			data-domain="did-exit.netlify.app"
 			src="https://plausible.io/js/script.js"
 		></script>
 	</head>
-	<body>
+	<body class="view-landing">
 		<div
 			id="app-loader"
 			style="display: flex; align-items: center; justify-content: center; height: 100vh;"
@@ -33,256 +31,269 @@
 			</div>
 		</div>
 		<div class="container">
-			<header class="app-header">
-				<h1>Did Exit</h1>
-				<p>Upload your exam PDF and make it interactive</p>
+			<header class="site-header">
+				<div class="site-header__brand">
+					<a href="#landing-upload" class="site-logo">Did Exit</a>
+				</div>
+				<div class="site-header__actions">
+					<button
+						id="Home"
+						class="btn btn-secondary"
+						style="display:none;"
+						type="button"
+					>
+						Go Home
+					</button>
+					<div class="theme-switcher">
+						<a
+							href="https://github.com/dagimg-dot/did-exit.git"
+							class="theme-github-link"
+							target="_blank"
+							rel="noopener noreferrer"
+							aria-label="View source on GitHub"
+						>
+							<svg
+								class="theme-github-icon"
+								xmlns="http://www.w3.org/2000/svg"
+								viewBox="0 0 24 24"
+								aria-hidden="true"
+								focusable="false"
+							>
+								<path
+									fill="currentColor"
+									d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"
+								/>
+							</svg>
+						</a>
+						<button
+							id="theme-light"
+							class="theme-toggle-btn"
+							type="button"
+						>
+							Light
+						</button>
+						<button
+							id="theme-dark"
+							class="theme-toggle-btn"
+							type="button"
+						>
+							Dark
+						</button>
+					</div>
+				</div>
 			</header>
 
-			<div
-				class="global-actions"
-				style="text-align: center; margin-bottom: 1rem;"
-			>
-				<button
-					id="Home"
-					class="btn btn-primary"
-					style="display:none;"
-					type="button"
-				>
-					Go Home
-				</button>
-				<button
-					id="receive-btn"
-					class="btn btn-secondary"
-					type="button"
-				>
-					Receive an Exam
-				</button>
-			</div>
-
-			<div class="theme-switcher">
-				<a
-					href="https://github.com/dagimg-dot/did-exit.git"
-					class="theme-github-link"
-					target="_blank"
-					rel="noopener noreferrer"
-					aria-label="View source on GitHub"
-				>
-					<svg
-						class="theme-github-icon"
-						xmlns="http://www.w3.org/2000/svg"
-						viewBox="0 0 24 24"
-						aria-hidden="true"
-						focusable="false"
-					>
-						<path
-							fill="currentColor"
-							d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"
-						/>
-					</svg>
-				</a>
-				<button id="theme-light" type="button">Light</button>
-				<button id="theme-dark" type="button">Dark</button>
-			</div>
-
 			<main class="app-main">
-				<!-- File Upload Section -->
-				<section id="upload-section" class="section ">
-					<!-- API Key Configuration -->
-					<div class="api-key-container">
-						<!-- Collapsed State - shown when API key is configured -->
-						<div
-							class="api-key-collapsed"
-							id="api-key-collapsed"
-							style="display: none;"
-						>
-							<div class="api-key-status-bar">
-								<span class="api-key-status-icon">🔑</span>
-								<span class="api-key-status-text"
-									>API Key Configured</span
-								>
-								<button
-									id="change-api-key-btn"
-									class="btn btn-secondary btn-sm"
-									type="button"
-								>
-									Configure
-								</button>
+				<section id="upload-section" class="section">
+					<div class="landing-stack">
+						<div class="landing-hero">
+							<div class="hero-badge">
+								<i
+									data-lucide="sparkles"
+									aria-hidden="true"
+								></i>
+								Ready when you are
 							</div>
+							<h1>
+								Deconstruct complexity.
+								<span class="hero-accent"
+									>Master the exam.</span
+								>
+							</h1>
+							<p class="hero-sub">
+								Upload your PDF and turn it into an interactive
+								quiz. Add your Google AI key once, pick a model,
+								and practice with instant feedback or exam mode.
+							</p>
 						</div>
 
-						<!-- Expanded State - shown when configuring API key -->
-						<div class="api-key-section" id="api-key-section">
-							<div class="api-key-icon">🔑</div>
-							<h3>API Key Configuration</h3>
-							<p>
-								Enter your Google AI API key to generate
-								questions from PDFs
-							</p>
-							<div class="api-key-input-group">
-								<input
-									type="password"
-									id="api-key-input"
-									placeholder="Enter your Google AI API key"
-									class="api-key-input"
-								>
-								<button
-									id="save-api-key-btn"
-									class="btn btn-primary"
-									type="button"
-								>
-									Save Key
-								</button>
-							</div>
-							<div class="api-key-model-row">
-								<label
-									class="api-key-model-label"
-									for="google-ai-model-select"
-								>
-									Model
-								</label>
-								<select
-									id="google-ai-model-select"
-									class="api-key-model-select"
-									disabled
-									aria-label="Google AI model"
-								>
-									<option value="">
-										Models load when you save the API key
-									</option>
-								</select>
-							</div>
-							<div class="api-key-status" id="api-key-status">
-								<!-- Status will be shown here -->
-							</div>
-							<div class="api-key-help">
-								<small
-									>Get your free API key at
-									<a
-										href="https://makersuite.google.com/app/apikey"
-										target="_blank"
-										>Google AI Studio</a
-									></small
-								>
-							</div>
-							<div class="api-key-actions">
-								<button
-									id="cancel-api-key-btn"
-									class="btn btn-secondary"
-									style="display: none;"
-									type="button"
-								>
-									Finish
-								</button>
-							</div>
-						</div>
-					</div>
-
-					<div class="upload-container" id="upload-container">
-						<div class="upload-area" id="upload-area">
-							<div class="upload-icon">📄</div>
-							<h3>Upload PDF File</h3>
-							<p>
-								Drag and drop your exam PDF here or click to
-								browse
-							</p>
-							<input
-								type="file"
-								id="pdf-input"
-								accept=".pdf"
-								hidden
-							>
-							<button
-								id="browse-btn"
-								class="btn btn-primary"
-								type="button"
-							>
-								Browse Files
-							</button>
-						</div>
-						<div
-							class="file-info"
-							id="file-info"
-							style="display: none;"
-						>
-							<p>
-								<strong>Selected:</strong>
-								<span id="file-name"></span>
-							</p>
-							<div id="file-actions">
-								<button
-									id="process-btn"
-									class="btn btn-success"
-									type="button"
-								>
-									Process PDF
-								</button>
-								<button
-									id="change-file-btn"
-									class="btn btn-secondary"
-									type="button"
-								>
-									Change File
-								</button>
-							</div>
-							<div
-								class="processing-status"
-								id="processing-status"
-								style="display: none;"
-							>
-								<div class="spinner"></div>
-								<p id="loading-message">
-									Processing PDF and generating questions...
+						<div class="landing-grid-2">
+							<article class="surface-card p2p-card">
+								<p class="card-kicker">Peer sync</p>
+								<h2 class="p2p-card__title">
+									Receive exam simulation
+								</h2>
+								<p class="p2p-card__desc">
+									Share or receive a full exam session with
+									progress over a direct connection—no upload
+									to a server.
 								</p>
-								<button
-									id="cancel-processing-btn"
-									class="btn btn-secondary"
-									type="button"
-								>
-									Cancel Processing
-								</button>
-							</div>
-						</div>
-					</div>
+								<div class="p2p-status">
+									<span class="p2p-status-dot"></span>
+									Waiting for handshake
+								</div>
+								<div class="p2p-card__actions">
+									<button
+										type="button"
+										class="btn btn-primary"
+										id="receive-btn"
+									>
+										Receive an exam
+									</button>
+								</div>
+							</article>
 
-					<!-- Recent Exams Section -->
-					<div class="recent-exams-container">
-						<div
-							class="recent-exams-section"
-							id="recent-exams-section"
+							<article
+								class="surface-card engine-card"
+								id="engine-card"
+							>
+								<p class="card-kicker">Engine configuration</p>
+								<h2 class="p2p-card__title">
+									Google AI engine
+								</h2>
+								<p class="p2p-card__desc">
+									Add your Gemini API key and choose a model
+									to generate and grade practice questions.
+								</p>
+								<div
+									class="p2p-status engine-key-status"
+									id="engine-key-status"
+									aria-live="polite"
+								>
+									<span
+										class="p2p-status-dot"
+										id="engine-key-status-dot"
+										aria-hidden="true"
+									></span>
+									<span id="engine-key-status-text"
+										>API key not configured</span
+									>
+								</div>
+								<div class="p2p-card__actions">
+									<button
+										type="button"
+										class="btn btn-primary"
+										id="configure-engine-btn"
+									>
+										Configure
+									</button>
+								</div>
+							</article>
+						</div>
+
+						<article
+							class="surface-card landing-upload-card"
+							id="landing-upload"
 						>
-							<div class="recent-exams-icon">📚</div>
-							<h3>Recent Exams</h3>
-							<p>
-								Previously processed PDFs - click to start quiz
-							</p>
-							<div
-								class="recent-exams-list"
-								id="recent-exams-list"
-							>
-								<!-- Recent exams will be dynamically added here -->
+							<div class="landing-upload-inner">
+								<div
+									class="upload-icon-wrap"
+									aria-hidden="true"
+								>
+									<i data-lucide="file-up"></i>
+								</div>
+								<div class="landing-upload-copy">
+									<h3>Upload study materials</h3>
+									<p>
+										Drop a PDF exam or browse. Text and
+										scanned pages are supported.
+									</p>
+								</div>
+								<div
+									class="upload-container"
+									id="upload-container"
+								>
+									<div class="upload-area" id="upload-area">
+										<input
+											type="file"
+											id="pdf-input"
+											accept=".pdf"
+											hidden
+										>
+										<button
+											id="browse-btn"
+											class="btn btn-primary"
+											type="button"
+										>
+											Select file
+										</button>
+									</div>
+									<div
+										class="file-info"
+										id="file-info"
+										style="display: none;"
+									>
+										<p>
+											<strong>Selected:</strong>
+											<span id="file-name"></span>
+										</p>
+										<div id="file-actions">
+											<button
+												id="process-btn"
+												class="btn btn-success"
+												type="button"
+											>
+												Process PDF
+											</button>
+											<button
+												id="change-file-btn"
+												class="btn btn-secondary"
+												type="button"
+											>
+												Change file
+											</button>
+										</div>
+										<div
+											class="processing-status"
+											id="processing-status"
+											style="display: none;"
+										>
+											<div class="spinner"></div>
+											<p id="loading-message">
+												Processing PDF and generating
+												questions...
+											</p>
+											<button
+												id="cancel-processing-btn"
+												class="btn btn-secondary"
+												type="button"
+											>
+												Cancel processing
+											</button>
+										</div>
+									</div>
+								</div>
 							</div>
-							<div
-								class="no-recent-exams"
-								id="no-recent-exams"
-								style="display: none;"
-							>
-								<p>No recent exams found</p>
+						</article>
+
+						<div class="landing-recent">
+							<div class="recent-exams-container">
+								<div
+									class="recent-exams-section"
+									id="recent-exams-section"
+								>
+									<p class="card-kicker">Library</p>
+									<h3>Recent exams</h3>
+									<p>
+										Previously processed PDFs - click to
+										continue.
+									</p>
+									<div
+										class="recent-exams-list"
+										id="recent-exams-list"
+									></div>
+									<div
+										class="no-recent-exams"
+										id="no-recent-exams"
+										style="display: none;"
+									>
+										<p>No recent exams yet</p>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
 				</section>
 
-				<!-- Quiz Section -->
 				<section id="quiz-section" class="section">
 					<div class="quiz-header">
 						<div class="progress-bar">
 							<div class="progress-fill" id="progress-fill"></div>
 						</div>
 						<div class="question-counter">
-							<span id="current-question">1</span>/ <span
-								id="total-questions"
-								>10</span
-							> <span id="pdf-file-name">Unnamed</span>
+							<span id="current-question">1</span>/
+							<span id="total-questions">10</span>
+							<span id="pdf-file-name">Unnamed</span>
 						</div>
 					</div>
 
@@ -290,7 +301,7 @@
 						<div class="quiz-mode-selector">
 							<span id="exam-mode-label">Exam Mode</span>
 							<label class="switch">
-								<input type="checkbox" id="quiz-mode-toggle" >
+								<input type="checkbox" id="quiz-mode-toggle">
 								<span class="slider round"></span>
 							</label>
 							<span id="instant-feedback-label"
@@ -301,9 +312,7 @@
 							<div class="question-nav" id="question-nav">
 								<h3>Question Navigation</h3>
 								<p>Click on a question to jump to it</p>
-								<ul class="nav-list" id="nav-list">
-									<!-- Question navigation items will be dynamically added -->
-								</ul>
+								<ul class="nav-list" id="nav-list"></ul>
 								<div class="nav-legend">
 									<div class="legend-item">
 										<span class="dot current"></span>Current
@@ -338,9 +347,7 @@
 								<div
 									class="options-container"
 									id="options-container"
-								>
-									<!-- Options will be dynamically added -->
-								</div>
+								></div>
 								<div
 									class="explanation-container"
 									id="explanation-container"
@@ -353,9 +360,7 @@
 									<ul
 										class="condensed-nav-list"
 										id="condensed-nav-list"
-									>
-										<!-- Question navigation items will be dynamically added -->
-									</ul>
+									></ul>
 								</div>
 								<div class="quiz-controls">
 									<button
@@ -396,7 +401,6 @@
 					</div>
 				</section>
 
-				<!-- Results Section -->
 				<section id="results-section" class="section">
 					<div class="results-container">
 						<div class="results-header">
@@ -408,9 +412,10 @@
 								>
 							</div>
 						</div>
-						<div class="results-breakdown" id="results-breakdown">
-							<!-- Results will be populated here -->
-						</div>
+						<div
+							class="results-breakdown"
+							id="results-breakdown"
+						></div>
 						<div class="results-actions">
 							<button
 								id="restart-btn"
@@ -432,20 +437,25 @@
 			</main>
 
 			<footer class="app-footer">
-				<a
-					href="https://gurshaplus.com/dagimg-dot"
-					target="_blank"
-					rel="noopener noreferrer"
-					>Buy me a coffee ☕</a
-				>
+				<div class="footer-brand">
+					© Did Exit — for the modern scholar
+				</div>
+				<div class="footer-links">
+					<a
+						href="https://gurshaplus.com/dagimg-dot"
+						target="_blank"
+						rel="noopener noreferrer"
+						class="footer-link--accent"
+						>Buy me a coffee</a
+					>
+				</div>
 			</footer>
 
-			<!-- Notification System -->
-			<div id="notification-container" class="notification-container">
-				<!-- Notifications will be dynamically added here -->
-			</div>
+			<div
+				id="notification-container"
+				class="notification-container"
+			></div>
 
-			<!-- Background Processing Indicator -->
 			<div
 				id="processing-indicator"
 				class="processing-indicator"
@@ -471,23 +481,87 @@
 					</div>
 				</div>
 			</div>
+
+			<div
+				id="api-key-modal-placeholder"
+				class="api-key-modal-placeholder"
+				aria-hidden="true"
+			>
+				<div class="api-key-section" id="api-key-section">
+					<p class="api-key-lead api-key-modal-lead">
+						Enter your API key and save to load available Gemini
+						models.
+					</p>
+					<div class="api-key-field">
+						<label class="api-key-field-label" for="api-key-input">
+							API key
+						</label>
+						<div class="api-key-input-group">
+							<input
+								type="password"
+								id="api-key-input"
+								placeholder="Paste your API key"
+								class="api-key-input"
+								autocomplete="off"
+								spellcheck="false"
+							>
+							<button
+								id="save-api-key-btn"
+								class="btn btn-primary api-key-save-btn"
+								type="button"
+							>
+								Save key
+							</button>
+						</div>
+					</div>
+					<div class="api-key-field api-key-model-row">
+						<label
+							class="api-key-field-label"
+							for="google-ai-model-select"
+						>
+							Model
+						</label>
+						<select
+							id="google-ai-model-select"
+							class="api-key-model-select"
+							disabled
+							aria-label="Google AI model"
+						>
+							<option value="">
+								Models load when you save the API key
+							</option>
+						</select>
+					</div>
+					<div class="api-key-status" id="api-key-status"></div>
+					<div class="api-key-help">
+						<small>
+							Get a key at
+							<a
+								href="https://makersuite.google.com/app/apikey"
+								target="_blank"
+								rel="noopener noreferrer"
+								>Google AI Studio</a
+							>
+						</small>
+					</div>
+				</div>
+			</div>
 		</div>
 
-		<!-- External dependencies for P2P sync -->
 		<script
 			src="https://cdn.jsdelivr.net/npm/simple-peer@9.11.1/simplepeer.min.js"
 		></script>
 		<script
 			src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"
 		></script>
-		<!-- End dependencies -->
-
 		<script
 			src="https://unpkg.com/html5-qrcode"
 			type="text/javascript"
 		></script>
+		<script
+			src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"
+		></script>
 
-		<!-- Scripts -->
 		<script type="module" src="js/main.js"></script>
 	</body>
 </html>

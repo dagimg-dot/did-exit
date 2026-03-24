@@ -290,32 +290,37 @@ class UIComponents {
 					left: 0;
 					right: 0;
 					bottom: 0;
-					background-color: rgba(0, 0, 0, 0.5);
+					background-color: rgba(0, 0, 0, 0.65);
 					display: flex;
 					align-items: center;
 					justify-content: center;
 					z-index: 1000;
 				}
 				.modal-dialog {
-					background-color: white;
-					border-radius: 8px;
-					box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+					background-color: var(--card-background);
+					color: var(--text-primary);
+					border-radius: var(--border-radius);
+					border: 1px solid var(--border-color);
+					box-shadow: var(--shadow-lg);
+					overflow: hidden;
 					width: 90%;
 					max-width: 600px;
 					display: flex;
 					flex-direction: column;
-					max-height: 80vh; /* Limit modal height */
+					max-height: 80vh;
 				}
 				.modal-header {
 					display: flex;
 					align-items: center;
 					justify-content: space-between;
-					padding: 1rem;
-					border-bottom: 1px solid #e5e7eb;
+					padding: 1rem 1.25rem;
+					border-bottom: 1px solid var(--border-color);
+					background: var(--card-background);
+					flex-shrink: 0;
 				}
 				.modal-title {
 					margin: 0;
-					font-size: 1.25rem;
+					font-size: 1.15rem;
 					font-weight: 600;
 				}
 				.modal-close-btn {
@@ -325,23 +330,29 @@ class UIComponents {
 					cursor: pointer;
 					padding: 0.25rem;
 					line-height: 1;
+					color: var(--text-secondary);
+				}
+				.modal-close-btn:hover {
+					color: var(--text-primary);
 				}
 				.modal-content {
-					padding: 1rem;
-					overflow-y: auto; /* Make content scrollable */
-					max-height: calc(80vh - 120px); /* Adjust for header and footer */
+					padding: 1.25rem;
+					overflow-y: auto;
+					max-height: calc(80vh - 120px);
 				}
 				.modal-footer {
 					display: flex;
 					justify-content: flex-end;
 					gap: 0.5rem;
-					padding: 1rem;
-					border-top: 1px solid #e5e7eb;
+					padding: 1rem 1.25rem;
+					border-top: 1px solid var(--border-color);
+					background: var(--color-surface-2);
+					flex-shrink: 0;
 				}
 				.version-block {
 					margin-bottom: 1rem;
 					padding-bottom: 1rem;
-					border-bottom: 1px solid #e5e7eb;
+					border-bottom: 1px solid var(--border-color);
 				}
 				.version-block:last-child {
 					border-bottom: none;
@@ -403,9 +414,39 @@ class UIComponents {
 
 	hideModal() {
 		if (this.modalElement) {
+			const placeholder = document.getElementById(
+				"api-key-modal-placeholder",
+			);
+			const apiSection = document.getElementById("api-key-section");
+			if (
+				placeholder &&
+				apiSection &&
+				this.modalElement.contains(apiSection)
+			) {
+				placeholder.appendChild(apiSection);
+			}
 			this.modalElement.remove();
 			this.modalElement = null;
 			document.body.style.overflow = "auto";
+		}
+	}
+
+	/** Mounts the shared #api-key-section into the modal (reparented on hideModal). */
+	showApiKeyModal() {
+		this.showModal("Google AI setup", "", [
+			{
+				text: "Close",
+				className: "btn-secondary",
+				onClick: () => {},
+			},
+		]);
+		const content = this.modalElement?.querySelector(".modal-content");
+		const section = document.getElementById("api-key-section");
+		if (content && section) {
+			content.appendChild(section);
+		}
+		if (typeof lucide !== "undefined") {
+			lucide.createIcons();
 		}
 	}
 
@@ -423,12 +464,15 @@ class UIComponents {
 		notification.className = `notification ${type}`;
 
 		notification.innerHTML = `
-            <div class="notification-content">
-                <div class="notification-icon"></div>
-                <div class="notification-text">${message}</div>
-                <button class="notification-close">&times;</button>
-            </div>
-        `;
+			<div class="notification-content">
+				<p class="notification-text"></p>
+				<button type="button" class="notification-close" aria-label="Dismiss">&times;</button>
+			</div>
+		`;
+		const textEl = notification.querySelector(".notification-text");
+		if (textEl) {
+			textEl.textContent = message;
+		}
 
 		container.appendChild(notification);
 
@@ -516,78 +560,35 @@ class UIComponents {
 
 	// ───────────────────────────────── Sync Modal ─────────────────────────────────
 	createSyncModal() {
-		// Use the same structure as the generic modal for consistent styling
 		const modalContent = `
-			<style>
-				/* Default active state (light mode) */
-				.sync-tabs .tab-btn.active {
-					border-bottom: 2px solid #4f46e5; /* Indigo 600 */
-					font-weight: 600;
-					color: #111827; /* Gray 900 */
-				}
-				/* Dark mode inactive tab text */
-				.dark-theme .sync-tabs .tab-btn {
-					color: #d1d5db; /* Gray 300 */
-				}
-				/* Dark mode ACTIVE tab text */
-				.dark-theme .sync-tabs .tab-btn.active {
-					color: #818cf8; /* Indigo 400 */
-					border-bottom-color: #818cf8;
-				}
-				/* Dark mode input fields */
-				.dark-theme .sync-modal-input {
-					background-color: #374151; /* Gray 700 */
-					border-color: #4b5563;   /* Gray 600 */
-					color: #f9fafb;         /* Gray 50 */
-				}
-				.sync-spinner {
-					border: 4px solid #f3f4f6;
-					border-top: 4px solid #4f46e5;
-					border-radius: 50%;
-					width: 50px;
-					height: 50px;
-					animation: spin 1s linear infinite;
-					margin: 0 auto;
-				}
-				.dark-theme .sync-spinner {
-					border-color: #4b5563;
-					border-top-color: #818cf8;
-				}
-				@keyframes spin {
-					0% { transform: rotate(0deg); }
-					100% { transform: rotate(360deg); }
-				}
-			</style>
-			<div class="sync-tabs" style="display:flex; gap:0.5rem; margin-bottom:1rem; border-bottom: 1px solid #e5e7eb;">
-				<button class="tab-btn" data-tab="share" style="padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent;">Share</button>
-				<button class="tab-btn" data-tab="receive" style="padding: 0.5rem 1rem; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent;">Receive</button>
+			<div class="sync-tabs">
+				<button type="button" class="sync-tab-btn" data-tab="share">Share</button>
+				<button type="button" class="sync-tab-btn" data-tab="receive">Receive</button>
 			</div>
 
-			<!-- Share Tab -->
-			<div class="tab-content" id="share-tab">
-				<p>Share this exam by having another device scan the QR code below.</p>
-				<div id="qrcode-container" style="display:flex; justify-content:center; margin: 1.5rem 0;"></div>
-				<p style="text-align:center; font-size:0.9rem; color:#6b7280;">Or copy the code:</p>
-				<div class="connection-code" style="display:flex; gap:0.5rem; align-items:center;">
-					<input type="text" id="connection-code" readonly class="sync-modal-input" style="flex:1; min-width:0; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.5rem;">
-					<button id="copy-code-btn" class="btn btn-secondary btn-sm">Copy</button>
+			<div class="sync-pane" id="share-tab">
+				<p class="sync-pane__lead">Share this exam by having another device scan the QR code below.</p>
+				<div id="qrcode-container" class="sync-qr-wrap"></div>
+				<p class="sync-hint">Or copy the code:</p>
+				<div class="sync-row connection-code">
+					<input type="text" id="connection-code" readonly class="sync-modal-input" >
+					<button type="button" id="copy-code-btn" class="btn btn-secondary btn-sm">Copy</button>
 				</div>
 			</div>
 
-			<!-- Receive Tab -->
-			<div class="tab-content" id="receive-tab" style="display:none">
-				<div id="qr-reader" style="width: 100%; margin-bottom: 1rem;"></div>
-				<p>Paste the connection code from the other device below, or scan the QR code.</p>
-				<div class="connection-input" style="display:flex; flex-direction:column; gap:0.5rem; margin-top: 1rem;">
-					<div style="display: flex; gap: 0.5rem;">
-						<input type="text" id="peer-connection-input" placeholder="Paste connection code" class="sync-modal-input" style="flex:1; min-width:0; border: 1px solid #d1d5db; border-radius: 4px; padding: 0.5rem;">
-						<button id="connect-btn" class="btn btn-primary">Connect</button>
+			<div class="sync-pane" id="receive-tab" style="display:none">
+				<div id="qr-reader" class="sync-qr-reader"></div>
+				<p class="sync-pane__lead">Paste the connection code from the other device below, or scan the QR code.</p>
+				<div class="sync-stack connection-input">
+					<div class="sync-row sync-row--input">
+						<input type="text" id="peer-connection-input" placeholder="Paste connection code" class="sync-modal-input" >
+						<button type="button" id="connect-btn" class="btn btn-primary sync-modal-primary">Connect</button>
 					</div>
-					<button id="scan-qr-btn" class="btn btn-secondary" style="align-self: center; margin-top: 0.5rem;">Scan QR Code</button>
+					<button type="button" id="scan-qr-btn" class="btn btn-secondary sync-scan-wide">Scan QR Code</button>
 				</div>
 			</div>
 
-			<div id="sync-status" style="margin-top: 1rem; font-size: 0.9rem; color: #6b7280; text-align: center; min-height: 20px;"></div>
+			<div id="sync-status" class="sync-status" aria-live="polite"></div>
 		`;
 		return modalContent;
 	}
@@ -611,19 +612,24 @@ class UIComponents {
 		const modal = this.modalElement;
 
 		// Tab switching logic
-		const shareTabBtn = modal.querySelector('.tab-btn[data-tab="share"]');
-		const receiveTabBtn = modal.querySelector(
-			'.tab-btn[data-tab="receive"]',
+		const shareTabBtn = modal.querySelector(
+			'.sync-tab-btn[data-tab="share"]',
 		);
+		const receiveTabBtn = modal.querySelector(
+			'.sync-tab-btn[data-tab="receive"]',
+		);
+		const syncTabsEl = modal.querySelector(".sync-tabs");
 		const shareTab = modal.querySelector("#share-tab");
 		const receiveTab = modal.querySelector("#receive-tab");
 
 		if (isReceiveOnly) {
-			// Default to Receive tab and hide the Share tab
 			shareTab.style.display = "none";
 			shareTabBtn.style.display = "none";
 			receiveTab.style.display = "block";
 			receiveTabBtn.classList.add("active");
+			if (syncTabsEl) {
+				syncTabsEl.style.display = "none";
+			}
 		} else {
 			// Default to Share tab
 			shareTabBtn.classList.add("active");
@@ -676,7 +682,7 @@ class UIComponents {
 					statusEl.textContent = "Ready to connect.";
 				} catch (err) {
 					console.error("Failed to create share session", err);
-					qrContainer.innerHTML = `<p style="color: #ef4444; text-align: center;">Failed to create session.</p>`;
+					qrContainer.innerHTML = `<p class="sync-error">Failed to create session.</p>`;
 					statusEl.textContent = `Error: ${err.message}`;
 					this.showError(
 						`Failed to create share session: ${err.message}`,

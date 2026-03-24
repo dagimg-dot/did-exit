@@ -135,12 +135,8 @@ class App {
 			.addEventListener("click", this.handleSaveAPIKey.bind(this));
 
 		document
-			.getElementById("change-api-key-btn")
-			.addEventListener("click", this.showAPIKeyConfig.bind(this));
-
-		document
-			.getElementById("cancel-api-key-btn")
-			.addEventListener("click", this.hideAPIKeyConfig.bind(this));
+			.getElementById("configure-engine-btn")
+			.addEventListener("click", this.openEngineConfigModal.bind(this));
 
 		document
 			.getElementById("api-key-input")
@@ -214,9 +210,8 @@ class App {
 			.getElementById("cancel-processing-btn")
 			.addEventListener("click", this.cancelProcessing.bind(this));
 
-		// Global receive button
 		document.getElementById("receive-btn").addEventListener("click", () => {
-			console.log("[UI] Global 'Receive an Exam' button clicked.");
+			console.log("[UI] 'Receive an exam' clicked.");
 			this.ui.showSyncModal(null, this.p2pSyncManager);
 		});
 
@@ -228,6 +223,7 @@ class App {
 			this.quizManager.reset();
 			this.fileUploader.reset();
 			this.loadRecentExams();
+			this.updateEngineCardStatus();
 		});
 
 		window.addEventListener("hashchange", () => {
@@ -716,9 +712,9 @@ class App {
 	showSection(sectionId) {
 		// Hide all sections
 		const sections = document.querySelectorAll(".section");
-		sections.forEach((section) => {
+		for (const section of sections) {
 			section.classList.remove("active");
-		});
+		}
 
 		// Show target section
 		const targetSection = document.getElementById(sectionId);
@@ -727,13 +723,15 @@ class App {
 			this.currentSection = sectionId;
 		}
 		const homeBtn = document.getElementById("Home");
-		const receiveBtn = document.getElementById("receive-btn");
-		if (sectionId === "quiz-section") {
+		const isQuizView =
+			sectionId === "quiz-section" || sectionId === "results-section";
+		document.body.classList.toggle("view-landing", !isQuizView);
+		document.body.classList.toggle("view-quiz", isQuizView);
+
+		if (isQuizView) {
 			homeBtn.style.display = "inline-flex";
-			receiveBtn.style.display = "none";
 		} else {
 			homeBtn.style.display = "none";
-			receiveBtn.style.display = "inline-flex";
 		}
 	}
 
@@ -826,39 +824,34 @@ class App {
 			const modelId = select?.value?.trim();
 			if (!modelId) {
 				this.showAPIKeyStatus(
-					"No model selected. Try again or use another key.",
+					"No model selected. Choose one from the list.",
 					"error",
 				);
 				return;
 			}
 
-			saveButton.textContent = "Testing…";
-			this.showAPIKeyStatus("Testing API key…", "");
+			saveButton.textContent = "Saving…";
+			this.showAPIKeyStatus("Saving your key…", "");
 
-			const testResult = await this.aiIntegration.testAPIKey(
-				apiKey,
-				modelId,
+			this.aiIntegration.setAPIKey(apiKey, modelId);
+			this.showAPIKeyStatus(
+				"API key saved. You're ready to generate.",
+				"success",
 			);
 
-			if (testResult.success) {
-				this.aiIntegration.setAPIKey(apiKey, modelId);
-				this.showAPIKeyStatus(
-					"✅ API key saved and verified!",
-					"success",
-				);
+			apiKeyInput.value = "";
+			apiKeyInput.placeholder = "Key saved — paste a new key to replace";
 
-				apiKeyInput.value = "";
-				apiKeyInput.placeholder = "API key configured ✓";
-
-				setTimeout(() => {
-					this.hideAPIKeyConfig();
-				}, 1500);
-			} else {
-				this.showAPIKeyStatus(`❌ ${testResult.message}`, "error");
-			}
+			setTimeout(() => {
+				this.ui.hideModal();
+				this.updateEngineCardStatus();
+			}, 1500);
 		} catch (error) {
-			console.error("API key test error:", error);
-			this.showAPIKeyStatus("❌ Failed to verify API key", "error");
+			console.error("API key save error:", error);
+			this.showAPIKeyStatus(
+				"Could not save the API key. Try again.",
+				"error",
+			);
 		} finally {
 			saveButton.disabled = false;
 			saveButton.textContent = prevLabel;
@@ -866,14 +859,22 @@ class App {
 	}
 
 	loadExistingAPIKey() {
+		this.updateEngineCardStatus();
+	}
+
+	updateEngineCardStatus() {
+		const row = document.getElementById("engine-key-status");
+		const textEl = document.getElementById("engine-key-status-text");
+		if (!row || !textEl) return;
+
 		const existingKey = localStorage.getItem("google-ai-api-key");
+		row.classList.remove("engine-status--ok", "engine-status--miss");
 		if (existingKey) {
-			// Show collapsed state if API key exists
-			this.hideAPIKeyConfig();
+			row.classList.add("engine-status--ok");
+			textEl.textContent = "API key configured";
 		} else {
-			// Show expanded state if no API key
-			this.showAPIKeyConfig();
-			this.showAPIKeyStatus("No API key configured", "warning");
+			row.classList.add("engine-status--miss");
+			textEl.textContent = "API key not configured";
 		}
 	}
 
@@ -881,62 +882,38 @@ class App {
 		const statusElement = document.getElementById("api-key-status");
 		if (statusElement) {
 			statusElement.textContent = message;
-			statusElement.className = `api-key-status ${type}`;
+			statusElement.className = type
+				? `api-key-status ${type}`
+				: "api-key-status";
 		}
 	}
 
-	showAPIKeyConfig() {
-		const expandedSection = document.getElementById("api-key-section");
-		const collapsedSection = document.getElementById("api-key-collapsed");
-		const cancelButton = document.getElementById("cancel-api-key-btn");
+	openEngineConfigModal() {
 		const apiKeyInput = document.getElementById("api-key-input");
+		const existingKey = localStorage.getItem("google-ai-api-key");
 
-		if (expandedSection && collapsedSection) {
-			expandedSection.style.display = "block";
-			collapsedSection.style.display = "none";
+		if (apiKeyInput) {
+			apiKeyInput.value = "";
+			apiKeyInput.placeholder = existingKey
+				? "Paste a new key to replace the stored key"
+				: "Paste your API key";
+		}
 
-			const existingKey = localStorage.getItem("google-ai-api-key");
-			if (existingKey && cancelButton) {
-				cancelButton.style.display = "inline-flex";
-			}
+		this.showAPIKeyStatus("", "");
 
-			if (apiKeyInput) {
-				apiKeyInput.value = "";
-				apiKeyInput.placeholder = "Enter your Google AI API key";
-				apiKeyInput.focus();
-			}
-
-			this.showAPIKeyStatus("", "");
-
-			if (existingKey) {
-				void this.refreshModelDropdown(existingKey);
-			} else {
-				const select = document.getElementById(
-					"google-ai-model-select",
-				);
-				if (select) {
-					select.innerHTML =
-						'<option value="">Models load when you save the API key</option>';
-					select.disabled = true;
-				}
+		if (existingKey) {
+			void this.refreshModelDropdown(existingKey);
+		} else {
+			const select = document.getElementById("google-ai-model-select");
+			if (select) {
+				select.innerHTML =
+					'<option value="">Models load when you save the API key</option>';
+				select.disabled = true;
 			}
 		}
-	}
 
-	hideAPIKeyConfig() {
-		const expandedSection = document.getElementById("api-key-section");
-		const collapsedSection = document.getElementById("api-key-collapsed");
-		const cancelButton = document.getElementById("cancel-api-key-btn");
-
-		if (expandedSection && collapsedSection) {
-			expandedSection.style.display = "none";
-			collapsedSection.style.display = "block";
-
-			// Hide cancel button
-			if (cancelButton) {
-				cancelButton.style.display = "none";
-			}
-		}
+		this.ui.showApiKeyModal();
+		queueMicrotask(() => apiKeyInput?.focus());
 	}
 
 	async loadRecentExams() {
@@ -944,37 +921,6 @@ class App {
 			const recentExamsList =
 				document.getElementById("recent-exams-list");
 			const noRecentExams = document.getElementById("no-recent-exams");
-
-			// Add CSS for the reset answers button if it doesn't exist
-			if (!document.getElementById("recent-exams-css")) {
-				const style = document.createElement("style");
-				style.id = "recent-exams-css";
-				style.textContent = `
-					.reset-answers-btn {
-						background: #4b5563;
-						color: white;
-						border: none;
-						border-radius: 50%;
-						width: 28px;
-						height: 28px;
-						font-size: 16px;
-						cursor: pointer;
-						margin-right: 8px;
-						display: flex;
-						align-items: center;
-						justify-content: center;
-						transition: background-color 0.2s;
-					}
-					.reset-answers-btn:hover {
-						background: #1e40af;
-					}
-					.answer-status {
-						color: #4f46e5;
-						font-weight: 500;
-					}
-				`;
-				document.head.appendChild(style);
-			}
 
 			// Get all PDFs from IndexedDB
 			const pdfs = await this.getAllPDFs();
@@ -996,6 +942,10 @@ class App {
 				.join("");
 			recentExamsList.innerHTML = examsHTML;
 			noRecentExams.style.display = "none";
+
+			if (typeof lucide !== "undefined") {
+				lucide.createIcons();
+			}
 
 			// Add event listeners for exam items and delete buttons
 			this.attachRecentExamListeners();
@@ -1045,15 +995,15 @@ class App {
 				<div class="recent-exam-actions">
 					${
 						hasUserAnswers
-							? `<button class="reset-answers-btn" data-pdf-id="${pdf.id}" title="Reset answers">↺</button>`
+							? `<button type="button" class="reset-answers-btn" data-pdf-id="${pdf.id}" title="Reset answers" aria-label="Reset answers"><i data-lucide="rotate-ccw" aria-hidden="true"></i></button>`
 							: ""
 					}
-					<button class="sync-exam-btn" data-pdf-id="${
+					<button type="button" class="sync-exam-btn" data-pdf-id="${
 						pdf.id
-					}" title="Sync exam">🔄</button>
-					<button class="delete-exam-btn" data-pdf-id="${
+					}" title="Share or sync exam" aria-label="Share or sync exam"><i data-lucide="share-2" aria-hidden="true"></i></button>
+					<button type="button" class="delete-exam-btn" data-pdf-id="${
 						pdf.id
-					}" title="Delete exam">×</button>
+					}" title="Delete exam" aria-label="Delete exam"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 				</div>
 			</div>
 		`;
@@ -1063,12 +1013,13 @@ class App {
 		// Handle exam item clicks (start quiz)
 		document.querySelectorAll(".recent-exam-item").forEach((item) => {
 			item.addEventListener("click", (e) => {
-				// Don't trigger if delete button or reset button was clicked
 				if (
-					e.target.classList.contains("delete-exam-btn") ||
-					e.target.classList.contains("reset-answers-btn")
-				)
+					e.target.closest(".delete-exam-btn") ||
+					e.target.closest(".reset-answers-btn") ||
+					e.target.closest(".sync-exam-btn")
+				) {
 					return;
+				}
 
 				const pdfId = item.dataset.pdfId;
 				this.startQuizFromRecent(pdfId);
@@ -1444,6 +1395,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 		console.log("🚀 PDF Quiz App initialized successfully");
 		document.getElementById("app-loader").style.display = "none";
 		document.querySelector(".container").style.display = "block";
+		if (typeof lucide !== "undefined") {
+			lucide.createIcons();
+		}
 	} catch (error) {
 		console.error("❌ Failed to initialize app:", error);
 

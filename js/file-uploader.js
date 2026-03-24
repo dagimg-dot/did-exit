@@ -101,7 +101,7 @@ class FileUploader {
 
 	showUploadArea() {
 		if (this.uploadArea) {
-			this.uploadArea.style.display = "block";
+			this.uploadArea.style.display = "flex";
 		}
 		this.fileInfo.style.display = "none";
 		this.selectedFile = null;
