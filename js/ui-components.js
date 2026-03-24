@@ -514,19 +514,20 @@ class UIComponents {
 		this.updateProgressIndicator(completed, total);
 	}
 
-	updateProgressIndicator(completed, total, message = null) {
+	updateProgressIndicator(completed, total, message) {
 		const fill = document.getElementById("processing-progress-fill");
 		const text = document.getElementById("processing-progress-text");
 		const msg = document.getElementById("processing-message");
 
-		if (message) {
+		if (message !== undefined && msg) {
 			msg.textContent = message;
 		}
 
 		if (fill && text) {
 			const percentage = total > 0 ? (completed / total) * 100 : 0;
 			fill.style.width = `${percentage}%`;
-			text.textContent = `Batch ${completed} of ${total}`;
+			text.textContent =
+				total > 0 ? `${Math.min(completed, total)} / ${total}` : "—";
 		}
 	}
 

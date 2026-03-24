@@ -176,6 +176,10 @@ class App {
 			this.handleBatchCompleted.bind(this),
 		);
 		this.batchProcessor.on(
+			"batchStarted",
+			this.handleBatchStarted.bind(this),
+		);
+		this.batchProcessor.on(
 			"processingComplete",
 			this.handleProcessingComplete.bind(this),
 		);
@@ -387,6 +391,25 @@ class App {
 			});
 	}
 
+	handleBatchStarted(data) {
+		if (data.batchNumber === 1) {
+			this.currentPdfId = data.pdfId;
+		} else if (this.currentPdfId !== data.pdfId) {
+			return;
+		}
+
+		if (this.currentSection !== "quiz-section" && data.batchNumber !== 1) {
+			return;
+		}
+
+		const completed = Math.max(0, data.batchNumber - 1);
+		this.ui.showProgressIndicator(
+			completed,
+			data.totalBatches,
+			`AI is extracting batch ${data.batchNumber} of ${data.totalBatches}…`,
+		);
+	}
+
 	handleBatchCompleted(data) {
 		console.log(
 			`📦 Batch ${data.batchNumber} completed:`,
@@ -439,10 +462,13 @@ class App {
 				"info",
 			);
 
-			// Update progress indicator
+			// Update progress indicator (bottom-right panel)
 			this.ui.updateProgressIndicator(
 				data.completedBatches,
 				data.totalBatches,
+				data.completedBatches < data.totalBatches
+					? `${data.newTotal} questions ready · ${data.completedBatches}/${data.totalBatches} batches done`
+					: `${data.newTotal} questions · all batches saved`,
 			);
 
 			this.quizManager.displayQuestionNavigation();
@@ -585,8 +611,13 @@ class App {
 		);
 		this.quizManager.correctAnswers = this.correctAnswers;
 
-		const params = new URLSearchParams();
-		params.set("question", 1);
+		const { questionNum, params: routeParams } = this.parseHashRoute();
+		const params = routeParams
+			? new URLSearchParams(routeParams.toString())
+			: new URLSearchParams();
+		const q =
+			!Number.isNaN(questionNum) && questionNum >= 1 ? questionNum : 1;
+		params.set("question", String(q));
 		window.history.replaceState(
 			{},
 			"",
@@ -607,7 +638,11 @@ class App {
 
 		// Show background processing progress
 		if (completedBatches < totalBatches) {
-			this.ui.showProgressIndicator(completedBatches, totalBatches);
+			this.ui.showProgressIndicator(
+				completedBatches,
+				totalBatches,
+				`More questions loading (${completedBatches}/${totalBatches} batches ready)…`,
+			);
 			this.ui.showNotification(
 				`Quiz started with ${this.quizData.length} questions! More questions are being processed in the background.`,
 				"info",

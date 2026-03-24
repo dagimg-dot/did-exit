@@ -755,8 +755,8 @@
 	padding: 1rem 1.25rem;
 	box-shadow: var(--shadow-lg);
 	border: 1px solid var(--border-color);
-	max-width: 350px;
-	z-index: 999;
+	max-width: min(22rem, calc(100vw - 2rem));
+	z-index: 1060;
 }
 
 .processing-content {

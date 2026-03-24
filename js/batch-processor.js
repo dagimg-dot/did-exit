@@ -251,6 +251,11 @@ class BatchProcessor {
 			// Process first chunk immediately with AI
 			console.log(`⚡ Processing first batch with AI...`);
 			const firstBatch = chunks[0];
+			this.emit("batchStarted", {
+				pdfId,
+				batchNumber: 1,
+				totalBatches,
+			});
 			const firstBatchQuestions = await this.processChunkWithAI(
 				firstBatch,
 				pdfId,
@@ -474,6 +479,12 @@ ${chunk.content}`;
 			const item = this.processingQueue.shift();
 
 			try {
+				this.emit("batchStarted", {
+					pdfId: item.pdfId,
+					batchNumber: item.chunk.batchNumber,
+					totalBatches: item.totalBatches,
+				});
+
 				// Enforce rate limiting
 				await this.enforceRateLimit();
 
