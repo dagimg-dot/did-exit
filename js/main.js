@@ -922,6 +922,23 @@ class App {
 		}
 		this._modelPickerSetup = true;
 
+		const selectEl = document.getElementById("google-ai-model-select");
+		if (selectEl) {
+			selectEl.addEventListener("change", () => {
+				if (this._suppressModelPersist) {
+					return;
+				}
+				const modelId = selectEl.value?.trim();
+				if (!modelId || selectEl.disabled) {
+					return;
+				}
+				if (!localStorage.getItem("google-ai-api-key")) {
+					return;
+				}
+				void this.aiIntegration.setSelectedModel(modelId);
+			});
+		}
+
 		this._boundModelPickerDocClick = (e) => {
 			const root = document.getElementById("google-ai-model-picker");
 			if (root && !root.contains(e.target)) {
@@ -1115,6 +1132,7 @@ class App {
 		saveButton.disabled = true;
 		saveButton.textContent = "Loading…";
 		this.showAPIKeyStatus("Loading models…", "");
+		this._suppressModelPersist = true;
 
 		try {
 			const listed = await this.refreshModelDropdown(apiKey);
@@ -1159,6 +1177,7 @@ class App {
 				"error",
 			);
 		} finally {
+			this._suppressModelPersist = false;
 			saveButton.disabled = false;
 			saveButton.textContent = prevLabel;
 		}
