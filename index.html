@@ -293,6 +293,16 @@
 				<section id="quiz-section" class="section">
 					<div class="quiz-header">
 						<div class="quiz-header__top">
+							<button
+								type="button"
+								id="quiz-nav-menu-btn"
+								class="quiz-nav-menu-btn"
+								aria-label="Open question navigation"
+								aria-expanded="false"
+								aria-controls="question-nav"
+							>
+								<i data-lucide="menu" aria-hidden="true"></i>
+							</button>
 							<div class="quiz-header__title" id="pdf-file-name">
 								Unnamed
 							</div>
@@ -310,7 +320,30 @@
 
 					<div class="quiz-container">
 						<div class="quiz-layout">
+							<button
+								type="button"
+								id="quiz-nav-drawer-backdrop"
+								class="quiz-nav-drawer__backdrop"
+								aria-label="Close question navigation"
+								tabindex="-1"
+							></button>
 							<div class="question-nav" id="question-nav">
+								<div class="question-nav__drawer-top">
+									<span class="question-nav__drawer-title"
+										>Questions</span
+									>
+									<button
+										type="button"
+										id="quiz-nav-close-btn"
+										class="question-nav__drawer-close"
+										aria-label="Close question navigation"
+									>
+										<i
+											data-lucide="x"
+											aria-hidden="true"
+										></i>
+									</button>
+								</div>
 								<div class="question-nav__head">
 									<div class="question-nav__intro">
 										<h3>Question Navigation</h3>

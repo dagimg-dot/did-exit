@@ -29,7 +29,7 @@ export const content = {
 				{
 					title: "Buy me a coffee 😁😁 (I don't like coffee, but I like money)",
 					description:
-						"You can now buy me a coffee to support the app. It's a small gesture, but it's appreciated. Go to <a href='https://jami.bio/jdlix' target='_blank'>https://jami.bio/jdlix</a> to buy me a coffee.",
+						"You can now buy me a coffee to support the app. It's a small gesture, but it's appreciated. Go to <a href='https://gurshaplus.com/dagimg-dot' target='_blank'>https://gurshaplus.com/dagimg-dot</a> to buy me a coffee.",
 				},
 			],
 		},

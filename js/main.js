@@ -199,6 +199,8 @@ class App {
 		);
 		this.quizManager.on("modeChanged", this.handleModeChanged.bind(this));
 
+		this.setupQuizNavDrawer();
+
 		// Navigation events
 		document
 			.getElementById("restart-btn")
@@ -735,6 +737,72 @@ class App {
 		} else {
 			homeBtn.style.display = "none";
 		}
+
+		if (sectionId !== "quiz-section") {
+			const quizSection = document.getElementById("quiz-section");
+			quizSection?.classList.remove("quiz-section--nav-drawer-open");
+			document.body.style.overflow = "";
+			const menuBtn = document.getElementById("quiz-nav-menu-btn");
+			menuBtn?.setAttribute("aria-expanded", "false");
+		}
+	}
+
+	setupQuizNavDrawer() {
+		const section = document.getElementById("quiz-section");
+		const menuBtn = document.getElementById("quiz-nav-menu-btn");
+		const backdrop = document.getElementById("quiz-nav-drawer-backdrop");
+		const closeBtn = document.getElementById("quiz-nav-close-btn");
+		const navList = document.getElementById("nav-list");
+
+		const isDrawerBreakpoint = () =>
+			window.matchMedia("(max-width: 1023px)").matches;
+
+		const openDrawer = () => {
+			if (!isDrawerBreakpoint()) return;
+			section?.classList.add("quiz-section--nav-drawer-open");
+			menuBtn?.setAttribute("aria-expanded", "true");
+			document.body.style.overflow = "hidden";
+		};
+
+		const closeDrawer = () => {
+			section?.classList.remove("quiz-section--nav-drawer-open");
+			menuBtn?.setAttribute("aria-expanded", "false");
+			document.body.style.overflow = "";
+		};
+
+		menuBtn?.addEventListener("click", () => {
+			if (section?.classList.contains("quiz-section--nav-drawer-open")) {
+				closeDrawer();
+			} else {
+				openDrawer();
+			}
+		});
+
+		backdrop?.addEventListener("click", () => closeDrawer());
+		closeBtn?.addEventListener("click", () => closeDrawer());
+
+		document.addEventListener("keydown", (e) => {
+			if (
+				e.key === "Escape" &&
+				section?.classList.contains("quiz-section--nav-drawer-open")
+			) {
+				closeDrawer();
+				menuBtn?.focus();
+			}
+		});
+
+		navList?.addEventListener("click", (e) => {
+			if (!isDrawerBreakpoint()) return;
+			if (e.target.closest(".question-nav-btn")) {
+				closeDrawer();
+			}
+		});
+
+		window.addEventListener("resize", () => {
+			if (!isDrawerBreakpoint()) {
+				closeDrawer();
+			}
+		});
 	}
 
 	handleProcessingError(error) {
