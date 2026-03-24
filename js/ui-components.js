@@ -1,4 +1,38 @@
 // UI Components and State Management
+
+/** Decode QR payload: legacy JSON `{"roomId"}`, site URL `?syncRoom=`, or raw UUID. */
+function parseRoomIdFromSyncPayload(decodedText) {
+	const trimmed = decodedText.trim();
+	if (!trimmed) {
+		return null;
+	}
+	try {
+		const info = JSON.parse(trimmed);
+		if (typeof info?.roomId === "string" && info.roomId.trim()) {
+			return info.roomId.trim();
+		}
+	} catch {
+		// not JSON
+	}
+	try {
+		const u = new URL(trimmed);
+		const room = u.searchParams.get("syncRoom");
+		if (room?.trim()) {
+			return room.trim();
+		}
+	} catch {
+		// not a URL
+	}
+	if (
+		/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+			trimmed,
+		)
+	) {
+		return trimmed;
+	}
+	return null;
+}
+
 class UIComponents {
 	constructor() {
 		this.setupElements();
@@ -656,7 +690,7 @@ class UIComponents {
 			</div>
 
 			<div class="sync-pane" id="share-tab">
-				<p class="sync-pane__lead">Share this exam by having another device scan the QR code below.</p>
+				<p class="sync-pane__lead">Share this exam: the QR opens Did Exit on another device (phone camera or browser) and starts receiving automatically.</p>
 				<div id="qrcode-container" class="sync-qr-wrap"></div>
 				<p class="sync-hint">Or copy the code:</p>
 				<div class="sync-row connection-code">
@@ -667,7 +701,7 @@ class UIComponents {
 
 			<div class="sync-pane" id="receive-tab" style="display:none">
 				<div id="qr-reader" class="sync-qr-reader"></div>
-				<p class="sync-pane__lead">Paste the connection code from the other device below, or scan the QR code.</p>
+				<p class="sync-pane__lead">If you opened this page from a QR link, connecting should start by itself. You can also paste the room code or use Scan to read a code with this device’s camera.</p>
 				<div class="sync-stack connection-input">
 					<div class="sync-row sync-row--input">
 						<input type="text" id="peer-connection-input" placeholder="Paste connection code" class="sync-modal-input" >
@@ -682,7 +716,8 @@ class UIComponents {
 		return modalContent;
 	}
 
-	showSyncModal(pdfId, p2pSyncManager) {
+	showSyncModal(pdfId, p2pSyncManager, options = {}) {
+		const { autoJoinRoomId = null } = options;
 		const isReceiveOnly = pdfId === null;
 		const modalContent = this.createSyncModal();
 		this.showModal(
@@ -759,10 +794,14 @@ class UIComponents {
 					const canvas = document.createElement("canvas");
 					qrContainer.appendChild(canvas);
 
-					const connectionInfo = { roomId };
-					const connectionString = JSON.stringify(connectionInfo);
+					const receiveUrl = new URL(
+						window.location.pathname || "/",
+						window.location.origin,
+					);
+					receiveUrl.searchParams.set("syncRoom", roomId);
+					const qrPayload = receiveUrl.toString();
 					// eslint-disable-next-line no-undef
-					QRCode.toCanvas(canvas, connectionString, {
+					QRCode.toCanvas(canvas, qrPayload, {
 						width: 220,
 						margin: 1,
 					});
@@ -806,23 +845,19 @@ class UIComponents {
 				qrReaderElement.style.display = "block";
 
 				const qrCodeSuccessCallback = (decodedText, _decodedResult) => {
-					try {
-						const info = JSON.parse(decodedText);
-						if (info.roomId) {
-							peerInput.value = info.roomId;
-							statusEl.textContent = `Scanned successfully! Connecting...`;
-							html5QrCode.stop().then(() => {
-								scanButton.textContent = "Scan QR Code";
-								qrReaderElement.style.display = "none";
-								connectButton.click();
-							});
-						} else {
-							throw new Error("Invalid QR code.");
-						}
-					} catch (e) {
+					const roomId = parseRoomIdFromSyncPayload(decodedText);
+					if (!roomId) {
 						statusEl.textContent = "Error: Invalid QR code format.";
-						console.error(e);
+						return;
 					}
+					peerInput.value = roomId;
+					statusEl.textContent =
+						"Scanned successfully! Connecting...";
+					html5QrCode.stop().then(() => {
+						scanButton.textContent = "Scan QR Code";
+						qrReaderElement.style.display = "none";
+						connectButton.click();
+					});
 				};
 
 				const config = { fps: 10, qrbox: { width: 250, height: 250 } };
@@ -876,6 +911,13 @@ class UIComponents {
 				this.showError(`Could not connect: ${err.message}`);
 			}
 		});
+
+		if (autoJoinRoomId?.trim()) {
+			peerInput.value = autoJoinRoomId.trim();
+			requestAnimationFrame(() => {
+				connectButton.click();
+			});
+		}
 	}
 }
 

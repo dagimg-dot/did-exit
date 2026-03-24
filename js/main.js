@@ -42,11 +42,45 @@ class App {
 		}
 		return { pdfFileName, questionNum, params };
 	}
+
+	/** Read ?syncRoom= from URL (phone camera QR), strip it, return room id or null. */
+	consumeSyncRoomQuery() {
+		const params = new URLSearchParams(window.location.search);
+		const raw = params.get("syncRoom")?.trim();
+		if (!raw) {
+			return null;
+		}
+		params.delete("syncRoom");
+		const qs = params.toString();
+		const newUrl =
+			window.location.pathname +
+			(qs ? `?${qs}` : "") +
+			window.location.hash;
+		window.history.replaceState({}, "", newUrl);
+
+		const uuidRe =
+			/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+		if (!uuidRe.test(raw)) {
+			console.warn("[Sync] Ignoring invalid syncRoom query parameter");
+			return null;
+		}
+		return raw;
+	}
+
 	async initializeApp() {
 		await this.initializeComponents();
 		this.setupEventListeners();
 		this.showNewFeaturesPrompt();
 		initializeTheme();
+
+		const syncRoom = this.consumeSyncRoomQuery();
+		if (syncRoom) {
+			this.showSection("upload-section");
+			this.ui.showSyncModal(null, this.p2pSyncManager, {
+				autoJoinRoomId: syncRoom,
+			});
+			return;
+		}
 
 		const { pdfFileName, questionNum, params } = this.parseHashRoute();
 		if (pdfFileName && !Number.isNaN(questionNum) && questionNum > 0) {
