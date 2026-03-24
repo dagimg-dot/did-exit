@@ -58,8 +58,10 @@
 	left: 50%;
 	transform: translateX(-50%);
 	padding: 0.35rem 0.55rem;
+	font-family: var(--font-sans);
 	font-size: 0.65rem;
 	font-weight: 600;
+	-webkit-font-smoothing: antialiased;
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
 	white-space: nowrap;

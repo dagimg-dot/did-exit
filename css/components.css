@@ -885,6 +885,7 @@
 	justify-content: space-between;
 	transition: all 0.2s ease;
 	cursor: pointer;
+	overflow: visible;
 }
 
 .recent-exam-item:hover {
@@ -922,6 +923,40 @@
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
+	overflow: visible;
+}
+
+.recent-exam-actions button[data-tip] {
+	position: relative;
+	z-index: 0;
+}
+
+.recent-exam-actions button[data-tip]:hover,
+.recent-exam-actions button[data-tip]:focus-visible {
+	z-index: 2;
+}
+
+.recent-exam-actions button[data-tip]:hover::after,
+.recent-exam-actions button[data-tip]:focus-visible::after {
+	content: attr(data-tip);
+	position: absolute;
+	right: calc(100% + 10px);
+	top: 50%;
+	transform: translateY(-50%);
+	padding: 0.4rem 0.6rem;
+	font-family: var(--font-sans);
+	font-size: 0.72rem;
+	font-weight: 600;
+	line-height: 1.25;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+	-webkit-font-smoothing: antialiased;
+	color: var(--color-text);
+	background: var(--color-surface-2);
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	box-shadow: var(--shadow);
+	pointer-events: none;
 }
 
 .answer-status {

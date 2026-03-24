@@ -1187,15 +1187,15 @@ class App {
 				<div class="recent-exam-actions">
 					${
 						hasUserAnswers
-							? `<button type="button" class="reset-answers-btn" data-pdf-id="${pdf.id}" title="Reset answers" aria-label="Reset answers"><i data-lucide="rotate-ccw" aria-hidden="true"></i></button>`
+							? `<button type="button" class="reset-answers-btn" data-pdf-id="${pdf.id}" data-tip="Reset saved answers" aria-label="Reset saved answers for this exam"><i data-lucide="rotate-ccw" aria-hidden="true"></i></button>`
 							: ""
 					}
 					<button type="button" class="sync-exam-btn" data-pdf-id="${
 						pdf.id
-					}" title="Share or sync exam" aria-label="Share or sync exam"><i data-lucide="share-2" aria-hidden="true"></i></button>
+					}" data-tip="Share or sync exam" aria-label="Share or sync this exam with another device"><i data-lucide="share-2" aria-hidden="true"></i></button>
 					<button type="button" class="delete-exam-btn" data-pdf-id="${
 						pdf.id
-					}" title="Delete exam" aria-label="Delete exam"><i data-lucide="trash-2" aria-hidden="true"></i></button>
+					}" data-tip="Remove from library" aria-label="Remove this exam from your library"><i data-lucide="trash-2" aria-hidden="true"></i></button>
 				</div>
 			</div>
 		`;
