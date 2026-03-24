@@ -517,20 +517,49 @@
 					<div class="api-key-field api-key-model-row">
 						<label
 							class="api-key-field-label"
-							for="google-ai-model-select"
+							for="google-ai-model-trigger"
 						>
 							Model
 						</label>
-						<select
-							id="google-ai-model-select"
-							class="api-key-model-select"
-							disabled
-							aria-label="Google AI model"
-						>
-							<option value="">
-								Models load when you save the API key
-							</option>
-						</select>
+						<div class="model-picker" id="google-ai-model-picker">
+							<select
+								id="google-ai-model-select"
+								class="model-picker-native"
+								disabled
+								aria-hidden="true"
+								tabindex="-1"
+							>
+								<option value="">
+									Models load when you save the API key
+								</option>
+							</select>
+							<button
+								type="button"
+								class="model-picker__trigger"
+								id="google-ai-model-trigger"
+								aria-haspopup="listbox"
+								aria-expanded="false"
+								aria-controls="google-ai-model-listbox"
+								disabled
+							>
+								<span
+									class="model-picker__value"
+									id="google-ai-model-display"
+								>
+									Models load when you save the API key
+								</span>
+								<span
+									class="model-picker__chevron"
+									aria-hidden="true"
+								></span>
+							</button>
+							<div
+								class="model-picker__dropdown"
+								id="google-ai-model-listbox"
+								role="listbox"
+								hidden
+							></div>
+						</div>
 					</div>
 					<div class="api-key-status" id="api-key-status"></div>
 					<div class="api-key-help">

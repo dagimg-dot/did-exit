@@ -146,6 +146,8 @@ class App {
 				}
 			});
 
+		this.setupModelPicker();
+
 		// Load existing API key on startup
 		this.loadExistingAPIKey();
 
@@ -754,42 +756,231 @@ class App {
 	async refreshModelDropdown(apiKey) {
 		const select = document.getElementById("google-ai-model-select");
 		if (!select || !apiKey) {
+			this.syncModelPickerFromSelect();
 			return false;
 		}
+		let ok = false;
 		select.disabled = true;
 		select.innerHTML = '<option value="">Loading models…</option>';
+		this.syncModelPickerFromSelect();
 		try {
 			const models = await this.aiIntegration.listModels(apiKey);
 			if (models.length === 0) {
 				select.innerHTML =
 					'<option value="">No models available for this key</option>';
 				select.disabled = true;
-				return false;
-			}
-			select.innerHTML = "";
-			for (const m of models) {
-				const opt = document.createElement("option");
-				opt.value = m.id;
-				opt.textContent =
-					m.displayName && m.displayName !== m.id
-						? `${m.displayName} (${m.id})`
-						: m.id;
-				select.appendChild(opt);
-			}
-			const saved = localStorage.getItem("google-ai-model-id");
-			if (saved && models.some((x) => x.id === saved)) {
-				select.value = saved;
+				ok = false;
 			} else {
-				select.selectedIndex = 0;
+				select.innerHTML = "";
+				for (const m of models) {
+					const opt = document.createElement("option");
+					opt.value = m.id;
+					opt.textContent =
+						m.displayName && m.displayName !== m.id
+							? `${m.displayName} (${m.id})`
+							: m.id;
+					select.appendChild(opt);
+				}
+				const saved = localStorage.getItem("google-ai-model-id");
+				if (saved && models.some((x) => x.id === saved)) {
+					select.value = saved;
+				} else {
+					select.selectedIndex = 0;
+				}
+				select.disabled = false;
+				ok = true;
 			}
-			select.disabled = false;
-			return true;
 		} catch (error) {
 			console.error("Failed to list models:", error);
 			select.innerHTML =
 				'<option value="">Could not load models</option>';
 			select.disabled = true;
-			return false;
+			ok = false;
+		}
+		this.syncModelPickerFromSelect();
+		return ok;
+	}
+
+	setupModelPicker() {
+		if (this._modelPickerSetup) {
+			return;
+		}
+		this._modelPickerSetup = true;
+
+		this._boundModelPickerDocClick = (e) => {
+			const root = document.getElementById("google-ai-model-picker");
+			if (root && !root.contains(e.target)) {
+				this.closeModelPicker();
+			}
+		};
+		this._boundModelPickerKeydown = (e) => {
+			if (e.key === "Escape") {
+				this.closeModelPicker();
+			}
+		};
+		this._boundModelPickerResize = () => {
+			const listbox = document.getElementById("google-ai-model-listbox");
+			if (listbox && !listbox.hidden) {
+				this.closeModelPicker();
+			}
+		};
+		/** Window/document scroll in capture phase includes the open listbox; only close for “outside” scroll. */
+		this._boundModelPickerScroll = (e) => {
+			const listbox = document.getElementById("google-ai-model-listbox");
+			if (!listbox || listbox.hidden) {
+				return;
+			}
+			const root = document.getElementById("google-ai-model-picker");
+			const t = e.target;
+			if (root && (t === root || root.contains(t))) {
+				return;
+			}
+			this.closeModelPicker();
+		};
+
+		const trigger = document.getElementById("google-ai-model-trigger");
+		if (!trigger) {
+			return;
+		}
+		trigger.addEventListener("click", (e) => {
+			e.stopPropagation();
+			if (trigger.disabled) {
+				return;
+			}
+			const listbox = document.getElementById("google-ai-model-listbox");
+			if (!listbox) {
+				return;
+			}
+			if (!listbox.hidden) {
+				this.closeModelPicker();
+			} else {
+				this.openModelPicker();
+			}
+		});
+
+		this.syncModelPickerFromSelect();
+	}
+
+	_positionModelPicker() {
+		const trigger = document.getElementById("google-ai-model-trigger");
+		const listbox = document.getElementById("google-ai-model-listbox");
+		if (!trigger || !listbox) {
+			return;
+		}
+		const r = trigger.getBoundingClientRect();
+		const gap = 4;
+		const maxH = Math.max(120, window.innerHeight - r.bottom - gap - 12);
+		listbox.style.position = "fixed";
+		listbox.style.left = `${r.left}px`;
+		listbox.style.width = `${r.width}px`;
+		listbox.style.top = `${r.bottom + gap}px`;
+		listbox.style.maxHeight = `${Math.min(280, maxH)}px`;
+	}
+
+	openModelPicker() {
+		const trigger = document.getElementById("google-ai-model-trigger");
+		const listbox = document.getElementById("google-ai-model-listbox");
+		if (!trigger || !listbox || trigger.disabled) {
+			return;
+		}
+		this._positionModelPicker();
+		listbox.hidden = false;
+		trigger.setAttribute("aria-expanded", "true");
+		trigger.classList.add("model-picker__trigger--open");
+		queueMicrotask(() => {
+			document.addEventListener("click", this._boundModelPickerDocClick);
+			document.addEventListener("keydown", this._boundModelPickerKeydown);
+			window.addEventListener("resize", this._boundModelPickerResize);
+			window.addEventListener(
+				"scroll",
+				this._boundModelPickerScroll,
+				true,
+			);
+		});
+	}
+
+	closeModelPicker() {
+		const listbox = document.getElementById("google-ai-model-listbox");
+		const trigger = document.getElementById("google-ai-model-trigger");
+		if (listbox) {
+			listbox.hidden = true;
+		}
+		if (trigger) {
+			trigger.setAttribute("aria-expanded", "false");
+			trigger.classList.remove("model-picker__trigger--open");
+		}
+		if (this._boundModelPickerDocClick) {
+			document.removeEventListener(
+				"click",
+				this._boundModelPickerDocClick,
+			);
+		}
+		if (this._boundModelPickerKeydown) {
+			document.removeEventListener(
+				"keydown",
+				this._boundModelPickerKeydown,
+			);
+		}
+		if (this._boundModelPickerResize) {
+			window.removeEventListener("resize", this._boundModelPickerResize);
+		}
+		if (this._boundModelPickerScroll) {
+			window.removeEventListener(
+				"scroll",
+				this._boundModelPickerScroll,
+				true,
+			);
+		}
+	}
+
+	syncModelPickerFromSelect() {
+		const select = document.getElementById("google-ai-model-select");
+		const trigger = document.getElementById("google-ai-model-trigger");
+		const display = document.getElementById("google-ai-model-display");
+		const listbox = document.getElementById("google-ai-model-listbox");
+		if (!select || !trigger || !display || !listbox) {
+			return;
+		}
+
+		this.closeModelPicker();
+
+		const idx = select.selectedIndex;
+		const selected = idx >= 0 ? select.options[idx] : null;
+		display.textContent = selected?.textContent?.trim()
+			? selected.textContent
+			: "Choose a model";
+
+		trigger.disabled = select.disabled;
+		listbox.innerHTML = "";
+
+		for (let i = 0; i < select.options.length; i++) {
+			const opt = select.options[i];
+			const row = document.createElement("div");
+			row.className = "model-picker__option";
+			row.setAttribute("role", "option");
+			row.id = `google-ai-model-opt-${i}`;
+			row.dataset.value = opt.value;
+			row.textContent = opt.textContent;
+			const isSel = select.selectedIndex === i;
+			row.setAttribute("aria-selected", isSel ? "true" : "false");
+			const unusable = !opt.value.trim();
+			if (unusable) {
+				row.classList.add("model-picker__option--muted");
+				row.setAttribute("aria-disabled", "true");
+			}
+			row.addEventListener("mousedown", (e) => {
+				e.preventDefault();
+			});
+			row.addEventListener("click", () => {
+				if (unusable || select.disabled) {
+					return;
+				}
+				select.selectedIndex = i;
+				select.dispatchEvent(new Event("change", { bubbles: true }));
+				this.syncModelPickerFromSelect();
+				this.closeModelPicker();
+			});
+			listbox.appendChild(row);
 		}
 	}
 
@@ -888,7 +1079,7 @@ class App {
 		}
 	}
 
-	openEngineConfigModal() {
+	async openEngineConfigModal() {
 		const apiKeyInput = document.getElementById("api-key-input");
 		const existingKey = localStorage.getItem("google-ai-api-key");
 
@@ -902,7 +1093,7 @@ class App {
 		this.showAPIKeyStatus("", "");
 
 		if (existingKey) {
-			void this.refreshModelDropdown(existingKey);
+			await this.refreshModelDropdown(existingKey);
 		} else {
 			const select = document.getElementById("google-ai-model-select");
 			if (select) {
@@ -910,6 +1101,7 @@ class App {
 					'<option value="">Models load when you save the API key</option>';
 				select.disabled = true;
 			}
+			this.syncModelPickerFromSelect();
 		}
 
 		this.ui.showApiKeyModal();
