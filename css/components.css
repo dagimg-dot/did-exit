@@ -483,6 +483,14 @@
 	color: var(--text-primary);
 }
 
+#file-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: 0.75rem;
+}
+
 .processing-status {
 	padding: 1rem 0;
 	text-align: center;
