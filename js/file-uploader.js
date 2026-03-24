@@ -18,8 +18,9 @@ class FileUploader {
 	}
 
 	setupEventListeners() {
-		// Browse button click
-		this.browseBtn.addEventListener("click", () => {
+		// Browse button click (stopPropagation so upload-area click doesn’t open the picker twice)
+		this.browseBtn.addEventListener("click", (e) => {
+			e.stopPropagation();
 			this.pdfInput.click();
 		});
 
