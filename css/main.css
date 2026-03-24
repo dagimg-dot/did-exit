@@ -117,6 +117,7 @@ body {
 	display: flex;
 	flex-direction: column;
 	gap: 2rem;
+	min-width: 0;
 }
 
 .landing-hero {
@@ -443,9 +444,16 @@ body {
 	align-items: center;
 }
 
+.landing-recent {
+	min-width: 0;
+	width: 100%;
+}
+
 .landing-recent .recent-exams-container {
 	max-width: none;
 	margin: 0;
+	min-width: 0;
+	width: 100%;
 }
 
 .landing-recent .recent-exams-section {
@@ -454,6 +462,8 @@ body {
 	border-style: solid;
 	text-align: left;
 	padding: 1.5rem 1.35rem;
+	min-width: 0;
+	max-width: 100%;
 }
 
 .landing-recent .recent-exams-section:hover {
@@ -470,13 +480,14 @@ body {
 
 .landing-recent .recent-exams-list {
 	display: grid;
-	grid-template-columns: 1fr;
+	grid-template-columns: minmax(0, 1fr);
 	gap: 0.75rem;
+	min-width: 0;
 }
 
 @media (min-width: 640px) {
 	.landing-recent .recent-exams-list {
-		grid-template-columns: repeat(2, 1fr);
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
 
@@ -576,13 +587,75 @@ body.view-quiz .site-header {
 		padding: 1rem;
 	}
 
+	/* One horizontal row: brand truncates, controls stay compact */
 	.site-header {
-		flex-direction: column;
-		align-items: flex-start;
+		flex-direction: row;
+		flex-wrap: nowrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 1.25rem;
+		padding-bottom: 0.65rem;
+	}
+
+	.site-header__brand {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.site-logo {
+		font-size: 1.1rem;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 
 	.site-header__actions {
-		width: 100%;
-		justify-content: flex-start;
+		flex: 0 0 auto;
+		flex-wrap: nowrap;
+		width: auto;
+		justify-content: flex-end;
+		gap: 0.35rem;
+		--site-header-control-h: 2.3rem;
+	}
+
+	.site-header__actions > .btn {
+		padding: 0 0.5rem;
+		font-size: 0.7rem;
+		font-weight: 600;
+	}
+
+	.site-header__actions .theme-switcher {
+		gap: 0.25rem;
+	}
+
+	.site-header__actions .theme-switcher .theme-toggle-btn {
+		padding: 0 0.4rem;
+		font-size: 0.62rem;
+		letter-spacing: 0.02em;
+	}
+}
+
+@media (max-width: 380px) {
+	.site-header {
+		gap: 0.35rem;
+	}
+
+	.site-logo {
+		font-size: 1rem;
+	}
+
+	.site-header__actions {
+		--site-header-control-h: 2.1rem;
+		gap: 0.25rem;
+	}
+
+	.site-header__actions > .btn {
+		padding: 0 0.4rem;
+		font-size: 0.65rem;
+	}
+
+	.site-header__actions .theme-switcher .theme-toggle-btn {
+		padding: 0 0.32rem;
+		font-size: 0.58rem;
 	}
 }

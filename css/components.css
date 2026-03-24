@@ -832,6 +832,9 @@
 .recent-exams-container {
 	max-width: 600px;
 	margin: 1rem auto 3rem auto;
+	width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
 }
 
 .recent-exams-section {
@@ -842,6 +845,9 @@
 	text-align: center;
 	transition: all 0.3s ease;
 	box-shadow: var(--shadow);
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .recent-exams-section:hover {
@@ -873,6 +879,7 @@
 	flex-direction: column;
 	gap: 0.75rem;
 	text-align: left;
+	min-width: 0;
 }
 
 .recent-exam-item {
@@ -883,9 +890,13 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	gap: 0.65rem;
 	transition: all 0.2s ease;
 	cursor: pointer;
 	overflow: visible;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 }
 
 .recent-exam-item:hover {
@@ -907,13 +918,21 @@
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	overflow-wrap: anywhere;
 }
 
 .recent-exam-meta {
 	font-size: 0.85rem;
 	color: var(--text-secondary);
 	display: flex;
-	gap: 1rem;
+	flex-wrap: wrap;
+	gap: 0.35rem 1rem;
+	min-width: 0;
+}
+
+.recent-exam-meta span {
+	min-width: 0;
+	overflow-wrap: anywhere;
 }
 
 .recent-exam-actions {
