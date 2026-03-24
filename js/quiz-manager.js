@@ -581,22 +581,36 @@ class QuizManager {
 				(page === "<" || page === ">")
 			) {
 				const arrowBtn = document.createElement("button");
-				arrowBtn.className = "question-nav-btn";
-				arrowBtn.classList.add("arrow-btn");
-				arrowBtn.textContent = page;
+				arrowBtn.type = "button";
+				arrowBtn.className = "question-nav-btn arrow-btn";
+				const isPrev = page === "<";
+				arrowBtn.setAttribute(
+					"aria-label",
+					isPrev ? "Previous page" : "Next page",
+				);
+				const icon = document.createElement("i");
+				icon.setAttribute(
+					"data-lucide",
+					isPrev ? "chevron-left" : "chevron-right",
+				);
+				icon.setAttribute("aria-hidden", "true");
+				arrowBtn.appendChild(icon);
 				arrowBtn.disabled =
-					(page === "<" && this.currentQuestionIndex === 0) ||
-					(page === ">" &&
+					(isPrev && this.currentQuestionIndex === 0) ||
+					(!isPrev &&
 						this.currentQuestionIndex === totalQuestions - 1);
 
 				arrowBtn.addEventListener("click", () => {
-					if (page === "<") {
+					if (isPrev) {
 						this.previousQuestion();
 					} else {
 						this.nextQuestion();
 					}
 				});
 				navItem.appendChild(arrowBtn);
+				if (typeof lucide !== "undefined") {
+					lucide.createIcons({ root: arrowBtn });
+				}
 			} else {
 				const dots = document.createElement("span");
 				dots.textContent = "...";
