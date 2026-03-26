@@ -258,11 +258,6 @@
 	color: var(--text-primary);
 }
 
-/* Multiple Choice Options */
-.options-container {
-	/* margin-bottom: 2.5rem; */
-}
-
 .option {
 	display: flex;
 	align-items: center;
@@ -377,14 +372,19 @@
 	min-width: 0;
 }
 
+/* Override .btn min-height (44px) and pill radius so controls stay square circles */
 .quiz-controls .btn-icon {
 	min-width: 2.5rem;
 	width: 2.5rem;
+	min-height: 2.5rem;
 	height: 2.5rem;
 	padding: 0;
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
+	flex-shrink: 0;
+	aspect-ratio: 1;
+	border-radius: 50%;
 }
 
 .quiz-controls .btn-icon .lucide {
@@ -396,6 +396,8 @@
 .quiz-controls .btn-icon--submit {
 	min-width: 2.75rem;
 	width: 2.75rem;
+	min-height: 2.75rem;
+	height: 2.75rem;
 }
 
 .quiz-controls .btn-icon--submit .lucide {
@@ -781,7 +783,15 @@
 	.quiz-controls .btn-icon {
 		width: 2.4rem;
 		min-width: 2.4rem;
+		min-height: 2.4rem;
 		height: 2.4rem;
+	}
+
+	.quiz-controls .btn-icon--submit {
+		width: 2.65rem;
+		min-width: 2.65rem;
+		min-height: 2.65rem;
+		height: 2.65rem;
 	}
 
 	.results-actions {
