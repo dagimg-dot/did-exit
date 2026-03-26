@@ -70,13 +70,13 @@ class App {
 	async initializeApp() {
 		await this.initializeComponents();
 		this.setupEventListeners();
-		this.showNewFeaturesPrompt();
+		await this.showNewFeaturesPrompt();
 		initializeTheme();
 
 		const syncRoom = this.consumeSyncRoomQuery();
 		if (syncRoom) {
 			this.showSection("upload-section");
-			this.ui.showSyncModal(null, this.p2pSyncManager, {
+			await this.ui.showSyncModal(null, this.p2pSyncManager, {
 				autoJoinRoomId: syncRoom,
 			});
 			return;
@@ -269,10 +269,12 @@ class App {
 				}
 			});
 
-		document.getElementById("receive-btn").addEventListener("click", () => {
-			console.log("[UI] 'Receive an exam' clicked.");
-			this.ui.showSyncModal(null, this.p2pSyncManager);
-		});
+		document
+			.getElementById("receive-btn")
+			.addEventListener("click", async () => {
+				console.log("[UI] 'Receive an exam' clicked.");
+				await this.ui.showSyncModal(null, this.p2pSyncManager);
+			});
 
 		document.getElementById("Home").addEventListener("click", () => {
 			this.goToLanding();
@@ -1321,7 +1323,7 @@ class App {
 			this.syncModelPickerFromSelect();
 		}
 
-		this.ui.showApiKeyModal();
+		await this.ui.showApiKeyModal();
 		queueMicrotask(() => apiKeyInput?.focus());
 	}
 
@@ -1455,11 +1457,11 @@ class App {
 
 		// Handle sync button clicks
 		document.querySelectorAll(".sync-exam-btn").forEach((btn) => {
-			btn.addEventListener("click", (e) => {
+			btn.addEventListener("click", async (e) => {
 				e.stopPropagation();
 				const pdfId = btn.dataset.pdfId;
 				console.log(`[UI] Sync button clicked for PDF:`, pdfId);
-				this.ui.showSyncModal(pdfId, this.p2pSyncManager);
+				await this.ui.showSyncModal(pdfId, this.p2pSyncManager);
 			});
 		});
 	}
@@ -1564,7 +1566,7 @@ class App {
 		}
 	}
 
-	showNewFeaturesPrompt() {
+	async showNewFeaturesPrompt() {
 		const lastSeenVersion =
 			localStorage.getItem("did-exit-version") || "0.0";
 
@@ -1613,7 +1615,7 @@ class App {
                 </div>
             `;
 
-			this.ui.showModal("What's New", htmlContent, [
+			await this.ui.showModal("What's New", htmlContent, [
 				{
 					text: "Got it!",
 					className: "btn-primary",

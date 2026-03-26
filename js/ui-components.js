@@ -311,94 +311,8 @@ class UIComponents {
 	}
 
 	// Method to create custom modal
-	showModal(title, content, buttons = []) {
-		// Remove existing modal if any
-		this.hideModal();
-
-		// Add CSS for modal if it doesn't exist yet
-		if (!document.getElementById("modal-custom-styles")) {
-			const style = document.createElement("style");
-			style.id = "modal-custom-styles";
-			style.textContent = `
-				.modal-backdrop {
-					position: fixed;
-					top: 0;
-					left: 0;
-					right: 0;
-					bottom: 0;
-					background-color: rgba(0, 0, 0, 0.45);
-					display: flex;
-					align-items: center;
-					justify-content: center;
-					z-index: 1000;
-					-webkit-backdrop-filter: blur(4px);
-					backdrop-filter: blur(4px);
-				}
-				.modal-dialog {
-					background-color: var(--card-background);
-					color: var(--text-primary);
-					border-radius: var(--border-radius);
-					border: 1px solid var(--border-color);
-					box-shadow: var(--shadow-lg);
-					overflow: hidden;
-					width: 90%;
-					max-width: 600px;
-					display: flex;
-					flex-direction: column;
-					max-height: 80vh;
-				}
-				.modal-header {
-					display: flex;
-					align-items: center;
-					justify-content: space-between;
-					padding: 1rem 1.25rem;
-					border-bottom: 1px solid var(--border-color);
-					background: var(--card-background);
-					flex-shrink: 0;
-				}
-				.modal-title {
-					margin: 0;
-					font-size: 1.15rem;
-					font-weight: 600;
-				}
-				.modal-close-btn {
-					background: none;
-					border: none;
-					font-size: 1.5rem;
-					cursor: pointer;
-					padding: 0.25rem;
-					line-height: 1;
-					color: var(--text-secondary);
-				}
-				.modal-close-btn:hover {
-					color: var(--text-primary);
-				}
-				.modal-content {
-					padding: 1.25rem;
-					overflow-y: auto;
-					max-height: calc(80vh - 120px);
-				}
-				.modal-footer {
-					display: flex;
-					justify-content: flex-end;
-					gap: 0.5rem;
-					padding: 1rem 1.25rem;
-					border-top: 1px solid var(--border-color);
-					background: var(--color-surface-2);
-					flex-shrink: 0;
-				}
-				.version-block {
-					margin-bottom: 1rem;
-					padding-bottom: 1rem;
-					border-bottom: 1px solid var(--border-color);
-				}
-				.version-block:last-child {
-					border-bottom: none;
-					margin-bottom: 0;
-				}
-			`;
-			document.head.appendChild(style);
-		}
+	async showModal(title, content, buttons = []) {
+		await this.hideModal();
 
 		const modalHTML = `
             <div class="modal-backdrop">
@@ -421,6 +335,16 @@ class UIComponents {
 		this.modalElement.innerHTML = modalHTML;
 		document.body.appendChild(this.modalElement);
 		document.body.style.overflow = "hidden"; // Prevent background scrolling
+
+		const backdrop = this.modalElement.querySelector(".modal-backdrop");
+		await new Promise((resolve) => {
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					backdrop?.classList.add("is-open");
+					resolve();
+				});
+			});
+		});
 
 		const footer = this.modalElement.querySelector(".modal-footer");
 		buttons.forEach((btn) => {
@@ -451,7 +375,17 @@ class UIComponents {
 	}
 
 	hideModal() {
-		if (this.modalElement) {
+		if (!this.modalElement) {
+			return Promise.resolve();
+		}
+
+		const backdrop = this.modalElement.querySelector(".modal-backdrop");
+		const dialog = this.modalElement.querySelector(".modal-dialog");
+
+		const finalizeModalDismissal = () => {
+			if (!this.modalElement) {
+				return;
+			}
 			const placeholder = document.getElementById(
 				"api-key-modal-placeholder",
 			);
@@ -465,13 +399,46 @@ class UIComponents {
 			}
 			this.modalElement.remove();
 			this.modalElement = null;
-			document.body.style.overflow = "auto";
+			document.body.style.overflow = "";
+		};
+
+		if (backdrop?.classList.contains("is-open")) {
+			backdrop.classList.remove("is-open");
+			return new Promise((resolve) => {
+				let settled = false;
+				const done = () => {
+					if (settled) {
+						return;
+					}
+					settled = true;
+					dialog?.removeEventListener(
+						"transitionend",
+						onTransitionEnd,
+					);
+					finalizeModalDismissal();
+					resolve();
+				};
+				const onTransitionEnd = (e) => {
+					if (
+						e.target === dialog &&
+						(e.propertyName === "opacity" ||
+							e.propertyName === "margin-top")
+					) {
+						done();
+					}
+				};
+				dialog?.addEventListener("transitionend", onTransitionEnd);
+				window.setTimeout(done, 400);
+			});
 		}
+
+		finalizeModalDismissal();
+		return Promise.resolve();
 	}
 
 	/** Mounts the shared #api-key-section into the modal (reparented on hideModal). */
-	showApiKeyModal() {
-		this.showModal("Google AI setup", "", [
+	async showApiKeyModal() {
+		await this.showModal("Google AI setup", "", [
 			{
 				text: "Close",
 				className: "btn-secondary",
@@ -660,7 +627,7 @@ class UIComponents {
 		}
 	}
 
-	showEnhancedError(message, details = null) {
+	async showEnhancedError(message, details = null) {
 		let detailHTML = "";
 		if (details) {
 			detailHTML = `<pre style="background: #eee; padding: 10px; border-radius: 4px; margin-top: 10px; white-space: pre-wrap; word-break: break-all;">${JSON.stringify(
@@ -670,9 +637,11 @@ class UIComponents {
 			)}</pre>`;
 		}
 
-		this.showModal("An Error Occurred", `<p>${message}</p>${detailHTML}`, [
-			{ text: "Close", onClick: () => this.hideModal() },
-		]);
+		await this.showModal(
+			"An Error Occurred",
+			`<p>${message}</p>${detailHTML}`,
+			[{ text: "Close", onClick: () => this.hideModal() }],
+		);
 	}
 
 	showBatchStatus(currentBatch, totalBatches, questionsReady) {
@@ -718,11 +687,11 @@ class UIComponents {
 		return modalContent;
 	}
 
-	showSyncModal(pdfId, p2pSyncManager, options = {}) {
+	async showSyncModal(pdfId, p2pSyncManager, options = {}) {
 		const { autoJoinRoomId = null } = options;
 		const isReceiveOnly = pdfId === null;
 		const modalContent = this.createSyncModal();
-		this.showModal(
+		await this.showModal(
 			isReceiveOnly ? "Receive Exam" : "Sync Exam",
 			modalContent,
 			[
